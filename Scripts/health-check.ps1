@@ -1,5 +1,5 @@
 # ============================================================================
-# Bar Avenida — Health Check del sistema completo
+# Bar Avenida - Health Check del sistema completo
 # ----------------------------------------------------------------------------
 # Verifica que TODO el sistema este sano:
 #   - Servicio Windows BarAvenidaAPI Running
@@ -27,13 +27,13 @@ function Print-Result {
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  HEALTH CHECK BAR AVENIDA — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+Write-Host "  HEALTH CHECK BAR AVENIDA - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
 $todo = $true
 
-# ── 1. Servicio Windows ──────────────────────────────────────────────────────
+# -- 1. Servicio Windows ------------------------------------------------------
 $svc = Get-Service -Name "BarAvenidaAPI" -ErrorAction SilentlyContinue
 $ok = ($svc -and $svc.Status -eq "Running")
 $todo = (Print-Result "Servicio BarAvenidaAPI" $ok ($svc.Status)) -and $todo
@@ -47,7 +47,7 @@ if ($ok) {
     }
 }
 
-# ── 2. Endpoint admin ────────────────────────────────────────────────────────
+# -- 2. Endpoint admin --------------------------------------------------------
 try {
     $r = Invoke-WebRequest "http://localhost:7000/admin/" -UseBasicParsing -TimeoutSec 5
     $todo = (Print-Result "Endpoint /admin/ HTTP 200" ($r.StatusCode -eq 200) "Status $($r.StatusCode)") -and $todo
@@ -55,7 +55,7 @@ try {
     $todo = (Print-Result "Endpoint /admin/ HTTP 200" $false "FAIL: $_") -and $todo
 }
 
-# ── 3. Endpoint hora servidor ────────────────────────────────────────────────
+# -- 3. Endpoint hora servidor ------------------------------------------------
 try {
     $r = Invoke-WebRequest "http://localhost:7000/api/sistema/hora" -UseBasicParsing -TimeoutSec 5
     $hora = ($r.Content | ConvertFrom-Json).local
@@ -64,16 +64,17 @@ try {
     $todo = (Print-Result "Endpoint /api/sistema/hora" $false "FAIL: $_") -and $todo
 }
 
-# ── 4. SQL Server conectividad ───────────────────────────────────────────────
+# -- 4. SQL Server conectividad ----------------------------------------------─
 try {
     $sqlOut = sqlcmd -S "localhost\MSSQLSERVER01" -E -d BarAvenida -Q "SELECT COUNT(*) FROM Productos" -h -1 2>&1
-    $cnt = ($sqlOut | Where-Object { $_ -match '^\d+$' } | Select-Object -First 1)
-    $todo = (Print-Result "SQL Server BarAvenida" ($cnt -gt 0) "$cnt productos") -and $todo
+    $cnt = ($sqlOut | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^\d+$' } | Select-Object -First 1)
+    $cntInt = if ($cnt) { [int]$cnt } else { 0 }
+    $todo = (Print-Result "SQL Server BarAvenida" ($cntInt -gt 0) "$cntInt productos") -and $todo
 } catch {
     $todo = (Print-Result "SQL Server BarAvenida" $false "FAIL: $_") -and $todo
 }
 
-# ── 5. Tarea de backup ──────────────────────────────────────────────────────
+# -- 5. Tarea de backup ------------------------------------------------------
 $tarea = Get-ScheduledTask -TaskName "BarAvenida_BackupHorario" -ErrorAction SilentlyContinue
 if ($tarea) {
     $info = Get-ScheduledTaskInfo -TaskName "BarAvenida_BackupHorario"
@@ -85,7 +86,7 @@ if ($tarea) {
     $todo = (Print-Result "Tarea backup horaria" $false "NO REGISTRADA") -and $todo
 }
 
-# ── 6. Backups recientes ─────────────────────────────────────────────────────
+# -- 6. Backups recientes ----------------------------------------------------─
 $backups = Get-ChildItem "F:\BarAvenida\Backups\BarAvenida_*.bak" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
 if ($backups.Count -gt 0) {
     $ultimo = $backups[0]
@@ -96,7 +97,7 @@ if ($backups.Count -gt 0) {
     $todo = (Print-Result "Backups en disco" $false "0 backups") -and $todo
 }
 
-# ── 7. Espacio en disco F: ───────────────────────────────────────────────────
+# -- 7. Espacio en disco F: --------------------------------------------------─
 $disco = Get-PSDrive F -ErrorAction SilentlyContinue
 if ($disco) {
     $gbLibres = [math]::Round($disco.Free / 1GB, 2)
@@ -104,30 +105,40 @@ if ($disco) {
     $todo = (Print-Result "Espacio libre en F:" $okDisco "$gbLibres GB libres") -and $todo
 }
 
-# ── 8. Logs sin errores recientes ────────────────────────────────────────────
+# -- 8. Logs sin errores recientes --------------------------------------------
 $logHoy = Get-ChildItem "F:\BarAvenida\Logs\baravenida-$(Get-Date -Format 'yyyyMMdd').log" -ErrorAction SilentlyContinue
 if ($logHoy) {
-    $errores = (Select-String -Path $logHoy.FullName -Pattern '\] (ERR|FTL)' -SimpleMatch:$false | Measure-Object).Count
+    # Solo cuenta errores DEL ULTIMO ARRANQUE del backend (descarta stack traces antiguos)
+    $bannerLine = (Select-String -Path $logHoy.FullName -Pattern 'Bar Avenida API arrancando' | Select-Object -Last 1)
+    if ($bannerLine) {
+        $desdeLinea = $bannerLine.LineNumber
+        $todoLog = Get-Content $logHoy.FullName -Encoding UTF8
+        $logRecent = $todoLog | Select-Object -Skip ($desdeLinea - 1)
+        $errores = ($logRecent | Where-Object { $_ -match '\] (ERR|FTL)' } | Measure-Object).Count
+    } else {
+        $errores = (Select-String -Path $logHoy.FullName -Pattern '\] (ERR|FTL)' | Measure-Object).Count
+    }
     $okLogs = ($errores -eq 0)
-    $todo = (Print-Result "Logs sin errores HOY" $okLogs "$errores errores") -and $todo
+    $todo = (Print-Result "Logs sin errores (ultimo arranque)" $okLogs "$errores errores") -and $todo
 } else {
     Print-Result "Logs sin errores HOY" $true "(sin log de hoy)" | Out-Null
 }
 
-# ── 9. Cuentas abiertas ─────────────────────────────────────────────────────
+# -- 9. Cuentas abiertas ----------------------------------------------------─
 try {
     $sqlAbiertas = sqlcmd -S "localhost\MSSQLSERVER01" -E -d BarAvenida -Q "SELECT COUNT(*) FROM Cuentas WHERE Estado = 'Abierta'" -h -1 2>&1
-    $abi = ($sqlAbiertas | Where-Object { $_ -match '^\d+$' } | Select-Object -First 1)
-    Print-Result "Cuentas abiertas (info)" $true "$abi mesa(s)" | Out-Null
+    $abi = ($sqlAbiertas | ForEach-Object { "$_".Trim() } | Where-Object { $_ -match '^\d+$' } | Select-Object -First 1)
+    $abiInt = if ($abi) { [int]$abi } else { 0 }
+    Print-Result "Cuentas abiertas (info)" $true "$abiInt mesa(s)" | Out-Null
 } catch {}
 
-# ── Resumen ────────────────────────────────────────────────────────────────
+# -- Resumen ----------------------------------------------------------------
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
 if ($todo) {
     Write-Host "  TODO SANO" -ForegroundColor Green
 } else {
-    Write-Host "  HAY PROBLEMAS — revisa los [FAIL] arriba" -ForegroundColor Red
+    Write-Host "  HAY PROBLEMAS - revisa los [FAIL] arriba" -ForegroundColor Red
 }
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""

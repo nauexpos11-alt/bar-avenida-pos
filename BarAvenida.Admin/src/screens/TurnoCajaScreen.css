@@ -1,0 +1,428 @@
+/* ═══════════════════════════════════════
+   TurnoCajaScreen.css
+   ═══════════════════════════════════════ */
+
+.tc-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+/* ── Header ──────────────────────────── */
+.tc-header {
+  padding: 20px 24px 10px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.tc-titulo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #f0c842;
+  margin: 0 0 4px;
+  letter-spacing: 0.06em;
+}
+
+.tc-breadcrumb {
+  font-size: 0.78rem;
+  color: #555;
+  letter-spacing: 0.03em;
+}
+
+.tc-btn-cerrar {
+  background: none;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: #666;
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.tc-btn-cerrar:hover { border-color: #888; color: #ccc; }
+
+/* ── Body ────────────────────────────── */
+.tc-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.tc-cargando {
+  color: #666;
+  font-style: italic;
+  margin-top: 60px;
+}
+
+/* ── Sin turno ───────────────────────── */
+.tc-sin-turno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-top: 40px;
+}
+
+.tc-sin-turno-txt {
+  color: #666;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* ── Estado badge ────────────────────── */
+.tc-estado-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 14px;
+  border-radius: 4px;
+}
+
+.tc-badge-cerrado {
+  background: #1a0a0a;
+  color: #e55;
+  border: 1px solid #5a1a1a;
+}
+
+.tc-badge-abierto {
+  background: #0d2718;
+  color: #4ade80;
+  border: 1px solid #1a4a2a;
+}
+
+/* ── Botones principales ─────────────── */
+.tc-btn-abrir {
+  background: #f0c842;
+  border: none;
+  border-radius: 8px;
+  color: #0a0a0a;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 14px 48px;
+  cursor: pointer;
+  transition: filter 0.12s;
+  letter-spacing: 0.04em;
+}
+.tc-btn-abrir:hover { filter: brightness(1.1); }
+
+/* ── Turno abierto ───────────────────── */
+.tc-turno-open {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.tc-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tc-card {
+  flex: 1;
+  min-width: 150px;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tc-card-gold { border-color: #3a3000; }
+
+.tc-card-lbl {
+  font-size: 0.72rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tc-card-val {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #f0c842;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc-card-sm { font-size: 1rem; font-weight: 600; }
+
+.tc-notas {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.tc-acciones {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tc-btn-refresh {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #888;
+  font-size: 0.9rem;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.tc-btn-refresh:hover { background: #2a2a2a; color: #f0c842; }
+
+.tc-btn-cerrar-turno {
+  background: none;
+  border: 2px solid #e55;
+  border-radius: 8px;
+  color: #e55;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 12px 36px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.04em;
+}
+.tc-btn-cerrar-turno:hover { background: #1a0a0a; }
+
+/* ── Modal form ──────────────────────── */
+.tc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tc-lbl {
+  font-size: 0.78rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tc-input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tc-input:focus { border-color: #f0c842; }
+
+.tc-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.tc-aviso {
+  background: #1a1400;
+  border: 1px solid #555510;
+  border-radius: 5px;
+  color: #bbb;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Corte X live stats strip ─────────── */
+.tc-corte-x-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #0e1a10;
+  border: 1px solid #1e3a22;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 8px;
+}
+
+.tc-cx-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+  flex: 1;
+}
+
+.tc-cx-item-dest { border-left: 1px solid #2a4a2e; padding-left: 12px; }
+
+.tc-cx-val {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #5fc878;
+}
+
+.tc-cx-lbl {
+  font-size: 0.68rem;
+  color: #558855;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════
+   PROMPT C.1 — Hint de sugerencia de fondo
+   ═══════════════════════════════════════ */
+.tc-hint-fondo {
+  background: linear-gradient(180deg, #1a1500 0%, #120e00 100%);
+  border: 1px solid #a0820d;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: tcHintIn 0.22s ease-out;
+}
+
+@keyframes tcHintIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tc-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tc-hint-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.tc-hint-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #a0820d;
+  flex-shrink: 0;
+}
+
+.tc-hint-monto {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #f0c842;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+
+.tc-hint-btn {
+  background: #f0c842;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 14px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+  flex-shrink: 0;
+}
+.tc-hint-btn:hover  { background: #ffd95f; }
+.tc-hint-btn:active { background: #c9a312; transform: scale(0.97); }
+
+.tc-hint-just {
+  font-size: 0.74rem;
+  color: #999;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  margin-left: 1px;
+}
+
+.tc-hint-vacio {
+  border-color: #2e2e2e;
+  background: #0f0f0f;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.tc-hint-vacio .tc-hint-icon { color: #666; }
+.tc-hint-vacio span:last-child {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+/* ═══════════════════════════════════════
+   PROMPT C.3 — Cierre asistido (banner severidad)
+   ═══════════════════════════════════════ */
+.tc-cierre-banner {
+  border: 1px solid;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 4px 0 8px;
+}
+.tc-cierre-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.tc-cierre-lbl {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.tc-cierre-monto {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.tc-cierre-msg {
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.tc-cierre-verde {
+  border-color: #16a34a;
+  background: #0a3a2a;
+  color: #6ee7b7;
+}
+.tc-cierre-amarilla {
+  border-color: #fbbf24;
+  background: #1a1500;
+  color: #fbbf24;
+}
+.tc-cierre-roja {
+  border-color: #dc2626;
+  background: #2a0808;
+  color: #fca5a5;
+  animation: tcCierrePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tcCierrePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45); }
+  50%      { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0); }
+}

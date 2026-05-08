@@ -1,0 +1,269 @@
+export const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:7000'
+
+async function req(path, opts = {}, token = null) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const resp = await fetch(`${API_URL}${path}`, {
+    ...opts,
+    headers: { ...headers, ...opts.headers },
+  })
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`
+    try { const j = await resp.json(); msg = j.message || j.title || msg } catch {}
+    throw new Error(msg)
+  }
+  const text = await resp.text()
+  return text ? JSON.parse(text) : null
+}
+
+export const api = {
+  // Auth
+  login: (codigo, pin) =>
+    req('/api/Auth/login', { method: 'POST', body: JSON.stringify({ codigo, pin }) }),
+
+  // Mesas
+  getMesas: (t) => req('/api/Mesas', {}, t),
+
+  // Cuentas
+  getCuenta:          (id, t) => req(`/api/Cuentas/${id}`, {}, t),
+  getCuentasAbiertas: (t)     => req('/api/Cuentas/abiertas', {}, t),
+  cobrar: (t, data) =>
+    req('/api/Cuentas/cobrar', { method: 'POST', body: JSON.stringify(data) }, t),
+
+  // Usuarios
+  getUsuarios:   (t)         => req('/api/Usuarios', {}, t),
+  createUsuario: (t, data)   => req('/api/Usuarios', { method: 'POST', body: JSON.stringify(data) }, t),
+  updateUsuario: (t, id, data) => req(`/api/Usuarios/${id}`, { method: 'PUT', body: JSON.stringify(data) }, t),
+
+  // Reportes
+  resumenMovil:          (t) => req('/api/Reportes/resumen-movil', {}, t),
+  productosMasVendidos:  (t) => req('/api/Reportes/productos-mas-vendidos', {}, t),
+  ventasPorCategoria:    (t) => req('/api/Reportes/ventas-categoria', {}, t),
+  ventasPorMesera:       (t) => req('/api/Reportes/ventas-mesera', {}, t),
+  ventasDelDia:          (t) => req('/api/Reportes/ventas-dia', {}, t),
+
+  // Admin — Productos
+  adminGetProductos: (t, { categoriaId, activo, busqueda } = {}) => {
+    const p = new URLSearchParams()
+    if (categoriaId != null) p.set('categoriaId', categoriaId)
+    if (activo     != null) p.set('activo', activo)
+    if (busqueda        )   p.set('busqueda', busqueda)
+    const qs = p.toString()
+    return req(`/api/admin/productos${qs ? '?' + qs : ''}`, {}, t)
+  },
+  adminCrearProducto:      (t, dto)     => req('/api/admin/productos', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminActualizarProducto: (t, id, dto) => req(`/api/admin/productos/${id}`, { method: 'PUT',   body: JSON.stringify(dto) }, t),
+  adminDesactivarProducto: (t, id)      => req(`/api/admin/productos/${id}`, { method: 'DELETE' }, t),
+  adminActivarProducto:    (t, id)      => req(`/api/admin/productos/${id}/activar`, { method: 'PATCH' }, t),
+
+  // Admin — Categorías
+  adminGetCategorias:      (t)          => req('/api/admin/categorias', {}, t),
+  adminCrearCategoria:     (t, dto)     => req('/api/admin/categorias', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminActualizarCategoria:(t, id, dto) => req(`/api/admin/categorias/${id}`, { method: 'PUT',    body: JSON.stringify(dto) }, t),
+  adminEliminarCategoria:  (t, id)      => req(`/api/admin/categorias/${id}`, { method: 'DELETE' }, t),
+
+  // Admin — Configuración general
+  adminGetConfiguracion:        (t)          => req('/api/admin/configuracion-ticket', {}, t),
+  adminUpdateConfiguracion:     (t, dto)     => req('/api/admin/configuracion-ticket', { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminImprimirPrueba:          (t)          => req('/api/admin/imprimir-prueba', { method: 'POST' }, t),
+  adminGetImpresorasDisponibles:(t)          => req('/api/admin/impresoras-disponibles', {}, t),
+  adminGetTicketsSimulados:     (t, limit = 10) => req(`/api/admin/tickets-simulados/recientes?limit=${limit}`, {}, t),
+  adminAbrirCajon:              (t, dto)     => req('/api/admin/abrir-cajon', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminGetRegistrosCajon:       (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    const qs = p.toString()
+    return req(`/api/admin/registros-cajon${qs ? '?' + qs : ''}`, {}, t)
+  },
+
+  // Admin — Caja / Turnos / Cortes / Retiros
+  adminGetTurnoActual:  (t)        => req('/api/Caja/turno-actual', {}, t),
+  adminGetSugerenciaFondo: (t)     => req('/api/Caja/sugerencia-fondo', {}, t),
+  adminAbrirTurno:      (t, dto)   => req('/api/Caja/abrir-turno',  { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminCerrarTurno:     (t, dto)   => req('/api/Caja/cerrar-turno', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminGetCorteX:       (t)        => req('/api/Caja/corte-x', {}, t),
+  adminPostCorteZ:      (t, dto)   => req('/api/Caja/corte-z', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminGetCortes:       (t, { turnoId, desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (turnoId != null) p.set('turnoId', turnoId)
+    if (desde)           p.set('desde',   desde)
+    if (hasta)           p.set('hasta',   hasta)
+    const qs = p.toString()
+    return req(`/api/Caja/cortes${qs ? '?' + qs : ''}`, {}, t)
+  },
+  adminPostRetiro:      (t, dto)      => req('/api/Caja/retiro', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminGetRetiros:      (t, turnoId)  => req(`/api/Caja/retiros/${turnoId}`, {}, t),
+  adminImprimirCorte:   (t, corteId, tipo) =>
+    req(`/api/Caja/imprimir-corte/${corteId}`, { method: 'POST', body: JSON.stringify({ tipo }) }, t),
+
+  // Auth — Cambiar PIN
+  cambiarPin:      (t, dto)              => req('/api/Auth/cambiar-pin',       { method: 'POST', body: JSON.stringify(dto) }, t),
+  cambiarPinAdmin: (t, dto)              => req('/api/Auth/cambiar-pin-admin', { method: 'POST', body: JSON.stringify(dto) }, t),
+
+  // Admin — Áreas
+  adminGetAreas:    (t)          => req('/api/admin/areas', {}, t),
+  adminCreateArea:  (t, dto)     => req('/api/admin/areas', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminUpdateArea:  (t, id, dto) => req(`/api/admin/areas/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminDeleteArea:  (t, id)      => req(`/api/admin/areas/${id}`, { method: 'DELETE' }, t),
+
+  // Admin — Mesas
+  adminGetMesas:    (t, areaId)  => {
+    const qs = areaId ? `?areaId=${areaId}` : ''
+    return req(`/api/admin/mesas${qs}`, {}, t)
+  },
+  adminCreateMesa:  (t, dto)     => req('/api/admin/mesas', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminUpdateMesa:  (t, id, dto) => req(`/api/admin/mesas/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminDeleteMesa:  (t, id)      => req(`/api/admin/mesas/${id}`, { method: 'DELETE' }, t),
+
+  // Admin — Meseros / Barman
+  adminGetMeseros:    (t)          => req('/api/admin/meseros', {}, t),
+  adminCreateMesero:  (t, dto)     => req('/api/admin/meseros', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminUpdateMesero:  (t, id, dto) => req(`/api/admin/meseros/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminDeleteMesero:        (t, id) => req(`/api/admin/meseros/${id}`,           { method: 'DELETE' }, t),
+  adminDeleteMeseroPerm:    (t, id) => req(`/api/admin/meseros/${id}/permanent`, { method: 'DELETE' }, t),
+  adminSeedFormasPago:      (t)     => req('/api/admin/formas-pago/seed',        { method: 'POST' }, t),
+
+  // Admin — Formas de pago
+  adminGetFormasPago:    (t)          => req('/api/admin/formas-pago', {}, t),
+  adminCreateFormaPago:  (t, dto)     => req('/api/admin/formas-pago', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminUpdateFormaPago:  (t, id, dto) => req(`/api/admin/formas-pago/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminDeleteFormaPago:  (t, id)      => req(`/api/admin/formas-pago/${id}`, { method: 'DELETE' }, t),
+
+  // Admin — Folio / Secuencia
+  adminGetFolio:    (t)      => req('/api/admin/folio', {}, t),
+  adminUpdateFolio: (t, dto) => req('/api/admin/folio', { method: 'PUT', body: JSON.stringify(dto) }, t),
+
+  // Admin — Reportes
+  adminGetReporteVentas: (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return req(`/api/Reportes/ventas-resumen?${p}`, {}, t)
+  },
+  adminGetReporteProductos: (t, { desde, hasta, limit = 20 } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    p.set('limit', limit)
+    return req(`/api/Reportes/productos-top?${p}`, {}, t)
+  },
+  adminGetReporteMeseros: (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return req(`/api/Reportes/meseros?${p}`, {}, t)
+  },
+  adminGetReporteCategorias: (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return req(`/api/Reportes/categorias?${p}`, {}, t)
+  },
+  adminGetReporteVentasHora: (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return req(`/api/Reportes/ventas-por-hora?${p}`, {}, t)
+  },
+  adminGetReporteMetodosPago: (t, { desde, hasta } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    return req(`/api/Reportes/metodos-pago?${p}`, {}, t)
+  },
+  adminExportarCsv: async (t, tipo, desde, hasta) => {
+    const p = new URLSearchParams({ tipo })
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    const resp = await fetch(`${API_URL}/api/Reportes/exportar-csv?${p}`, {
+      headers: { Authorization: `Bearer ${t}` },
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const blob = await resp.blob()
+    const cd   = resp.headers.get('content-disposition') ?? ''
+    const m    = cd.match(/filename[^;=\n]*=(['"]?)([^\n'"]+)\1/)
+    const name = m ? m[2] : `reporte-${tipo}-${desde}.csv`
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url; a.download = name; a.click()
+    URL.revokeObjectURL(url)
+  },
+
+  // Admin — Cuentas por cobrar (flujo de cobro)
+  adminGetCuentasPorCobrar: (t) => req('/api/Cuentas/por-cobrar', {}, t),
+
+  adminCobrarCuenta: async (token, cuentaId, dto) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    }
+    const resp = await fetch(`${API_URL}/api/Cuentas/${cuentaId}/cobrar`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(dto),
+    })
+    if (resp.ok) {
+      const text = await resp.text()
+      return text ? JSON.parse(text) : null
+    }
+    const err = new Error(`HTTP ${resp.status}`)
+    err.status = resp.status
+    try {
+      const j = await resp.json()
+      err.message = j.mensaje || j.message || j.title || err.message
+    } catch {}
+    throw err
+  },
+
+  // Admin — Consulta de cuentas
+  adminGetCuentas: (t, { desde, hasta, estado, folio } = {}) => {
+    const p = new URLSearchParams()
+    if (desde)           p.set('desde', desde)
+    if (hasta)           p.set('hasta', hasta)
+    if (estado)          p.set('estado', estado)
+    if (folio != null)   p.set('folio', folio)
+    const qs = p.toString()
+    return req(`/api/Cuentas${qs ? '?' + qs : ''}`, {}, t)
+  },
+  adminGetCuentaDetalle:          (t, id)      => req(`/api/Cuentas/${id}`, {}, t),
+  adminReimprimirCuenta:          (t, id)      => req(`/api/Cuentas/${id}/reimprimir`, { method: 'POST' }, t),
+  adminCancelarCuenta:            (t, id, dto) => req(`/api/Cuentas/${id}/cancelar`, { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminGetTicketsSimuladosCuenta: (t, id)      => req(`/api/Cuentas/${id}/tickets-simulados`, {}, t),
+
+  // Admin — Incidentes de caja (PROMPT C.3)
+  adminGetIncidentes: (t, { desde, hasta, page = 1, pageSize = 50 } = {}) => {
+    const p = new URLSearchParams()
+    if (desde) p.set('desde', desde)
+    if (hasta) p.set('hasta', hasta)
+    p.set('page',     page)
+    p.set('pageSize', pageSize)
+    return req(`/api/Caja/incidentes?${p}`, {}, t)
+  },
+
+  // Admin — Reglas Cross-sell (PROMPT G)
+  adminGetReglasCrossSell:   (t)          => req('/api/admin/reglas-crosssell', {}, t),
+  adminCrearReglaCrossSell:  (t, dto)     => req('/api/admin/reglas-crosssell', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminUpdateReglaCrossSell: (t, id, dto) => req(`/api/admin/reglas-crosssell/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
+  adminDeleteReglaCrossSell: (t, id)      => req(`/api/admin/reglas-crosssell/${id}`, { method: 'DELETE' }, t),
+
+  // Admin — Dashboard Vivo (PROMPT D)
+  adminGetDashboardLive: (t) => req('/api/admin/dashboard/live', {}, t),
+
+  // Admin — Informe del dia (PROMPT E)
+  adminGetInformeDia: (t, fecha) => {
+    const qs = fecha ? `?fecha=${fecha}` : ''
+    return req(`/api/admin/reportes/informe-dia${qs}`, {}, t)
+  },
+
+  // Admin — Analisis IA del informe (PROMPT IA.1)
+  adminAnalisisIa: (t, fecha) => {
+    const qs = fecha ? `?fecha=${fecha}` : ''
+    return req(`/api/admin/reportes/analisis-ia${qs}`, { method: 'POST' }, t)
+  },
+
+  // Admin — Solicitudes de cancelación (PROMPT B3)
+  getSolicitudesPendientes: (t)     => req('/api/SolicitudesCancelacion/pendientes', {}, t),
+  aprobarSolicitud:         (t, id) => req(`/api/SolicitudesCancelacion/${id}/aprobar`,  { method: 'POST' }, t),
+  rechazarSolicitud:        (t, id) => req(`/api/SolicitudesCancelacion/${id}/rechazar`, { method: 'POST' }, t),
+}

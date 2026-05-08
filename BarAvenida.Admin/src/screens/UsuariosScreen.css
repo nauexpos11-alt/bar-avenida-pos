@@ -1,0 +1,314 @@
+.usr-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.usr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  height: 50px;
+  flex-shrink: 0;
+  background: #0c0c0c;
+  border-bottom: 2px solid var(--gold-dark);
+}
+
+.usr-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--gold-light);
+}
+
+.usr-icon {
+  font-size: 1rem;
+  color: var(--gold);
+}
+
+.usr-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Filtros ──────────────────────────────────────── */
+.usr-filters {
+  display: flex;
+  gap: 4px;
+}
+
+.filter-btn {
+  padding: 5px 14px;
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  border-radius: 20px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.filter-btn:hover { border-color: var(--gold-dark); color: var(--text); }
+
+.filter-active {
+  background: var(--gold-bg);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+/* ── Botón nuevo ──────────────────────────────────── */
+.btn-nuevo {
+  padding: 7px 16px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #000;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, transform 0.08s;
+}
+
+.btn-nuevo:hover { background: var(--gold-light); }
+.btn-nuevo:active { transform: scale(0.96); }
+
+/* ── Error banner ─────────────────────────────────── */
+.usr-error-banner {
+  background: #3b0000;
+  border-bottom: 2px solid #ef4444;
+  color: #fca5a5;
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── Tabla ────────────────────────────────────────── */
+.usr-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.usr-loading,
+.usr-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.usr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.usr-table thead tr {
+  border-bottom: 2px solid var(--gold-dark);
+}
+
+.usr-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+}
+
+.usr-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.usr-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.row-inactivo { opacity: 0.5; }
+
+.usr-table td {
+  padding: 10px 14px;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.col-id     { width: 50px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.col-nombre { font-weight: 600; }
+.col-codigo { font-family: monospace; font-size: 0.9rem; color: var(--text-dim); }
+.col-pin    { letter-spacing: 0.2em; color: var(--text-muted); }
+
+/* ── Badges ───────────────────────────────────────── */
+.badge-rol {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.badge-admin  { background: #1a1200; border: 1px solid var(--gold-dark); color: var(--gold); }
+.badge-mesera { background: #0d1f3a; border: 1px solid #3b82f6; color: #93c5fd; }
+.badge-barman { background: #0d2318; border: 1px solid #22c55e; color: #4ade80; }
+
+.badge-estado {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.badge-activo   { background: #0d2318; border: 1px solid #22c55e; color: #4ade80; }
+.badge-inactivo { background: #1f0808; border: 1px solid #ef4444; color: #f87171; }
+
+/* ── Botones por fila ─────────────────────────────── */
+.col-acciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn-row {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: opacity 0.12s, transform 0.08s;
+  white-space: nowrap;
+}
+
+.btn-row:active { transform: scale(0.94); }
+
+.btn-editar     { background: transparent; border-color: var(--border2); color: var(--text-dim); }
+.btn-editar:hover { border-color: var(--gold-dark); color: var(--gold); }
+
+.btn-desactivar { background: transparent; border-color: #6b1d1d; color: #f87171; }
+.btn-desactivar:hover { background: #3b0000; }
+
+.btn-activar    { background: transparent; border-color: #14532d; color: #4ade80; }
+.btn-activar:hover { background: #0d2318; }
+
+/* ── Modal ────────────────────────────────────────── */
+.usr-modal {
+  max-width: 460px;
+  gap: 16px;
+}
+
+.usr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usr-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  margin-top: 10px;
+}
+
+.lbl-opcional {
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.usr-input {
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.12s;
+  user-select: text;
+}
+
+.usr-input:focus { border-color: var(--gold); }
+
+select.usr-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.usr-input-pin {
+  font-size: 1.2rem;
+  letter-spacing: 0.4em;
+  font-family: monospace;
+}
+
+/* ── Toggle ───────────────────────────────────────── */
+.usr-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+}
+
+.toggle-btn {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.toggle-on  { background: #22c55e; }
+.toggle-off { background: var(--border2); }
+
+.toggle-dot {
+  position: absolute;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+}
+
+.toggle-on  .toggle-dot { left: 23px; }
+.toggle-off .toggle-dot { left: 3px; }
+
+.toggle-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}

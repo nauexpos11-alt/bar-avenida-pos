@@ -1,0 +1,109 @@
+.enc-root {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── Floating particles ────────────────────────────── */
+.enc-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.enc-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+  bottom: -10px;
+  left: calc(var(--i) * 5.3%);
+  animation: floatParticle calc(7s + var(--i) * 0.65s) ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.4s);
+}
+
+@keyframes floatParticle {
+  0%   { opacity: 0;    transform: translateY(0)      scale(0.5); }
+  15%  { opacity: 0.15; }
+  85%  { opacity: 0.04; }
+  100% { opacity: 0;    transform: translateY(-100vh) scale(1.8); }
+}
+
+/* ── Content ───────────────────────────────────────── */
+.enc-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  z-index: 1;
+  animation: fadeIn 0.4s ease-out;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* ── Gear ──────────────────────────────────────────── */
+.enc-gear {
+  width: 72px;
+  height: 72px;
+  color: var(--gold);
+  animation: rotateSlow 8s linear infinite;
+  filter: drop-shadow(0 0 14px rgba(240, 200, 66, 0.28));
+}
+
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.enc-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #fde68a;
+  max-width: 600px;
+  line-height: 1.2;
+}
+
+.enc-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+.enc-pronto {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.enc-volver {
+  margin-top: 6px;
+  padding: 11px 28px;
+  background: transparent;
+  border: 1.5px solid var(--gold-dark);
+  border-radius: 8px;
+  color: var(--gold);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.enc-volver:hover {
+  background: rgba(240, 200, 66, 0.08);
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(240, 200, 66, 0.18);
+}
+
+.enc-volver:active {
+  transform: scale(0.97);
+}

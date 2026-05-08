@@ -1,0 +1,323 @@
+.dl-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #f0f0f0;
+  font-family: inherit;
+}
+
+/* -- Header -------------------------------------------------- */
+.dl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #111;
+  border-bottom: 2px solid #222;
+  gap: 16px;
+}
+
+.dl-volver {
+  background: none;
+  border: 1px solid #333;
+  color: #999;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.dl-volver:hover { border-color: #f0c842; color: #f0c842; }
+
+.dl-titulo {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #f0c842;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.dl-update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dl-update-time {
+  font-size: 0.78rem;
+  color: #555;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dl-refresh {
+  background: none;
+  border: 1px solid #333;
+  color: #f0c842;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: border-color 0.15s;
+}
+.dl-refresh:hover    { border-color: #f0c842; }
+.dl-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dl-refresh.spinning {
+  animation: dlSpin 0.7s linear infinite;
+}
+@keyframes dlSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* -- Error / Loading ----------------------------------------- */
+.dl-error {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-bottom: 2px solid #ef4444;
+}
+
+.dl-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  color: #555;
+  letter-spacing: 0.06em;
+}
+
+/* -- KPI Cards ----------------------------------------------- */
+.dl-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 20px 8px;
+}
+
+@media (max-width: 900px) {
+  .dl-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.dl-kpi {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.dl-kpi:hover { border-color: #333; }
+
+.dl-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.dl-kpi-gold::before  { background: #f0c842; }
+.dl-kpi-red::before   { background: #ef4444; }
+.dl-kpi-blue::before  { background: #3b82f6; }
+.dl-kpi-green::before { background: #22c55e; }
+
+.dl-kpi-icon {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+.dl-kpi-value {
+  font-size: 1.9rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.dl-kpi-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.dl-kpi-delta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.kpi-delta-up   { color: #4ade80; }
+.kpi-delta-down { color: #f87171; }
+.kpi-delta-flat { color: #555; }
+
+/* -- Charts -------------------------------------------------- */
+.dl-charts {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 12px;
+  padding: 8px 20px;
+}
+
+@media (max-width: 900px) {
+  .dl-charts { grid-template-columns: 1fr; }
+}
+
+.dl-chart-box {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 16px 16px 12px;
+}
+
+.dl-chart-titulo {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #666;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.dl-chart-vacio {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* Bar chart */
+.dl-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.dl-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dl-bar-nombre {
+  width: 90px;
+  font-size: 0.78rem;
+  color: #ccc;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.dl-bar-track {
+  flex: 1;
+  height: 18px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dl-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  min-width: 4px;
+}
+
+.dl-bar-qty {
+  font-size: 0.72rem;
+  color: #666;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  width: 46px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* -- Footer -------------------------------------------------- */
+.dl-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+
+.dl-foot-item {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dl-foot-icon {
+  width: 32px;
+  height: 32px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #f0c842;
+  flex-shrink: 0;
+}
+
+.dl-foot-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dl-foot-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.dl-foot-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f0c842;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

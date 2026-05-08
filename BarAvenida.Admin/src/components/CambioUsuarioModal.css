@@ -1,0 +1,92 @@
+/* CambioUsuarioModal.css */
+.cum-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.cum-modal {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.9);
+  animation: cum-in .15s ease;
+}
+
+@keyframes cum-in {
+  from { opacity:0; transform:scale(.95) translateY(8px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+.cum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.cum-titulo { font-size:1.05rem; font-weight:700; color:#f0c842; letter-spacing:.04em; }
+
+.cum-btn-x { background:none; border:none; color:#555; font-size:1.1rem; cursor:pointer; padding:4px 8px; border-radius:4px; }
+.cum-btn-x:hover { color:#f0c842; }
+
+.cum-body { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+
+.cum-hint { font-size:.8rem; color:#666; line-height:1.5; }
+
+.cum-error { background:#1a0808; border:1px solid #4a1010; border-radius:5px; color:#e55; font-size:.82rem; padding:8px 12px; }
+
+.cum-lbl { font-size:.72rem; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+
+.cum-input {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 5px;
+  color: #e0e0e0;
+  font-size: .9rem;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cum-input:focus { border-color: #f0c842; }
+
+.cum-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid #1e1e1e;
+}
+
+.cum-btn-ingresar {
+  background: #f0c842;
+  border: none;
+  border-radius: 6px;
+  color: #0a0a0a;
+  font-size: .85rem;
+  font-weight: 700;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+.cum-btn-ingresar:hover:not(:disabled) { background: #e0b830; }
+.cum-btn-ingresar:disabled { opacity: .5; cursor: not-allowed; }
+
+.cum-btn-cancelar {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #888;
+  font-size: .85rem;
+  padding: 9px 18px;
+  cursor: pointer;
+}
+.cum-btn-cancelar:hover { color: #ccc; border-color: #444; }

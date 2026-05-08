@@ -1,0 +1,169 @@
+.mesa-card {
+  background: #1a1a1a;
+  border: 3px solid;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: mcCardIn 0.22s ease-out;
+}
+
+@keyframes mcCardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mesa-card.mc-green  { border-color: #16a34a; box-shadow: 0 0 0 1px rgba(22,163,74,0.15); }
+.mesa-card.mc-yellow { border-color: #fbbf24; box-shadow: 0 0 0 1px rgba(251,191,36,0.20); }
+.mesa-card.mc-red    { border-color: #dc2626; }
+
+.mesa-card.mc-urgente {
+  border-color: #dc2626;
+  animation: mcUrgentePulse 1.2s ease-in-out infinite, mcCardIn 0.22s ease-out;
+  box-shadow: 0 0 0 2px rgba(220,38,38,0.5);
+}
+
+@keyframes mcUrgentePulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(220,38,38,0.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+}
+
+/* -- Cabecera de mesa -------------------------------------- */
+.mc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mc-mesa {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.mc-badge-urgente {
+  background: #dc2626;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  animation: mcBadgeFlash 1s ease-in-out infinite;
+}
+
+@keyframes mcBadgeFlash {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.65; }
+}
+
+.mc-mesera {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ddd;
+  letter-spacing: 0.06em;
+}
+
+.mc-sep {
+  border: none;
+  border-top: 1px solid #2e2e2e;
+  margin: 0;
+}
+
+/* -- Ordenes internas ------------------------------------- */
+.mc-ordenes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mc-orden {
+  background: #0f0f0f;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: opacity 0.36s, transform 0.36s;
+}
+
+.mc-orden.removing {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.mc-orden-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #a0820d;
+}
+
+.mc-orden-num  { text-transform: uppercase; }
+.mc-orden-hora { color: #888; font-variant-numeric: tabular-nums; }
+
+/* -- Productos -------------------------------------------- */
+.mc-detalles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-det {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 1.05rem;
+  color: #f1f1f1;
+}
+
+.mc-cant {
+  color: #fbbf24;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+}
+
+.mc-prod {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* -- Boton listo ------------------------------------------ */
+.mc-btn-listo {
+  margin-top: 4px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.mc-btn-listo:hover   { background: #22c55e; }
+.mc-btn-listo:active  { background: #15803d; transform: scale(0.97); }
+.mc-btn-listo:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* -- Footer ----------------------------------------------- */
+.mc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #999;
+  font-weight: 700;
+}
+
+.mc-tiempo { color: #fbbf24; }
+.mc-count  { color: #888; }

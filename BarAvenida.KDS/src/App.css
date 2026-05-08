@@ -1,0 +1,194 @@
+.kds-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0d0d0d;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.kds-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #111;
+  border-bottom: 2px solid #222;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.hdr-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hdr-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #f0f0f0;
+  white-space: nowrap;
+}
+
+.hdr-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.hdr-center {
+  flex: 1;
+  text-align: center;
+}
+
+.hdr-count {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.hdr-count.libre  { color: #4ade80; }
+.hdr-count.ocupado { color: #facc15; }
+
+.hdr-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.hdr-clock {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: #f0f0f0;
+}
+
+.hdr-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.hdr-status.ok  { color: #4ade80; }
+.hdr-status.err { color: #f87171; animation: blink 1.2s ease-in-out infinite; }
+
+@keyframes blink {
+  50% { opacity: 0.25; }
+}
+
+/* ── Error banner ─────────────────────────────────── */
+.error-banner {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 2px solid #ef4444;
+}
+
+/* ── Empty state ──────────────────────────────────── */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 60px 24px;
+  user-select: none;
+}
+
+.empty-check {
+  font-size: 7rem;
+  color: #1a4d2e;
+  line-height: 1;
+}
+
+.empty-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #1f3d1f;
+}
+
+.empty-sub {
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: #222;
+}
+
+/* -- Grid de ordenes (conservado) ────────────────── */
+.ordenes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  align-content: start;
+}
+
+/* -- PROMPT F — Banner de metricas vivas ─────────── */
+.metricas-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  padding: 10px 20px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #2e2e2e;
+}
+
+.met-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.met-num {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fbbf24;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.met-lbl {
+  font-size: 0.65rem;
+  color: #888;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.met-item.met-urgente .met-num { color: #ef4444; }
+.met-item.met-urgente { animation: metUrgentePulse 1.2s ease-in-out infinite; }
+
+@keyframes metUrgentePulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+.met-sep {
+  width: 1px;
+  height: 32px;
+  background: #2e2e2e;
+}
+
+/* -- PROMPT F — Grid de mesas agrupadas ──────────── */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  padding: 16px;
+  align-content: start;
+}

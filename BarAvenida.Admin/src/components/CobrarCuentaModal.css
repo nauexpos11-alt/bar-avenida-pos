@@ -1,0 +1,606 @@
+/* ═══════════════════════════════════════════
+   CobrarCuentaModal.css — Admin
+   Full-screen modal para cobro en admin
+   ═══════════════════════════════════════════ */
+
+.ccm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  backdrop-filter: blur(6px);
+}
+
+.ccm-modal {
+  background: #0f0f0f;
+  border: 1px solid var(--gold-dark, #a0820d);
+  border-radius: 12px;
+  width: 97vw;
+  max-width: 1140px;
+  height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: ccmIn 0.18s ease-out;
+}
+
+@keyframes ccmIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Header ──────────────────────────────── */
+.ccm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 48px;
+  background: #111;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.ccm-header-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #f0c842;
+}
+
+.ccm-header-close {
+  background: none;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #888;
+  font-size: 1rem;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ccm-header-close:active { border-color: #eee; color: #eee; }
+
+/* ── Body ────────────────────────────────── */
+.ccm-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Panel izquierdo ─────────────────────── */
+.ccm-izq {
+  width: 42%;
+  min-width: 290px;
+  max-width: 440px;
+  border-right: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  overflow-y: auto;
+}
+
+/* Resumen */
+.ccm-resumen {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.ccm-res-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.ccm-comision {
+  color: #f59e0b;
+  font-size: 0.8rem;
+}
+
+.ccm-sep {
+  height: 1px;
+  background: #2e2e2e;
+  margin: 3px 0;
+}
+
+.ccm-total-row {
+  font-weight: 900;
+}
+
+.ccm-total-val {
+  color: #f0c842;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sección label */
+.ccm-section-lbl {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: #c9a312;
+  flex-shrink: 0;
+}
+
+/* Método de pago */
+.ccm-metodos {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ccm-metodo-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: #1a1a1a;
+  border: 2px solid #2e2e2e;
+  border-radius: 8px;
+  color: #999;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  min-height: 76px;
+  transition: border-color 0.12s, background 0.12s, color 0.12s, transform 0.08s;
+}
+.ccm-metodo-btn:active:not(:disabled) { transform: scale(0.94); }
+.ccm-metodo-btn:disabled { opacity: 0.4; cursor: default; }
+
+.ccm-metodo-icon { font-size: 1.5rem; }
+
+.ccm-metodo-sel {
+  border-color: #f0c842;
+  background: #1a1500;
+  color: #f0c842;
+}
+
+/* Mixto */
+.ccm-mixto {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ccm-mixto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ccm-mixto-lbl {
+  font-size: 0.85rem;
+  color: #999;
+  font-weight: 600;
+}
+
+.ccm-mixto-inp {
+  background: #111;
+  border: 2px solid #2e2e2e;
+  border-radius: 6px;
+  color: #f0c842;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-width: 120px;
+  text-align: right;
+  transition: border-color 0.12s, background 0.12s;
+}
+.ccm-mixto-act {
+  border-color: #f0c842;
+  background: #1a1500;
+}
+
+.ccm-mixto-warn {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  text-align: center;
+}
+
+/* Recibido / Cambio */
+.ccm-recibido {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ccm-rec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ccm-rec-lbl {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #999;
+}
+
+.ccm-rec-val {
+  background: #111;
+  border: 2px solid #2e2e2e;
+  border-radius: 6px;
+  color: #f0c842;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-width: 120px;
+  text-align: right;
+  transition: border-color 0.12s, background 0.12s;
+}
+.ccm-rec-act   { border-color: #f0c842; background: #1a1500; }
+.ccm-rec-insuf { border-color: #ef4444 !important; color: #f87171 !important; }
+
+.ccm-cambio {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #999;
+}
+.ccm-cambio-pos { color: #4ade80; }
+
+/* RFC */
+.ccm-rfc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ccm-rfc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #999;
+  user-select: none;
+}
+
+.ccm-rfc-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #f0c842;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ccm-rfc-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ccm-rfc-inp {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #eee;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.ccm-rfc-inp:focus { border-color: #a0820d; }
+
+/* ── Panel derecho ───────────────────────── */
+.ccm-der {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Tarjeta info */
+.ccm-tarjeta-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.ccm-tarjeta-ico  { font-size: 3.5rem; }
+.ccm-tarjeta-txt  { font-size: 1.1rem; font-weight: 700; color: #999; }
+.ccm-tarjeta-com  { font-size: 0.9rem; color: #f59e0b; }
+.ccm-tarjeta-total {
+  font-size: 1rem;
+  color: #eee;
+  line-height: 1.6;
+}
+.ccm-tarjeta-total strong {
+  display: block;
+  color: #f0c842;
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* NumPad label */
+.ccm-np-lbl {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #c9a312;
+  text-transform: uppercase;
+  align-self: stretch;
+  text-align: center;
+}
+
+/* Display */
+.ccm-display {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  color: #f0c842;
+  font-size: 2.2rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  padding: 10px 20px;
+  align-self: stretch;
+  text-align: right;
+  min-height: 60px;
+  line-height: 1.2;
+}
+
+/* NumPad */
+.ccm-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  align-self: stretch;
+  width: 100%;
+  max-width: 340px;
+}
+
+.ccm-np-btn {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  color: #eee;
+  font-size: 1.65rem;
+  font-weight: 700;
+  height: 70px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, transform 0.07s;
+}
+.ccm-np-btn:active { background: #2e2e2e; transform: scale(0.93); }
+.ccm-np-del        { color: #ef4444; font-size: 1.3rem; }
+
+/* Quick buttons */
+.ccm-rapidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-self: stretch;
+  justify-content: center;
+  max-width: 340px;
+}
+
+.ccm-rap-btn {
+  background: #242424;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #999;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s, transform 0.07s;
+}
+.ccm-rap-btn:active {
+  background: #1a1500;
+  color: #f0c842;
+  border-color: #f0c842;
+  transform: scale(0.93);
+}
+
+/* ── Footer ──────────────────────────────── */
+.ccm-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+  background: #111;
+}
+
+.ccm-btn-cancel {
+  padding: 0 22px;
+  height: 58px;
+  background: transparent;
+  border: 2px solid #2e2e2e;
+  border-radius: 8px;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.12s;
+}
+.ccm-btn-cancel:disabled      { opacity: 0.35; cursor: default; }
+.ccm-btn-cancel:active:not(:disabled) { border-color: #999; }
+
+.ccm-toast-err {
+  flex: 1;
+  background: #3b0000;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.ccm-btn-cobrar {
+  flex: 1;
+  height: 58px;
+  background: #f0c842;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s, opacity 0.15s;
+}
+.ccm-btn-cobrar:active:not(:disabled) {
+  background: #c9a312;
+  transform: scale(0.98);
+}
+.ccm-btn-cobrar:disabled { opacity: 0.35; cursor: default; }
+
+/* ── Overlay de fase ─────────────────────── */
+.ccm-fase-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.87);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  animation: ccmFadeIn 0.18s ease-out;
+}
+
+@keyframes ccmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ccm-fase-card {
+  background: #111;
+  border: 1px solid #2e2e2e;
+  border-radius: 12px;
+  padding: 40px 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 300px;
+  text-align: center;
+  animation: ccmIn 0.18s ease-out;
+}
+
+.ccm-fase-ok  { border-color: #22c55e; }
+.ccm-fase-err { border-color: #ef4444; }
+
+.ccm-fase-ico  { font-size: 3rem; }
+.ccm-fase-txt  { font-size: 1.7rem; font-weight: 900; letter-spacing: 0.1em; color: #eee; }
+.ccm-fase-folio { font-size: 1rem; font-weight: 700; color: #f0c842; }
+
+.ccm-fase-cambio {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4ade80;
+  font-variant-numeric: tabular-nums;
+}
+
+.ccm-fase-sub {
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.ccm-fase-sim {
+  font-size: 0.8rem;
+  color: #60a5fa;
+  background: #1e2a3a;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 6px 14px;
+}
+
+.ccm-fase-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.ccm-btn-reintentar {
+  padding: 12px 26px;
+  background: #ef4444;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.ccm-btn-reintentar:active { background: #dc2626; transform: scale(0.95); }
+
+.ccm-btn-cancel-fase {
+  padding: 12px 26px;
+  background: transparent;
+  border: 2px solid #2e2e2e;
+  border-radius: 8px;
+  color: #999;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.ccm-btn-cancel-fase:active { border-color: #999; }
+
+/* Spinner */
+.ccm-spinner {
+  width: 54px;
+  height: 54px;
+  border: 5px solid #2e2e2e;
+  border-top-color: #f0c842;
+  border-radius: 50%;
+  animation: ccmSpin 1.2s linear infinite;
+}
+
+@keyframes ccmSpin {
+  to { transform: rotate(360deg); }
+}

@@ -1,0 +1,63 @@
+# ============================================================================
+# Bar Avenida — Git ignore
+# ============================================================================
+
+# .NET / Visual Studio
+**/bin/
+**/obj/
+**/publish/
+**/publish-installer/
+*.user
+*.suo
+*.userprefs
+.vs/
+.vscode/
+*.cache
+
+# Node.js
+**/node_modules/
+**/dist/
+**/build/
+.npm/
+.eslintcache
+.parcel-cache/
+
+# Environment
+*.env.local
+.env.*.local
+
+# Logs y runtime data del bar (NO subir nunca)
+Logs/
+TicketsImpresos/
+Backups/*.bak
+Backups/*.log
+
+# Builds de Electron
+BarAvenida.Desktop/dist/
+BarAvenida.KDS.Desktop/dist/
+
+# Builds de instaladores
+Installer/dist/
+
+# Archivos temporales
+*.tmp
+*.swp
+*~
+Thumbs.db
+.DS_Store
+
+# Secrets (la API key vive en User Secrets, no en repo)
+*.local.json
+appsettings.Production.json
+appsettings.Development.local.json
+
+# Cache de electron
+.cache/
+
+# Output del SDK
+TestResults/
+*.trx
+
+# IDE
+.idea/
+*.iml

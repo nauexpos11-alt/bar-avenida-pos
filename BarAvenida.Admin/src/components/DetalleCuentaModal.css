@@ -1,0 +1,302 @@
+/* ═══════════════════════════════════════
+   DetalleCuentaModal.css
+   ═══════════════════════════════════════ */
+
+/* ── Overlay ─────────────────────────── */
+.dcm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.dcm-overlay-top {
+  z-index: 1010;
+}
+
+/* ── Modal ───────────────────────────── */
+.dcm-modal {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  width: min(720px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  animation: dcm-in 0.15s ease;
+}
+
+.dcm-modal-sm {
+  width: min(480px, 100%);
+}
+
+@keyframes dcm-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Header ──────────────────────────── */
+.dcm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+.dcm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dcm-titulo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f0c842;
+  letter-spacing: 0.04em;
+}
+
+.dcm-btn-x {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.dcm-btn-x:hover { color: #f0c842; }
+
+/* ── Chips de estado ─────────────────── */
+.dcm-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dcm-chip-abierta   { background: #1a1400; color: #f0c842; border: 1px solid #3a3000; }
+.dcm-chip-cobrada   { background: #0a1f0d; color: #5fc878; border: 1px solid #1a4a20; }
+.dcm-chip-cancelada { background: #1a0a0a; color: #e55;    border: 1px solid #4a1010; }
+
+/* ── Body ────────────────────────────── */
+.dcm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dcm-loader {
+  text-align: center;
+  color: #555;
+  padding: 40px;
+  font-size: 0.9rem;
+}
+
+/* ── Secciones ───────────────────────── */
+.dcm-section {
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dcm-section-title {
+  margin: 0;
+  padding: 8px 14px;
+  background: #0e0e0e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.dcm-section-sub {
+  color: #555;
+  font-weight: 400;
+  font-size: 0.68rem;
+}
+
+/* ── Info grid ───────────────────────── */
+.dcm-info-grid {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 0;
+  padding: 0;
+}
+
+.dcm-info-lbl,
+.dcm-info-val {
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #151515;
+}
+
+.dcm-info-lbl {
+  color: #666;
+  font-weight: 600;
+  background: #0c0c0c;
+}
+
+.dcm-info-val {
+  color: #ccc;
+}
+
+.dcm-val-cancelada { color: #e55; }
+.dcm-val-descuento { color: #5fc878; }
+
+/* ── Tabla productos ─────────────────── */
+.dcm-tabla-prod {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.dcm-tabla-prod th {
+  padding: 8px 12px;
+  text-align: left;
+  color: #555;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #0c0c0c;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.dcm-tabla-prod td {
+  padding: 7px 12px;
+  color: #ccc;
+  border-bottom: 1px solid #111;
+}
+
+.dcm-td-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.dcm-par   { background: #0e0e0e; }
+.dcm-impar { background: #0b0b0b; }
+
+.dcm-tr-sep td {
+  background: #101508;
+  color: #556633;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-bottom: 1px solid #1a2010;
+}
+
+.dcm-badge-agr {
+  background: #1a2500;
+  color: #7a9a30;
+  border: 1px solid #2a3a10;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 0.65rem;
+  margin-left: 8px;
+}
+
+/* ── Totales ─────────────────────────── */
+.dcm-totales {
+  padding: 8px 14px;
+}
+
+.dcm-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 0.83rem;
+  color: #aaa;
+  border-bottom: 1px solid #111;
+}
+
+.dcm-total-row:last-child { border-bottom: none; }
+
+.dcm-total-grande {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #2a2a2a !important;
+  border-bottom: none;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f0c842;
+}
+
+/* ── Footer acciones ─────────────────── */
+.dcm-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  border-top: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+.dcm-btn-reimp {
+  background: #0e1a12;
+  border: 1px solid #2a4a30;
+  border-radius: 6px;
+  color: #5fc878;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dcm-btn-reimp:hover:not(:disabled) { background: #182a1e; }
+.dcm-btn-reimp:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dcm-btn-cancel {
+  background: #1a0808;
+  border: 1px solid #4a1010;
+  border-radius: 6px;
+  color: #e55;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dcm-btn-cancel:hover:not(:disabled) { background: #2a0e0e; }
+.dcm-btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dcm-btn-cerrar {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #888;
+  font-size: 0.82rem;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.dcm-btn-cerrar:hover { color: #ccc; border-color: #444; }
+
+/* ── Aviso (sub-modal) ───────────────── */
+.dcm-aviso {
+  background: #1a0e0e;
+  border: 1px solid #4a1010;
+  border-radius: 5px;
+  color: #cc8888;
+  font-size: 0.82rem;
+  padding: 10px 14px;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}

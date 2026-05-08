@@ -1,0 +1,271 @@
+/* ═══════════════════════════════════════════════
+   CuentasPorCobrarScreen.css — Admin
+   Pantalla de cuentas pendientes de cobro
+   ═══════════════════════════════════════════════ */
+
+.cpc-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────── */
+.cpc-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  height: 56px;
+  background: #111;
+  border-bottom: 2px solid #a0820d;
+  flex-shrink: 0;
+}
+
+.cpc-btn-volver {
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #999;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 14px;
+  height: 36px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cpc-btn-volver:hover { border-color: #f0c842; color: #f0c842; }
+
+.cpc-titulo {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #f0c842;
+  margin: 0;
+  text-align: center;
+}
+
+.cpc-btn-refresh {
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #999;
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.cpc-btn-refresh:hover  { border-color: #f0c842; color: #f0c842; }
+.cpc-btn-refresh:active { transform: rotate(180deg); }
+
+/* ── Error ───────────────────────────────────── */
+.cpc-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #3b0000;
+  border-bottom: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cpc-error-bar button {
+  background: none;
+  border: none;
+  color: #fca5a5;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+
+/* ── Toast ───────────────────────────────────── */
+.cpc-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #064e3b;
+  border: 1px solid #059669;
+  color: #6ee7b7;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 400;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: cpcFadeIn 0.2s ease-out;
+}
+
+@keyframes cpcFadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Body ────────────────────────────────────── */
+.cpc-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ── Loading ─────────────────────────────────── */
+.cpc-loading {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 60px 0;
+  letter-spacing: 0.08em;
+}
+
+/* ── Vacío ───────────────────────────────────── */
+.cpc-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.cpc-vacio-ico {
+  font-size: 4rem;
+}
+
+.cpc-vacio-txt {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #4ade80;
+  letter-spacing: 0.04em;
+}
+
+.cpc-vacio-sub {
+  font-size: 0.9rem;
+  color: #666;
+  max-width: 320px;
+}
+
+/* ── Cards grid ──────────────────────────────── */
+.cpc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+/* ── Card individual ─────────────────────────── */
+.cpc-card {
+  background: #111;
+  border: 2px solid #f97316;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: cpcCardIn 0.22s ease-out;
+}
+
+@keyframes cpcCardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cpc-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cpc-folio {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #666;
+}
+
+.cpc-espera {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #f97316;
+  background: #1a0e00;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+
+.cpc-mesa {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.cpc-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #1e1e1e;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.cpc-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cpc-lbl {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.cpc-val {
+  font-size: 0.82rem;
+  color: #bbb;
+  font-weight: 700;
+}
+
+.cpc-total {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #f0c842;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+.cpc-btn-cobrar {
+  width: 100%;
+  height: 52px;
+  background: #f0c842;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.cpc-btn-cobrar:active {
+  background: #c9a312;
+  transform: scale(0.97);
+}

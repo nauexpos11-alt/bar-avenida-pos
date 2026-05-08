@@ -1,0 +1,234 @@
+/* ── Variables globales ───────────────────────────── */
+:root {
+  --gold:        #d4a017;
+  --gold-light:  #f0c842;
+  --gold-dark:   #8b6914;
+  --gold-bg:     #1a1400;
+
+  --bg:          #0a0a0a;
+  --surface:     #141414;
+  --surface2:    #1c1c1c;
+  --border:      #2a2a2a;
+  --border2:     #383838;
+
+  --text:        #f0f0f0;
+  --text-dim:    #888;
+  --text-muted:  #555;
+
+  --libre-bg:    #0d2318;
+  --libre-border:#22c55e;
+  --libre-text:  #4ade80;
+
+  --ocupada-bg:  #1f0808;
+  --ocupada-border: #ef4444;
+  --ocupada-text:#f87171;
+
+  --radius:      10px;
+  --radius-lg:   14px;
+}
+
+/* ── Reset ────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* ── Scrollbar ────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* ── Shared modal styles ──────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 2px solid var(--gold-dark);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  text-align: center;
+}
+
+.modal-sub {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.modal-error {
+  background: #3b0000;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ── Shared buttons ───────────────────────────────── */
+.btn-cancel {
+  flex: 1;
+  padding: 14px;
+  background: transparent;
+  border: 2px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-cancel:active { border-color: #555; color: var(--text); }
+
+.btn-primary {
+  flex: 2;
+  padding: 14px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #000;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-primary:active:not(:disabled) { background: var(--gold-dark); transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+.error-banner {
+  background: #3b0000;
+  border-bottom: 2px solid #ef4444;
+  color: #fca5a5;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── iOS / Mobile optimizations ───────────────────── */
+
+/* Safe-area para notch y Dynamic Island */
+#root {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Evita zoom automático al enfocar inputs en iOS */
+input, select, textarea {
+  font-size: 16px;
+}
+
+/* Scroll nativo en iOS para áreas con overflow */
+.resumen-list,
+.carrito-list,
+.mesas-grid,
+.productos-area,
+.cats-strip {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Tablet pequeña (600px – 768px) ───────────────── */
+@media (min-width: 600px) and (max-width: 767px) {
+  body { font-size: 15px; }
+
+  .mesas-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* ── Tablet mediana (768px – 1023px) ──────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  body { font-size: 16px; }
+
+  .mesas-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .modal-box {
+    max-width: 480px;
+    padding: 32px 36px;
+  }
+
+  .modal-title { font-size: 1.6rem; }
+}
+
+/* ── Tablet grande (1024px+) ──────────────────────── */
+@media (min-width: 1024px) {
+  body { font-size: 17px; }
+
+  .mesas-grid {
+    grid-template-columns: repeat(10, 1fr);
+  }
+
+  .modal-box {
+    max-width: 520px;
+    padding: 36px 40px;
+  }
+
+  .modal-title { font-size: 1.75rem; }
+
+  .btn-primary,
+  .btn-cancel {
+    font-size: 1.05rem;
+    padding: 16px;
+  }
+}

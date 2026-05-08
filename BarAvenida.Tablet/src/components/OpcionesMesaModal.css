@@ -1,0 +1,129 @@
+/* ── Overlay ──────────────────────────────────────────── */
+.om-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+/* ── Caja ─────────────────────────────────────────────── */
+.om-box {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-top: 3px solid var(--gold-dark);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.22s ease-out;
+}
+
+/* ── Header ───────────────────────────────────────────── */
+.om-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.om-title {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+  line-height: 1;
+}
+
+.om-subtitle {
+  font-size: 0.75rem;
+  color: #666;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+/* ── Grid de opciones ─────────────────────────────────── */
+.om-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 14px;
+}
+
+.om-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 8px;
+  min-height: 100px;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  color: var(--gold-light);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+  cursor: pointer;
+  white-space: pre-line;
+  line-height: 1.2;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.om-btn:hover  { background: #1e1e1e; border-color: var(--gold-dark); }
+.om-btn:active { transform: scale(0.94); background: #1a1400; }
+
+.om-ico {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+/* Botón SOLICITAR COBRO — dorado */
+.om-btn-pagar {
+  background: linear-gradient(135deg, #1a1400 0%, #0d0a00 100%);
+  border: 1px solid var(--gold-dark);
+  color: var(--gold-light);
+}
+.om-btn-pagar:hover:not(:disabled)  { background: linear-gradient(135deg, #221a00 0%, #100d00 100%); border-color: var(--gold); }
+.om-btn-pagar:active:not(:disabled) { transform: scale(0.94); }
+.om-btn-pagar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Footer ───────────────────────────────────────────── */
+.om-footer {
+  padding: 12px 14px;
+  border-top: 1px solid #1a1a1a;
+  background: #080808;
+}
+
+.om-btn-cancelar {
+  width: 100%;
+  padding: 13px;
+  background: transparent;
+  border: 1px solid #3a1010;
+  border-radius: 10px;
+  color: #666;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  min-height: 48px;
+}
+.om-btn-cancelar:hover { border-color: #ef4444; color: #f87171; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 599px) {
+  .om-overlay { padding: 0; align-items: flex-end; }
+  .om-box     { max-width: 100%; border-radius: 18px 18px 0 0; border-left: none; border-right: none; border-bottom: none; }
+  .om-grid    { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .om-btn     { min-height: 80px; font-size: 0.58rem; }
+  .om-ico     { width: 22px; height: 22px; }
+}

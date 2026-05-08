@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bar Avenida — Configurar servidor</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0a0a0a;
+      color: #f0c842;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .box {
+      width: 480px;
+      padding: 2.5rem;
+      border: 2px solid #f0c842;
+      border-radius: 12px;
+      background: #111;
+    }
+    h1 { margin: 0 0 .5rem; font-size: 1.6rem; }
+    p  { color: #aaa; margin: 0 0 1.5rem; }
+    label { display: block; font-size: .8rem; margin: .8rem 0 .3rem; letter-spacing: .1em; }
+    input {
+      width: 100%;
+      padding: .8rem;
+      border: 1px solid #333;
+      background: #0a0a0a;
+      color: #f0c842;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    input:focus { outline: none; border-color: #f0c842; }
+    .row { display: flex; gap: .6rem; }
+    .row > .ip   { flex: 1; }
+    .row > .port { width: 100px; }
+    button {
+      width: 100%;
+      padding: .9rem;
+      margin-top: 1.2rem;
+      background: #f0c842;
+      color: #0a0a0a;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      letter-spacing: .05em;
+    }
+    button:disabled { opacity: .4; cursor: wait; }
+    .btn-cancel {
+      background: transparent;
+      color: #888;
+      border: 1px solid #333;
+      margin-top: .6rem;
+    }
+    #msg { margin-top: 1rem; min-height: 1.3em; font-size: .9rem; }
+    .ok    { color: #4ade80; }
+    .error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Configurar servidor</h1>
+    <p>Escribe la IP de la PC que tiene el backend de Bar Avenida.</p>
+
+    <label>IP DEL SERVIDOR</label>
+    <div class="row">
+      <input class="ip"   id="ip"   placeholder="192.168.100.10" value="192.168.100.10">
+      <input class="port" id="port" placeholder="7000"            value="7000">
+    </div>
+
+    <button id="btnProbar">PROBAR Y GUARDAR</button>
+    <button class="btn-cancel" id="btnCancelar">Cancelar y salir</button>
+
+    <p id="msg"></p>
+  </div>
+
+  <script>
+    const $ip     = document.getElementById('ip')
+    const $port   = document.getElementById('port')
+    const $btn    = document.getElementById('btnProbar')
+    const $cancel = document.getElementById('btnCancelar')
+    const $msg    = document.getElementById('msg')
+
+    $btn.addEventListener('click', async () => {
+      const url = `http://${$ip.value.trim()}:${$port.value.trim()}`
+      $btn.disabled = true
+      $btn.textContent = 'PROBANDO...'
+      $msg.className = ''
+      $msg.textContent = ''
+      try {
+        const ok = await window.baravenida.probarServidor(url)
+        if (ok) {
+          $msg.className = 'ok'
+          $msg.textContent = 'Conectado. Guardando...'
+          await window.baravenida.guardarServidor(url)
+        } else {
+          $msg.className = 'error'
+          $msg.textContent = 'No respondió. Revisa IP/puerto y que el backend esté corriendo.'
+          $btn.disabled = false
+          $btn.textContent = 'PROBAR Y GUARDAR'
+        }
+      } catch (e) {
+        $msg.className = 'error'
+        $msg.textContent = 'Error: ' + e.message
+        $btn.disabled = false
+        $btn.textContent = 'PROBAR Y GUARDAR'
+      }
+    })
+
+    $cancel.addEventListener('click', () => {
+      window.baravenida.cancelarConfig()
+    })
+  </script>
+</body>
+</html>

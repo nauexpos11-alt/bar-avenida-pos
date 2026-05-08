@@ -1,0 +1,198 @@
+/* ── Tarjeta base ─────────────────────────────────── */
+.orden-card {
+  border-radius: 14px;
+  border: 3px solid;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: cardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  will-change: transform, opacity;
+}
+
+.orden-card.removing {
+  animation: cardOut 0.42s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.93); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes cardOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.86); }
+}
+
+/* ── Variantes de color ───────────────────────────── */
+/* Verde: < 2 min */
+.card-green {
+  background: #0a1f10;
+  border-color: #22c55e;
+}
+
+/* Amarillo: 2–5 min */
+.card-yellow {
+  background: #1a1500;
+  border-color: #eab308;
+}
+
+/* Rojo: > 5 min — pulsa lentamente */
+.card-red {
+  background: #1a0505;
+  border-color: #ef4444;
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.18);
+  animation: cardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             redPulse 1.8s 0.35s ease-in-out infinite;
+}
+
+.card-red.removing {
+  animation: cardOut 0.42s ease-in both;
+}
+
+@keyframes redPulse {
+  0%, 100% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.18); }
+  50%       { box-shadow: 0 0 48px rgba(239, 68, 68, 0.45); }
+}
+
+/* ── Parte superior ───────────────────────────────── */
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mesa-num {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.badge-agregado {
+  background: #ea580c;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 6px 12px;
+  border-radius: 6px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  margin-top: 6px;
+  animation: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes badgePop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Nombre mesera ────────────────────────────────── */
+.mesera-nombre {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #d1d5db;
+}
+
+/* ── Separador ────────────────────────────────────── */
+.sep {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Lista de productos ───────────────────────────── */
+.detalles {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.det-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.det-cant {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #facc15;
+  min-width: 52px;
+  text-align: right;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.det-prod {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f0f0f0;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.tiempo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hora {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #d1d5db;
+}
+
+.elapsed {
+  font-size: 0.95rem;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ── Botón LISTO ──────────────────────────────────── */
+.btn-listo {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 28px;
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  transition: background 0.12s, transform 0.1s;
+  user-select: none;
+}
+
+.btn-listo:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.btn-listo:active:not(:disabled) {
+  background: #14532d;
+  transform: scale(0.95);
+}
+
+.btn-listo:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

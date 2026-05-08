@@ -1,0 +1,514 @@
+/* ═══════════════════════════════════════════════
+   SolicitudesPendientesScreen.css — Admin (PROMPT B3)
+   Pantalla de solicitudes de cancelación pendientes
+   Tema: dorado #f0c842 sobre negro #0a0a0a
+   ═══════════════════════════════════════════════ */
+
+.solp-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────── */
+.solp-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  height: 56px;
+  background: #111;
+  border-bottom: 2px solid #a0820d;
+  flex-shrink: 0;
+}
+
+.solp-btn-volver {
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #999;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 14px;
+  height: 36px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.solp-btn-volver:hover { border-color: #f0c842; color: #f0c842; }
+
+.solp-titulo {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #f0c842;
+  margin: 0;
+  text-align: center;
+}
+
+.solp-btn-refresh {
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  color: #999;
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.solp-btn-refresh:hover  { border-color: #f0c842; color: #f0c842; }
+.solp-btn-refresh:active { transform: rotate(180deg); }
+
+/* ── Error ──────────────────────────────────── */
+.solp-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #3b0000;
+  border-bottom: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.solp-error-bar button {
+  background: none;
+  border: none;
+  color: #fca5a5;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+
+/* ── Toast ──────────────────────────────────── */
+.solp-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0a3a2a;
+  border: 1px solid #059669;
+  color: #6ee7b7;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  z-index: 400;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  animation: solpFadeIn 0.2s ease-out;
+}
+
+@keyframes solpFadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Contador superior ─────────────────────── */
+.solp-contador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: #1a0d2e;
+  border-bottom: 1px solid #6d28d9;
+  flex-shrink: 0;
+}
+.solp-contador-num {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #c4b5fd;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.solp-contador-txt {
+  font-size: 0.9rem;
+  color: #c4b5fd;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ── Body ───────────────────────────────────── */
+.solp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ── Loading ─────────────────────────────────── */
+.solp-loading {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 60px 0;
+  letter-spacing: 0.08em;
+}
+
+/* ── Vacío ───────────────────────────────────── */
+.solp-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 20px;
+  text-align: center;
+}
+.solp-vacio-ico {
+  font-size: 4rem;
+}
+.solp-vacio-txt {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #4ade80;
+  letter-spacing: 0.04em;
+}
+.solp-vacio-sub {
+  font-size: 0.9rem;
+  color: #666;
+  max-width: 360px;
+}
+
+/* ── Cards grid ──────────────────────────────── */
+.solp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+/* ── Card individual ─────────────────────────── */
+.solp-card {
+  background: #111;
+  border: 2px solid #6d28d9;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: solpCardIn 0.22s ease-out;
+}
+.solp-card-cuenta {
+  border-color: #dc2626;
+  background: linear-gradient(180deg, #1a0808 0%, #111 60%);
+}
+.solp-card-producto {
+  border-color: #6d28d9;
+  background: linear-gradient(180deg, #160a26 0%, #111 60%);
+}
+
+@keyframes solpCardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.solp-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solp-folio {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #666;
+}
+
+.solp-espera {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fbbf24;
+  background: #1a0e00;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+
+.solp-mesa-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.solp-mesa {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.solp-tipo-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.solp-tipo-cuenta {
+  background: #3b0000;
+  color: #fca5a5;
+  border: 1px solid #dc2626;
+}
+.solp-tipo-producto {
+  background: #1e0a3a;
+  color: #c4b5fd;
+  border: 1px solid #6d28d9;
+}
+
+.solp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #1e1e1e;
+  border-bottom: 1px solid #1e1e1e;
+}
+.solp-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.solp-lbl {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.solp-val {
+  font-size: 0.82rem;
+  color: #bbb;
+  font-weight: 700;
+  text-align: right;
+}
+.solp-val-motivo {
+  font-style: italic;
+  color: #fbbf24;
+  font-weight: 600;
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+/* ── Productos involucrados ─────────────────── */
+.solp-productos {
+  background: #0a0a0a;
+  border: 1px solid #1e1e1e;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.solp-productos-titulo {
+  font-size: 0.7rem;
+  color: #666;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.solp-productos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.solp-prod-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.82rem;
+}
+.solp-prod-cant {
+  color: #f0c842;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.solp-prod-nom {
+  color: #ddd;
+}
+.solp-prod-sub {
+  color: #999;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Cuenta completa warning ────────────────── */
+.solp-cuenta-warn {
+  background: #2a0808;
+  border: 1px solid #dc2626;
+  color: #fca5a5;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* ── Monto total ────────────────────────────── */
+.solp-monto {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #f0c842;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+/* ── Botones acción ─────────────────────────── */
+.solp-botones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.solp-btn-rechazar,
+.solp-btn-aprobar {
+  height: 56px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s, opacity 0.12s;
+}
+
+.solp-btn-rechazar {
+  background: #dc2626;
+  color: #fff;
+}
+.solp-btn-rechazar:hover  { background: #ef4444; }
+.solp-btn-rechazar:active { background: #b91c1c; transform: scale(0.97); }
+.solp-btn-rechazar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.solp-btn-aprobar {
+  background: #16a34a;
+  color: #fff;
+}
+.solp-btn-aprobar:hover  { background: #22c55e; }
+.solp-btn-aprobar:active { background: #15803d; transform: scale(0.97); }
+.solp-btn-aprobar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════
+   Modal de confirmación
+   ═══════════════════════════════════════════════ */
+.solp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: solpFadeIn 0.15s ease-out;
+}
+
+.solp-modal {
+  background: #111;
+  border: 2px solid #f0c842;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 460px;
+  width: 92%;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+  animation: solpModalIn 0.2s ease-out;
+}
+
+@keyframes solpModalIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.solp-modal-titulo {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #f0c842;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.solp-modal-msg {
+  color: #ddd;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.solp-modal-msg b {
+  color: #f0c842;
+}
+
+.solp-modal-warn {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.solp-modal-info {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #93c5fd;
+}
+
+.solp-modal-botones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.solp-modal-cancelar {
+  height: 48px;
+  background: transparent;
+  border: 1px solid #2e2e2e;
+  color: #999;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.solp-modal-cancelar:hover { border-color: #999; color: #ddd; }
+
+.solp-modal-confirmar-aprobar,
+.solp-modal-confirmar-rechazar {
+  height: 48px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.solp-modal-confirmar-aprobar  { background: #16a34a; }
+.solp-modal-confirmar-aprobar:hover  { background: #22c55e; }
+.solp-modal-confirmar-aprobar:active { background: #15803d; transform: scale(0.97); }
+
+.solp-modal-confirmar-rechazar { background: #dc2626; }
+.solp-modal-confirmar-rechazar:hover  { background: #ef4444; }
+.solp-modal-confirmar-rechazar:active { background: #b91c1c; transform: scale(0.97); }

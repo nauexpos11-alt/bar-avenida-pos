@@ -1,0 +1,337 @@
+/* ── Overlay principal ────────────────────────────── */
+.am-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+/* ── Caja del modal ───────────────────────────────── */
+.am-box {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-top: 3px solid var(--gold-dark);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalIn 0.2s ease-out;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.am-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.am-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold-light);
+}
+
+.am-subtitle {
+  font-size: 0.72rem;
+  color: #555;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* ── Body ─────────────────────────────────────────── */
+.am-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: #111;
+}
+
+/* ── Campo tipo card (tappable) ───────────────────── */
+.am-campo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #0f0f0f;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s, border-color 0.12s;
+  min-height: 64px;
+}
+
+.am-campo:hover  { background: #131313; border-left-color: var(--gold-dark); }
+.am-campo:active { background: #1a1400; border-left-color: var(--gold-light); }
+
+.am-campo-readonly {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.am-campo-readonly:hover  { background: #0f0f0f; border-left-color: transparent; }
+.am-campo-readonly:active { background: #0f0f0f; border-left-color: transparent; }
+
+.am-campo-pendiente .am-valor-pending {
+  color: #444;
+  font-style: italic;
+}
+
+.am-campo-pendiente:hover .am-valor-pending { color: #666; }
+
+/* ── Labels y valores ─────────────────────────────── */
+.am-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 130px;
+}
+
+.am-valor {
+  flex: 1;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gold-light);
+}
+
+.am-valor-pending {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.am-chevron {
+  font-size: 1.4rem;
+  color: #383838;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.am-ico-lock {
+  color: #383838;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Campo input (cliente) ────────────────────────── */
+.am-campo-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  background: #0f0f0f;
+  min-height: 64px;
+  cursor: text;
+}
+
+.am-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--gold-light);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  padding: 0;
+  min-height: 44px;
+  user-select: auto;
+}
+
+.am-input::placeholder { color: #333; font-weight: 400; font-style: italic; }
+
+/* ── Error ────────────────────────────────────────── */
+.am-error {
+  background: #2a0000;
+  border-top: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 12px 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.am-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #1a1a1a;
+  background: #080808;
+  flex-shrink: 0;
+}
+
+.am-btn-cancelar {
+  flex: 1;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid #3f1010;
+  border-radius: 10px;
+  color: #888;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  min-height: 52px;
+}
+
+.am-btn-cancelar:hover  { border-color: #ef4444; color: #f87171; }
+.am-btn-cancelar:disabled { opacity: 0.4; cursor: default; }
+
+.am-btn-abrir {
+  flex: 2;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  min-height: 52px;
+}
+
+.am-btn-abrir:hover  { opacity: 0.9; }
+.am-btn-abrir:active { transform: scale(0.98); opacity: 0.85; }
+.am-btn-abrir:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+/* ── Sub-modal: seleccionar área ──────────────────── */
+.am-sub-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 20px;
+}
+
+.am-sub-box {
+  background: #0f0f0f;
+  border: 2px solid var(--gold-dark);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  animation: modalIn 0.16s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.am-sub-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--gold);
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.am-sub-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.am-sub-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #111;
+  color: #aaa;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+  min-height: 52px;
+}
+
+.am-sub-btn:hover  { background: #141414; color: #ddd; }
+.am-sub-btn:active { background: #1a1400; }
+
+.am-sub-btn.am-sub-activo {
+  background: #1a1400;
+  color: var(--gold-light);
+  border-left: 3px solid var(--gold-light);
+}
+
+.am-check {
+  color: var(--gold-light);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.am-sub-cancelar {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid #1e1e1e;
+  color: #555;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  min-height: 48px;
+}
+
+.am-sub-cancelar:hover { color: #f87171; background: #110000; }
+
+/* ── Responsive ───────────────────────────────────── */
+
+/* Celular: modal full-screen */
+@media (max-width: 599px) {
+  .am-overlay { padding: 0; align-items: flex-end; }
+
+  .am-box {
+    max-width: 100%;
+    max-height: 96vh;
+    border-radius: 18px 18px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .am-label  { min-width: 100px; font-size: 0.6rem; }
+  .am-valor  { font-size: 0.95rem; }
+  .am-campo  { padding: 14px 16px; min-height: 58px; }
+  .am-campo-input { padding: 0 16px; }
+
+  .am-footer { padding: 12px 14px; }
+  .am-btn-abrir, .am-btn-cancelar { padding: 12px; min-height: 48px; }
+}
+
+/* Tablet grande */
+@media (min-width: 768px) {
+  .am-label { min-width: 160px; }
+  .am-campo { min-height: 70px; }
+}

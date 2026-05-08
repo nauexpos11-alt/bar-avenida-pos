@@ -710,32 +710,88 @@
   text-align: center;
 }
 
-/* ── Estado PorCobrar (naranja) ───────────────────── */
-.mesa-por-cobrar {
-  background: #1a0e00;
-  border-color: #f97316;
+/* ── Estado PorCobrar (morado, igual que pendiente cancelacion) ───────── */
+.mesa-card.mesa-por-cobrar {
+  background: linear-gradient(135deg, #2a0d3d 0%, #1a0825 100%);
+  border: 2px solid #b85cff;
+  box-shadow: 0 0 12px rgba(184, 92, 255, 0.4), inset 0 0 8px rgba(184, 92, 255, 0.15);
+  animation: pulse-purple 2s ease-in-out infinite;
   opacity: 1;
 }
 
-.mesa-por-cobrar:disabled {
-  opacity: 0.85;
+.mesa-card.mesa-por-cobrar:disabled {
+  opacity: 0.92;
   cursor: default;
 }
 
-.txt-por-cobrar {
-  color: #fb923c;
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-align: center;
+.mesa-card.mesa-por-cobrar .mesa-numero { color: #d18cff; }
+
+.mesa-card.mesa-por-cobrar .mesa-mesera {
+  color: #b85cff;
+  font-weight: 600;
 }
 
-.mesa-monto-cobrar {
-  color: #fb923c;
-  font-weight: 800;
+.mesa-card.mesa-por-cobrar .mesa-monto-cobrar {
+  color: #d18cff;
+  font-weight: 700;
   font-size: 1.1rem;
   line-height: 1;
 }
+
+.mesa-card.mesa-por-cobrar .txt-por-cobrar {
+  color: #d18cff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Alias personalizado debajo del numero de mesa (cuando coexiste con numero) */
+.mesa-alias {
+  display: block;
+  color: #f0c842;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 6px;
+}
+
+/* Alias como TITULO PRINCIPAL (reemplaza el numero grande cuando hay alias) */
+.mesa-alias-titulo {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  color: inherit;
+  padding: 4px 8px;
+  margin-top: 4px;
+  word-break: break-word;
+  hyphens: auto;
+  text-transform: uppercase;
+}
+
+/* Cuando el alias-titulo esta dentro de una mesa-mia, hereda el dorado */
+.mesa-mia .mesa-alias-titulo { color: #f0c842; }
+.mesa-libre .mesa-alias-titulo { color: #2dd06f; }
+.mesa-pendiente .mesa-alias-titulo { color: #f59e0b; }
+.mesa-otra .mesa-alias-titulo { color: #f87171; }
+.mesa-por-cobrar .mesa-alias-titulo,
+.mesa-con-solicitud .mesa-alias-titulo { color: #d18cff; }
 
 .mesa-monto-solicitud {
   color: #c084fc;
@@ -744,15 +800,40 @@
   line-height: 1;
 }
 
-.mesa-con-solicitud {
-  background: #1a0a1f;
-  border-color: #9333ea;
+.mesa-card.mesa-con-solicitud {
+  background: linear-gradient(135deg, #2a0d3d 0%, #1a0825 100%);
+  border: 2px solid #b85cff;
+  box-shadow: 0 0 12px rgba(184, 92, 255, 0.4), inset 0 0 8px rgba(184, 92, 255, 0.15);
+  animation: pulse-purple 2s ease-in-out infinite;
 }
-.mesa-con-solicitud .mesa-numero { color: #c084fc; }
 
-.txt-solicitud {
-  color: #c084fc;
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+.mesa-card.mesa-con-solicitud .mesa-numero {
+  color: #d18cff;
+}
+
+.mesa-card.mesa-con-solicitud .mesa-mesera {
+  color: #b85cff;
+  font-weight: 600;
+}
+
+.mesa-card.mesa-con-solicitud .mesa-monto-solicitud {
+  color: #d18cff;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.mesa-card.mesa-con-solicitud .txt-solicitud {
+  color: #d18cff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 4px;
+}
+
+@keyframes pulse-purple {
+  0%, 100% { box-shadow: 0 0 12px rgba(184, 92, 255, 0.4), inset 0 0 8px rgba(184, 92, 255, 0.15); }
+  50%      { box-shadow: 0 0 20px rgba(184, 92, 255, 0.7), inset 0 0 12px rgba(184, 92, 255, 0.25); }
 }

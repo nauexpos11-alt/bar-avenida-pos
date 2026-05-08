@@ -39,27 +39,30 @@ export default function OpcionesMesaModal({
 }) {
   const [solicitando, setSolicitando] = useState(false)
   const [error, setError]             = useState(null)
+  const [confirmCobro, setConfirmCobro] = useState(false)
 
   const nombreMesera = cuenta?.nombreMesera ?? cuenta?.mesera?.nombre ?? mesa?.nombreMesera ?? ''
   const totalActual  = cuenta?.total ?? mesa?.totalActual ?? 0
+  // Alias viene del backend (cuenta.nombreCliente o mesa.aliasCuenta)
+  const aliasMesa    = cuenta?.nombreCliente || mesa?.aliasCuenta || null
 
-  const handleSolicitarCobro = async () => {
+  const ejecutarSolicitarCobro = async () => {
     if (solicitando) return
-    console.log('[COBRO] Solicitando cobro, cuenta:', cuenta)
     if (!cuenta?.id) {
       setError('No hay cuenta cargada')
+      setConfirmCobro(false)
       return
     }
     setSolicitando(true)
     setError(null)
     try {
-      const r = await api.solicitarCobro(auth.token, cuenta.id)
-      console.log('[COBRO] Respuesta:', r)
+      await api.solicitarCobro(auth.token, cuenta.id)
+      setConfirmCobro(false)
       onCancelar()
     } catch (e) {
-      console.error('[COBRO] Error:', e)
       setError(e.message ?? 'Error al solicitar cobro')
       setSolicitando(false)
+      setConfirmCobro(false)
     }
   }
 
@@ -69,7 +72,7 @@ export default function OpcionesMesaModal({
 
         {/* Header */}
         <div className="om-header">
-          <div className="om-title">MESA {mesa.numero}</div>
+          <div className="om-title">{aliasMesa || `MESA ${mesa.numero}`}</div>
           {nombreMesera && (
             <div className="om-subtitle">
               {nombreMesera}
@@ -97,7 +100,7 @@ export default function OpcionesMesaModal({
           </button>
           <button
             className="om-btn om-btn-pagar"
-            onClick={handleSolicitarCobro}
+            onClick={() => setConfirmCobro(true)}
             disabled={solicitando}
           >
             <span className="om-ico" style={{ fontSize: '1.4rem', height: 'auto' }}>💵</span>
@@ -113,6 +116,48 @@ export default function OpcionesMesaModal({
         </div>
 
       </div>
+
+      {/* Modal de confirmacion antes de mandar la solicitud al admin */}
+      {confirmCobro && (
+        <div className="om-overlay" style={{ zIndex: 500 }}
+          onClick={e => e.target === e.currentTarget && setConfirmCobro(false)}>
+          <div className="om-box" style={{ maxWidth: 420 }}>
+            <div className="om-header" style={{ textAlign: 'center' }}>
+              <div className="om-title" style={{ color: '#d18cff' }}>¿SOLICITAR COBRO?</div>
+              <div className="om-subtitle" style={{ marginTop: 8 }}>
+                {aliasMesa || `Mesa ${mesa.numero}`}{nombreMesera ? ` — ${nombreMesera}` : ''}
+              </div>
+              <div style={{
+                fontSize: '2rem', fontWeight: 800, color: '#f0c842',
+                marginTop: 14, letterSpacing: '0.04em'
+              }}>
+                ${Number(totalActual).toFixed(0)}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#888', marginTop: 8 }}>
+                Se enviará la solicitud al administrador para que procese el cobro.
+              </div>
+            </div>
+            <div className="om-footer" style={{ gap: 10 }}>
+              <button
+                className="om-btn-cancelar"
+                onClick={() => setConfirmCobro(false)}
+                disabled={solicitando}
+                style={{ flex: 1 }}
+              >
+                CANCELAR
+              </button>
+              <button
+                className="om-btn om-btn-pagar"
+                onClick={ejecutarSolicitarCobro}
+                disabled={solicitando}
+                style={{ flex: 2, minHeight: 56, fontSize: '0.95rem' }}
+              >
+                {solicitando ? 'ENVIANDO...' : 'SI, SOLICITAR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

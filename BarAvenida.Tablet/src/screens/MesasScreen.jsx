@@ -5,7 +5,7 @@ import AbrirMesaModal from '../components/AbrirMesaModal'
 import OpcionesMesaModal from '../components/OpcionesMesaModal'
 import './MesasScreen.css'
 
-const AREAS = ['TODAS LAS ÁREAS', 'COMEDOR', 'TERRAZA', 'BARRA']
+const AREAS = ['TODAS LAS ÁREAS', 'COMEDOR', 'TERRAZA']
 const POR_PAGINA = 24
 
 const IcoVerPrecios = () => (
@@ -18,7 +18,7 @@ const IcoVerPrecios = () => (
   </svg>
 )
 
-export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, onVerPrecios, onIrBarra }) {
+export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, onVerPrecios }) {
   const [mesas, setMesas]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
@@ -31,13 +31,15 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
   const [modalMesa, setModalMesa]           = useState(null)
   const [modalOpciones, setModalOpciones]   = useState(null)
   const [cargandoCuenta, setCargandoCuenta] = useState(false)
-  const [porCobrarMesas, setPorCobrarMesas]       = useState(new Set())
+  // porCobrarMesas guarda Map de mesaId -> snapshot { mesera, monto } para no perder
+  // los datos cuando MesaActualizada llega después y resetea estado de la mesa
+  const [porCobrarMesas, setPorCobrarMesas]       = useState(new Map())
   const [solicitudesMesas, setSolicitudesMesas]   = useState(new Map())
   const connRef = useRef(null)
 
   const cargarMesas = () => {
     setLoading(true)
-    setPorCobrarMesas(new Set())
+    setPorCobrarMesas(new Map())
     api.getMesas(auth.token)
       .then(data => { setMesas(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(e  => { setError(e.message); setLoading(false) })
@@ -60,7 +62,16 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
     })
 
     conn.on('MesaPorCobrar', (mesaId) => {
-      setPorCobrarMesas(prev => new Set([...prev, mesaId]))
+      // Capturar snapshot de la mesa para no perder mesera/total cuando MesaActualizada llegue luego
+      setMesas(prevMesas => {
+        const m = prevMesas.find(x => x.id === mesaId)
+        const snapshot = {
+          mesera: m?.meseraActual ?? m?.nombreMesera ?? '',
+          monto:  m?.totalActual ?? 0,
+        }
+        setPorCobrarMesas(prev => { const map = new Map(prev); map.set(mesaId, snapshot); return map })
+        return prevMesas
+      })
     })
 
     conn.on('SolicitudCancelacion', (payload) => {
@@ -78,10 +89,19 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
     conn.on('CuentaCobrada',   () => cargarMesas())
     conn.on('CuentaCancelada', () => cargarMesas())
 
-    conn.onreconnected(() => { setConnected(true); cargarMesas() })
+    // Inscribirse al grupo "Meseras" cuando reconecte automáticamente
+    conn.onreconnected(() => {
+      setConnected(true)
+      conn.invoke('UnirseAGrupo', 'Meseras').catch(() => {})
+      cargarMesas()
+    })
     conn.onclose(() => setConnected(false))
     conn.start()
-      .then(() => setConnected(true))
+      .then(() => {
+        setConnected(true)
+        // Inscribirse al grupo "Meseras" para recibir MesaPorCobrar y otros eventos
+        return conn.invoke('UnirseAGrupo', 'Meseras').catch(() => {})
+      })
       .catch(e => console.warn('SignalR:', e.message))
 
     connRef.current = conn
@@ -124,15 +144,18 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
   const handleArea = (area) => { setAreaActual(area); setPagina(0); setSidebarOpen(false) }
 
   const renderMesa = (mesa) => {
-    const porCobrar      = porCobrarMesas.has(mesa.id)
+    // El backend dice si la cuenta esta en estado "PorCobrar" (autoritativo).
+    // El SignalR map sirve como respaldo para snapshot inmediato cuando llega el evento.
+    const porCobrarBackend = mesa.estadoCuenta === 'PorCobrar'
+    const porCobrar      = porCobrarBackend || porCobrarMesas.has(mesa.id)
     const tieneSolicitud = !porCobrar && solicitudesMesas.has(mesa.id)
     const ocupada        = !porCobrar && !tieneSolicitud && (mesa.estado === 'Ocupada' || !!mesa.cuentaActivaId || !!mesa.cuentaId || !!mesa.cuentaActualId)
     const pendiente      = !porCobrar && !tieneSolicitud && !ocupada && (mesa.estado === 'Pendiente' || mesa.estado === 'EnProceso')
 
-    // Cuando el backend devuelva meseraActualId usar eso; fallback temporal: comparar nombre
+    // meseraActualId del backend es la fuente de verdad. Fallback al nombre solo por compat.
     const esMia = ocupada && (
       mesa.meseraActualId != null
-        ? String(mesa.meseraActualId) === String(auth.id)
+        ? Number(mesa.meseraActualId) === Number(auth.id)
         : (mesa.meseraActual != null && mesa.meseraActual === auth.nombre)
     )
     const esOtra = ocupada && !esMia
@@ -144,7 +167,13 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
       : pendiente      ? 'mesa-pendiente'
       : 'mesa-libre'
 
-    const sol = tieneSolicitud ? solicitudesMesas.get(mesa.id) : null
+    const sol       = tieneSolicitud ? solicitudesMesas.get(mesa.id) : null
+    const cobroSnap = porCobrar ? porCobrarMesas.get(mesa.id) : null
+    // Alias viene del backend (cuenta.NombreCliente). Cuando la cuenta se cobra/cancela el backend lo deja vacío.
+    const alias     = mesa.aliasCuenta || null
+    // Mesera y monto a mostrar — backend autoritativo, snapshot solo como fallback inmediato
+    const meseraVisible = mesa.meseraActual || mesa.nombreMesera || (cobroSnap?.mesera ?? '')
+    const montoVisible  = mesa.totalActual ?? (porCobrar ? (cobroSnap?.monto ?? 0) : (sol?.monto ?? 0))
 
     return (
       <button
@@ -153,27 +182,31 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
         onClick={() => handleTapMesa(mesa)}
         disabled={cargandoCuenta || porCobrar || esOtra}
       >
-        <span className="mesa-numero">{mesa.numero}</span>
+        {/* Si hay alias mostrar SOLO el alias (sin numero grande). Si no, el numero. */}
+        {alias
+          ? <span className="mesa-alias-titulo" title={`Mesa ${mesa.numero}`}>{alias}</span>
+          : <span className="mesa-numero">{mesa.numero}</span>
+        }
         {porCobrar ? (
           <div className="mesa-info">
-            <span className="mesa-mesera">{mesa.meseraActual || mesa.nombreMesera || ''}</span>
-            <span className="mesa-monto-cobrar">${(mesa.totalActual ?? 0).toFixed(0)}</span>
-            <span className="mesa-estado-txt txt-por-cobrar">💵 COBRANDO</span>
+            <span className="mesa-mesera">{meseraVisible}</span>
+            <span className="mesa-monto-cobrar">${Number(montoVisible).toFixed(0)}</span>
+            <span className="mesa-estado-txt txt-por-cobrar">PENDIENTE DE<br/>COBRO</span>
           </div>
         ) : tieneSolicitud ? (
           <div className="mesa-info">
-            <span className="mesa-mesera">{mesa.meseraActual || mesa.nombreMesera || ''}</span>
-            <span className="mesa-monto-solicitud">${(sol?.monto ?? mesa.totalActual ?? 0).toFixed(0)}</span>
-            <span className="mesa-estado-txt txt-solicitud">🔔 SOLICITUD</span>
+            <span className="mesa-mesera">{meseraVisible}</span>
+            <span className="mesa-monto-solicitud">${Number(montoVisible).toFixed(0)}</span>
+            <span className="mesa-estado-txt txt-solicitud">PENDIENTE DE<br/>CANCELACIÓN</span>
           </div>
         ) : esMia ? (
           <div className="mesa-info">
-            <span className="mesa-mesera mesa-mesera-mia">{mesa.meseraActual || mesa.nombreMesera || ''}</span>
+            <span className="mesa-mesera mesa-mesera-mia">{meseraVisible}</span>
             <span className="mesa-total mesa-total-mia">${(mesa.totalActual ?? 0).toFixed(0)}</span>
           </div>
         ) : esOtra ? (
           <div className="mesa-info">
-            <span className="mesa-mesera">{mesa.meseraActual || mesa.nombreMesera || ''}</span>
+            <span className="mesa-mesera">{meseraVisible}</span>
             <span className="mesa-estado-txt txt-otra">🔒 OCUPADA</span>
           </div>
         ) : (
@@ -204,20 +237,9 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
             <IcoVerPrecios />
             <span>VER PRECIOS</span>
           </button>
-          <button
-            className="action-btn action-btn-barra"
-            onClick={() => onIrBarra?.()}
-            style={{ border: '1px solid #f0c842', color: '#f0c842' }}
-          >
-            <span style={{ fontSize: '1.1rem' }}>🍺</span>
-            <span>BARRA RÁPIDA</span>
-          </button>
         </div>
 
         <div className="action-bar-end">
-          <span className={`conn-dot ${connected ? 'conn-ok' : 'conn-err'}`}>
-            ● {connected ? 'EN LÍNEA' : 'DESCONECTADO'}
-          </span>
           <button className="btn-hamburger" onClick={() => setSidebarOpen(o => !o)}>☰</button>
         </div>
       </div>
@@ -269,7 +291,7 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
           <div className="sidebar-inner">
 
             <div className="sidebar-mesero">
-              <div className="mesero-codigo">{auth.id ?? '—'}</div>
+              <div className="mesero-codigo">{auth.codigo || auth.id || '—'}</div>
               <div className="mesero-nombre">{auth.nombre}</div>
               <div className="mesero-rol">{auth.rol}</div>
             </div>
@@ -327,6 +349,7 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
       {modalMesa && (
         <AbrirMesaModal
           mesa={modalMesa}
+          mesasDisponibles={mesas}
           auth={auth}
           onExito={(cuenta) => { setModalMesa(null); onIrCuenta(modalMesa, cuenta) }}
           onCancelar={() => setModalMesa(null)}

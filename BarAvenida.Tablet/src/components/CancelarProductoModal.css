@@ -268,6 +268,74 @@
 .cp-btn-siguiente:hover:not(:disabled)  { opacity: 0.88; }
 .cp-btn-siguiente:disabled { opacity: 0.3; cursor: default; background: #222; color: #555; }
 
+/* ── Cards seleccionables (CAMBIO 6) ─────────────────── */
+.cpm-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.cpm-card {
+  display: grid;
+  grid-template-columns: 32px 60px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  background: #131313;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.cpm-card:hover {
+  border-color: #f0c842;
+  background: #181818;
+}
+.cpm-card-sel {
+  border-color: #f0c842;
+  background: rgba(240, 200, 66, 0.08);
+}
+.cpm-checkbox {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  accent-color: #f0c842;
+}
+.cpm-card-cantidad {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #f0c842;
+  text-align: center;
+}
+.cpm-card-nombre {
+  font-size: 1.05rem;
+  color: #fff;
+  font-weight: 600;
+}
+.cpm-card-precio {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 4px;
+}
+.cpm-card-importe {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f0c842;
+}
+
+/* Botón solicitar más prominente */
+.cpm-btn-solicitar {
+  min-height: 56px !important;
+  padding: 16px 28px !important;
+  font-size: 1rem !important;
+}
+
+.cp-motivo-select {
+  padding: 14px 10px;
+  font-size: 1rem;
+}
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 599px) {
   .cp-overlay { padding: 0; align-items: flex-end; }

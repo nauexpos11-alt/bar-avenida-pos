@@ -1,15 +1,34 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { api } from '../api'
 import NumPad from './NumPad'
 import './AbrirMesaModal.css'
 
+const AREAS_VALIDAS = ['Comedor', 'Terraza']
+
 export default function AbrirMesaModal({ mesa, auth, onExito, onCancelar }) {
-  const [personas, setPersonas]   = useState(2)
+  // Default: el area que tiene la mesa, si es valida; sino "Comedor"
+  const areaInicial = AREAS_VALIDAS.includes(mesa.areaNombre) ? mesa.areaNombre : 'Comedor'
+
+  const [areaSel, setAreaSel]           = useState(areaInicial)
+  const [aliasMesa, setAliasMesa]       = useState(`Mesa ${mesa.numero}`)
+  const [personas, setPersonas]         = useState(2)
   const [showPersonas, setShowPersonas] = useState(false)
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState(null)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => { inputRef.current?.select() }, [])
 
   const handleAbrir = async () => {
+    const aliasFinal = (aliasMesa ?? '').trim()
+    const esDefault = !aliasFinal ||
+      aliasFinal.toLowerCase() === `mesa ${mesa.numero}`.toLowerCase()
+    const aliasParaBackend = esDefault ? null : aliasFinal
+
+    // Si la mesera dejo el area que ya tenia la mesa, no lo mandamos (queda heredado de la mesa).
+    // Si la mesera la cambio, mandamos el nuevo valor para sobreescribir.
+    const areaParaBackend = (areaSel === mesa.areaNombre) ? null : areaSel
+
     setLoading(true)
     setError(null)
     try {
@@ -17,6 +36,8 @@ export default function AbrirMesaModal({ mesa, auth, onExito, onCancelar }) {
         mesaId:         mesa.id,
         meseraId:       auth.id,
         numeroPersonas: personas,
+        nombreCliente:  aliasParaBackend,
+        area:           areaParaBackend,
       })
       onExito(cuenta)
     } catch (e) {
@@ -26,50 +47,68 @@ export default function AbrirMesaModal({ mesa, auth, onExito, onCancelar }) {
     }
   }
 
+  const tituloHeader = aliasMesa?.trim() || `Mesa ${mesa.numero}`
+
   return (
     <>
-      {/* ── Overlay principal ── */}
       <div className="am-overlay" onClick={e => e.target === e.currentTarget && onCancelar()}>
         <div className="am-box">
 
           {/* Header */}
           <div className="am-header">
-            <div className="am-title">ABRIR CUENTA — MESA {mesa.numero}</div>
-            <div className="am-subtitle">Captura los datos de la cuenta nueva</div>
+            <div className="am-title">ABRIR CUENTA</div>
+            <div className="am-subtitle">Captura los datos para iniciar el servicio</div>
           </div>
 
           {/* Body */}
           <div className="am-body">
 
-            {/* ÁREA readonly */}
-            <div className="am-campo am-campo-readonly">
-              <span className="am-label">ÁREA</span>
-              <span className="am-valor">{mesa.areaNombre ?? '—'}</span>
-              <span className="am-ico-lock">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0110 0v4"/>
-                </svg>
-              </span>
+            {/* Mesa info read-only (numero original) */}
+            <div className="am-mesa-info">
+              <div className="am-mesa-info-bloque">
+                <span className="am-mesa-info-label">MESA</span>
+                <span className="am-mesa-info-val">{mesa.numero}</span>
+              </div>
+              <div className="am-mesa-info-bloque">
+                <span className="am-mesa-info-label">ORIGEN</span>
+                <span className="am-mesa-info-val am-mesa-info-val-sm">{mesa.areaNombre || '—'}</span>
+              </div>
             </div>
 
-            {/* MESA readonly */}
-            <div className="am-campo am-campo-readonly">
-              <span className="am-label">MESA</span>
-              <span className="am-valor">{mesa.numero}</span>
-              <span className="am-ico-lock">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0110 0v4"/>
-                </svg>
-              </span>
-            </div>
+            {/* AREA editable - SELECT */}
+            <label className="am-campo am-campo-select">
+              <span className="am-label">ÁREA</span>
+              <select
+                className="am-select"
+                value={areaSel}
+                onChange={e => setAreaSel(e.target.value)}
+                disabled={loading}
+              >
+                {AREAS_VALIDAS.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+              <span className="am-chevron">▾</span>
+            </label>
+
+            {/* NOMBRE editable */}
+            <label className="am-campo am-campo-input">
+              <span className="am-label">NOMBRE</span>
+              <input
+                ref={inputRef}
+                type="text"
+                className="am-input"
+                value={aliasMesa}
+                onChange={e => setAliasMesa(e.target.value)}
+                placeholder={`Mesa ${mesa.numero}`}
+                maxLength={30}
+                disabled={loading}
+              />
+            </label>
 
             {/* PERSONAS */}
-            <button className="am-campo" onClick={() => setShowPersonas(true)}>
-              <span className="am-label">NÚMERO DE PERSONAS</span>
+            <button className="am-campo" onClick={() => !loading && setShowPersonas(true)} disabled={loading}>
+              <span className="am-label">PERSONAS</span>
               <span className="am-valor">
                 {personas} {personas === 1 ? 'PERSONA' : 'PERSONAS'}
               </span>
@@ -78,7 +117,6 @@ export default function AbrirMesaModal({ mesa, auth, onExito, onCancelar }) {
 
           </div>
 
-          {/* Error */}
           {error && <div className="am-error">⚠ {error}</div>}
 
           {/* Footer */}
@@ -86,15 +124,18 @@ export default function AbrirMesaModal({ mesa, auth, onExito, onCancelar }) {
             <button className="am-btn-cancelar" onClick={onCancelar} disabled={loading}>
               CANCELAR
             </button>
-            <button className="am-btn-abrir" onClick={handleAbrir} disabled={loading}>
-              {loading ? 'ABRIENDO...' : 'ABRIR MESA'}
+            <button
+              className="am-btn-abrir"
+              onClick={handleAbrir}
+              disabled={loading}
+            >
+              {loading ? 'ABRIENDO...' : `ABRIR ${tituloHeader.toUpperCase()}`}
             </button>
           </div>
 
         </div>
       </div>
 
-      {/* ── NumPad: Cantidad de personas ── */}
       {showPersonas && (
         <NumPad
           titulo="NÚMERO DE PERSONAS"

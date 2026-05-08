@@ -7,6 +7,7 @@ public class AbrirCuentaDto
     public int MeseraId { get; set; }
     public int NumeroPersonas { get; set; } = 1;
     public string? NombreCliente { get; set; }
+    public string? Area { get; set; }   // Opcional: sobreescribe el area de la mesa para esta cuenta especifica
 }
 
 // ===== ABRIR CUENTA RÁPIDA (BARRA) — sin mesa =====
@@ -37,6 +38,7 @@ public class CuentaCompletaDto
     public string MeseraNombre { get; set; } = string.Empty;
     public int NumeroPersonas { get; set; }
     public string? NombreCliente { get; set; }
+    public string? Area { get; set; }   // Area especifica de esta cuenta (puede ser distinta a la mesa)
     public DateTime FechaApertura { get; set; }
     public DateTime? FechaCierre { get; set; }
     public string Estado { get; set; } = string.Empty;

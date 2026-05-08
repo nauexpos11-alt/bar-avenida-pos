@@ -840,6 +840,91 @@
 }
 
 /* =======================================
+   CAMBIO 5 -- Mejoras UI touch-friendly
+   ======================================= */
+
+/* Botones de categorías: más grandes y legibles */
+.cat-card {
+  min-height: 48px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Tarjetas de producto: mejor padding, radio y hover */
+.prod-card {
+  min-height: 92px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #2a2a2a;
+  background: linear-gradient(180deg, #161616 0%, #0a0a0a 100%);
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.prod-card:hover {
+  border-color: #f0c842;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(240, 200, 66, 0.18);
+}
+.prod-nombre {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+.prod-precio {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0c842;
+  margin-top: 6px;
+}
+
+/* Footer total: borde dorado más visible */
+.comanda-total-bar {
+  border-top: 2px solid #f0c842;
+  background: #0a0a0a;
+}
+
+/* Botón ACEPTAR: gradiente verde más llamativo */
+.accion-aceptar {
+  background: linear-gradient(180deg, #1f8f3a 0%, #166b2c 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  min-height: 56px;
+  border: none;
+}
+.accion-aceptar:hover:not(:disabled) { background: linear-gradient(180deg, #237a3e 0%, #1a7a32 100%); color: #fff; }
+
+/* Botón CANCELA: gradiente rojo más llamativo */
+.accion-cancela {
+  background: linear-gradient(180deg, #c93434 0%, #8a1f1f 100%);
+  color: #fff;
+  min-height: 56px;
+}
+.accion-cancela:hover:not(:disabled) { background: linear-gradient(180deg, #d63e3e 0%, #9a2424 100%); color: #fff; }
+
+/* Lista de la comanda: filas más generosas */
+.cmd-row {
+  padding: 12px 14px;
+  min-height: 44px;
+}
+.cmd-cant {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0c842;
+}
+.cmd-desc {
+  color: #fff;
+  font-size: 0.95rem;
+}
+.cmd-imp {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f0c842;
+}
+
+/* =======================================
    PROMPT G -- Sugerencias inline
    ======================================= */
 .cs-sugerencias {

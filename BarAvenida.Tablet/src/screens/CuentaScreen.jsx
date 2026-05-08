@@ -113,6 +113,9 @@ export default function CuentaScreen({ auth, mesa, cuenta: cuentaInit, onVolver,
   const [sugerencias, setSugerencias]           = useState([])
 
   const mesaNum    = mesa?.numero ?? cuenta?.mesaNumero ?? cuenta?.mesa?.numero ?? '?'
+  // Alias viene del backend (cuenta.nombreCliente o mesa.aliasCuenta)
+  const aliasMesa  = cuenta?.nombreCliente || mesa?.aliasCuenta || null
+  const tituloMesa = aliasMesa || `MESA ${mesaNum}`
   const resumen    = getResumen(cuenta)
   const totalCuenta = cuenta?.total ?? 0
   const totalCarr  = totalCarrito(carrito)
@@ -271,7 +274,7 @@ export default function CuentaScreen({ auth, mesa, cuenta: cuentaInit, onVolver,
             <span>AGREGAR</span>
           </button>
           <div className="captura-mesa-info">
-            <span className="cs-mesa">MESA {mesaNum}</span>
+            <span className="cs-mesa">{tituloMesa}</span>
             <span className="cs-mesera">{auth.nombre}</span>
           </div>
         </div>

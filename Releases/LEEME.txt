@@ -41,4 +41,4 @@ PROBLEMAS COMUNES:
 - Si el servicio Windows no inicia, revisa permisos SQL para
   NT AUTHORITY\SYSTEM (script en F:\BarAvenida\Backups\fix-permisos-sql-system.sql).
 
-Generado: 2026-05-08 01:25
+Generado: 2026-05-08 02:08

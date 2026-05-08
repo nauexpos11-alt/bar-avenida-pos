@@ -27,23 +27,26 @@
 
 /* ── Header ───────────────────────────────────────── */
 .am-header {
-  padding: 20px 24px 16px;
+  padding: 24px 28px 18px;
   border-bottom: 1px solid #1a1a1a;
   flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(240, 200, 66, 0.05) 0%, transparent 100%);
 }
 
 .am-title {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--gold-light);
+  text-shadow: 0 1px 8px rgba(240, 200, 66, 0.15);
 }
 
 .am-subtitle {
-  font-size: 0.72rem;
-  color: #555;
+  font-size: 0.75rem;
+  color: #777;
   letter-spacing: 0.08em;
-  margin-top: 4px;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 /* ── Body ─────────────────────────────────────────── */
@@ -201,18 +204,23 @@
 
 .am-btn-abrir {
   flex: 2;
-  padding: 14px;
+  padding: 16px;
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
   border: none;
   border-radius: 10px;
   color: #000;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  min-height: 52px;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+  min-height: 58px;
+  box-shadow: 0 4px 14px rgba(240, 200, 66, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.am-btn-abrir:hover { box-shadow: 0 6px 18px rgba(240, 200, 66, 0.4); }
 
 .am-btn-abrir:hover  { opacity: 0.9; }
 .am-btn-abrir:active { transform: scale(0.98); opacity: 0.85; }
@@ -305,6 +313,87 @@
 }
 
 .am-sub-cancelar:hover { color: #f87171; background: #110000; }
+
+/* ── Mesa info (numero + area heredada de la mesa, read-only) ───── */
+.am-mesa-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.am-mesa-info-bloque {
+  background: linear-gradient(180deg, #131313 0%, #0d0d0d 100%);
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.am-mesa-info-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+}
+
+.am-mesa-info-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.am-mesa-info-val-sm {
+  font-size: 0.95rem;
+  color: #aaa;
+  font-weight: 600;
+}
+
+/* ── Select editable (legacy, conservado por si se usa en otro lugar) ───── */
+.am-campo-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.am-campo-select:hover { border-color: #f0c842; }
+.am-select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #f0c842;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: right;
+  padding-right: 12px;
+  cursor: pointer;
+  appearance: none;
+}
+.am-select:focus { outline: none; }
+.am-select option {
+  background: #1a1a1a;
+  color: #f0c842;
+  padding: 8px;
+}
+.am-campo-select .am-chevron {
+  color: #f0c842;
+  font-size: 1.2rem;
+  pointer-events: none;
+}
 
 /* ── Responsive ───────────────────────────────────── */
 

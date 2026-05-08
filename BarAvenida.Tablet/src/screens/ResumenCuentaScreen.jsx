@@ -75,6 +75,7 @@ export default function ResumenCuentaScreen({
   const [cancelando, setCancelando]             = useState(false)
   const [showCancelarProd, setShowCancelarProd] = useState(false)
   const [solicitando, setSolicitando]           = useState(false)
+  const [confirmCobro, setConfirmCobro]         = useState(false)
   const [toastMsg, setToastMsg]                 = useState(null)
   const [error, setError]                       = useState(null)
   const connRef = useRef(null)
@@ -84,7 +85,11 @@ export default function ResumenCuentaScreen({
   const total    = cuenta?.total ?? subtotal
 
   const mesaNum  = mesa?.numero  ?? cuenta?.mesaNumero ?? cuenta?.mesa?.numero ?? '?'
-  const area     = mesa?.areaNombre ?? mesa?.area ?? mesa?.zona ?? cuenta?.mesa?.area ?? '—'
+  // Alias viene del backend (cuenta.nombreCliente o mesa.aliasCuenta)
+  const aliasMesa = cuenta?.nombreCliente || mesa?.aliasCuenta || null
+  const tituloMesa = aliasMesa || `MESA ${mesaNum}`
+  // El area de la cuenta (puede ser distinta a la de la mesa fisica) tiene prioridad
+  const area     = cuenta?.area ?? mesa?.areaCuenta ?? mesa?.areaNombre ?? mesa?.area ?? mesa?.zona ?? cuenta?.mesa?.area ?? '—'
   const personas = cuenta?.numeroPersonas ?? cuenta?.personas ?? '—'
   const folio    = cuenta?.id ?? '—'
   const apertura = cuenta?.fechaApertura ?? cuenta?.createdAt ?? null
@@ -145,17 +150,25 @@ export default function ResumenCuentaScreen({
     return () => conn.stop()
   }, [auth.token, cuenta.id])
 
-  // ── Solicitar cobro ────────────────────────────────
-  const handleSolicitarCobro = async () => {
+  // ── Solicitar cobro: abre modal de confirmacion ────
+  const handleSolicitarCobro = () => {
     if (solicitando || !esMiCuenta) return
+    setConfirmCobro(true)
+  }
+
+  // Confirmacion del modal: aqui sí ejecuta la llamada
+  const ejecutarSolicitarCobro = async () => {
+    if (solicitando) return
     setSolicitando(true)
     try {
       await api.solicitarCobro(auth.token, cuenta.id)
+      setConfirmCobro(false)
       setToastMsg('Solicitud enviada al administrador')
       setTimeout(() => onIrMesas(), 1500)
     } catch (e) {
       setError(e.message || 'Error al solicitar cobro')
       setSolicitando(false)
+      setConfirmCobro(false)
     }
   }
 
@@ -245,7 +258,7 @@ export default function ResumenCuentaScreen({
       <div className="rc-info-bar">
         <div className="rc-info-group">
           <span className="rc-info-label">CUENTA</span>
-          <span className="rc-info-val">MESA {mesaNum}</span>
+          <span className="rc-info-val">{tituloMesa}</span>
         </div>
         <div className="rc-info-group">
           <span className="rc-info-label">ÁREA</span>
@@ -361,7 +374,7 @@ export default function ResumenCuentaScreen({
           <div className="modal-box" style={{ maxWidth: 400 }}>
             <div className="modal-title" style={{ color: '#ef4444' }}>SOLICITAR CANCELACIÓN</div>
             <div className="modal-sub">
-              Mesa {mesaNum} — La solicitud se enviará al admin para autorización.
+              {tituloMesa} — La solicitud se enviará al admin para autorización.
             </div>
             <div style={{ padding: '0 0 12px' }}>
               <label style={{ display: 'block', fontSize: '0.62rem', fontWeight: 800,
@@ -402,6 +415,40 @@ export default function ResumenCuentaScreen({
           onConfirmar={() => setShowCancelarProd(false)}
           onCancelar={() => setShowCancelarProd(false)}
         />
+      )}
+
+      {/* ── Modal: Confirmar solicitud de cobro ── */}
+      {confirmCobro && (
+        <div className="modal-overlay"
+          onClick={e => e.target === e.currentTarget && !solicitando && setConfirmCobro(false)}>
+          <div className="modal-box" style={{ maxWidth: 420, textAlign: 'center' }}>
+            <div className="modal-title" style={{ color: '#d18cff' }}>¿SOLICITAR COBRO?</div>
+            <div className="modal-sub">
+              {tituloMesa} — Se enviará al admin para procesar el pago.
+            </div>
+            <div style={{
+              fontSize: '2.2rem', fontWeight: 800, color: '#f0c842',
+              marginTop: 16, marginBottom: 6, letterSpacing: '0.04em'
+            }}>
+              ${Number(total).toFixed(0)}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: 18 }}>
+              Total a cobrar al cliente
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" disabled={solicitando}
+                onClick={() => setConfirmCobro(false)}>
+                CANCELAR
+              </button>
+              <button className="rc-btn-pagar"
+                disabled={solicitando}
+                onClick={ejecutarSolicitarCobro}
+                style={{ minHeight: 56 }}>
+                {solicitando ? '⏳ ENVIANDO...' : 'SI, SOLICITAR'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Toast ── */}

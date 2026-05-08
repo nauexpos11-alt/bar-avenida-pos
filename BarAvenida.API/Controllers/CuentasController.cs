@@ -61,7 +61,8 @@ public class CuentasController : ControllerBase
             MesaId = dto.MesaId,
             MeseraId = dto.MeseraId,
             NumeroPersonas = dto.NumeroPersonas,
-            NombreCliente = dto.NombreCliente,
+            NombreCliente = string.IsNullOrWhiteSpace(dto.NombreCliente) ? null : dto.NombreCliente.Trim(),
+            Area = string.IsNullOrWhiteSpace(dto.Area) ? null : dto.Area.Trim(),
             FechaApertura = DateTime.Now,
             Estado = "Abierta",
             Folio = ultimoFolio + 1
@@ -869,6 +870,7 @@ public class CuentasController : ControllerBase
             MeseraNombre            = cuenta.Mesera!.Nombre,
             NumeroPersonas          = cuenta.NumeroPersonas,
             NombreCliente           = cuenta.NombreCliente,
+            Area                    = cuenta.Area,
             FechaApertura           = cuenta.FechaApertura,
             FechaCierre             = cuenta.FechaCierre,
             Estado                  = cuenta.Estado,

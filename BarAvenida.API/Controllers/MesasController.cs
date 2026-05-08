@@ -34,23 +34,28 @@ public class MesasController : ControllerBase
 
         foreach (var mesa in mesas)
         {
-            // Buscar si tiene cuenta abierta
+            // Buscar si tiene cuenta activa (Abierta O PorCobrar — ambas significan que la mesa NO esta libre)
             var cuentaAbierta = await _context.Cuentas
                 .Include(c => c.Mesera)
-                .FirstOrDefaultAsync(c => c.MesaId == mesa.Id && c.Estado == "Abierta");
+                .FirstOrDefaultAsync(c => c.MesaId == mesa.Id
+                    && (c.Estado == "Abierta" || c.Estado == "PorCobrar"));
 
             var dto = new MesaDto
             {
-                Id = mesa.Id,
-                Numero = mesa.Numero,
-                AreaId = mesa.AreaId,
-                AreaNombre = mesa.Area?.Nombre ?? "",
-                Capacidad = mesa.Capacidad,
-                Estado = cuentaAbierta != null ? "Ocupada" : "Libre",
-                CuentaActivaId = cuentaAbierta?.Id,
-                TotalActual = cuentaAbierta?.Total,
-                MeseraActual = cuentaAbierta?.Mesera?.Nombre,
-                FechaApertura = cuentaAbierta?.FechaApertura
+                Id              = mesa.Id,
+                Numero          = mesa.Numero,
+                AreaId          = mesa.AreaId,
+                AreaNombre      = mesa.Area?.Nombre ?? "",
+                Capacidad       = mesa.Capacidad,
+                Estado          = cuentaAbierta != null ? "Ocupada" : "Libre",
+                CuentaActivaId  = cuentaAbierta?.Id,
+                TotalActual     = cuentaAbierta?.Total,
+                MeseraActual    = cuentaAbierta?.Mesera?.Nombre,
+                MeseraActualId  = cuentaAbierta?.MeseraId,
+                EstadoCuenta    = cuentaAbierta?.Estado,
+                AliasCuenta     = cuentaAbierta?.NombreCliente,
+                AreaCuenta      = cuentaAbierta?.Area,
+                FechaApertura   = cuentaAbierta?.FechaApertura
             };
 
             resultado.Add(dto);
@@ -74,20 +79,24 @@ public class MesasController : ControllerBase
 
         var cuentaAbierta = await _context.Cuentas
             .Include(c => c.Mesera)
-            .FirstOrDefaultAsync(c => c.MesaId == mesa.Id && c.Estado == "Abierta");
+            .FirstOrDefaultAsync(c => c.MesaId == mesa.Id
+                && (c.Estado == "Abierta" || c.Estado == "PorCobrar"));
 
         var dto = new MesaDto
         {
-            Id = mesa.Id,
-            Numero = mesa.Numero,
-            AreaId = mesa.AreaId,
-            AreaNombre = mesa.Area?.Nombre ?? "",
-            Capacidad = mesa.Capacidad,
-            Estado = cuentaAbierta != null ? "Ocupada" : "Libre",
-            CuentaActivaId = cuentaAbierta?.Id,
-            TotalActual = cuentaAbierta?.Total,
-            MeseraActual = cuentaAbierta?.Mesera?.Nombre,
-            FechaApertura = cuentaAbierta?.FechaApertura
+            Id              = mesa.Id,
+            Numero          = mesa.Numero,
+            AreaId          = mesa.AreaId,
+            AreaNombre      = mesa.Area?.Nombre ?? "",
+            Capacidad       = mesa.Capacidad,
+            Estado          = cuentaAbierta != null ? "Ocupada" : "Libre",
+            CuentaActivaId  = cuentaAbierta?.Id,
+            TotalActual     = cuentaAbierta?.Total,
+            MeseraActual    = cuentaAbierta?.Mesera?.Nombre,
+            MeseraActualId  = cuentaAbierta?.MeseraId,
+            EstadoCuenta    = cuentaAbierta?.Estado,
+            AliasCuenta     = cuentaAbierta?.NombreCliente,
+            FechaApertura   = cuentaAbierta?.FechaApertura
         };
 
         return Ok(dto);

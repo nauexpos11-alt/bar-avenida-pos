@@ -1,6 +1,17 @@
 import { encolarOrden } from './lib/offlineQueue'
 
-const API = import.meta.env.VITE_API_URL || 'https://localhost:7000'
+// Resolver URL del backend en este orden:
+// 1. VITE_API_URL si está bien formada (con host)
+// 2. window.location.origin (mismo origen donde se sirve la app)
+// Esto evita problemas cuando el .env tiene valores vacíos o mal escritos.
+function resolverApiUrl() {
+  const fromEnv = import.meta.env.VITE_API_URL
+  if (fromEnv && /^https?:\/\/.+/.test(fromEnv)) return fromEnv.replace(/\/+$/, '')
+  if (typeof window !== 'undefined' && window.location?.origin)
+    return window.location.origin
+  return 'http://localhost:7000'
+}
+const API = resolverApiUrl()
 
 async function req(path, opts = {}, token = null) {
   const headers = { 'Content-Type': 'application/json' }

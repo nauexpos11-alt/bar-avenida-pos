@@ -1,3 +1,6 @@
+/* ── Tipografia Inter de Google Fonts (mejor legibilidad y profesional) ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 /* ── Variables globales ───────────────────────────── */
 :root {
   --gold:        #d4a017;
@@ -43,7 +46,7 @@ html, body, #root {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
@@ -160,6 +163,16 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
+}
+
+/* ── Animaciones globales ─────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.25s ease-out;
 }
 
 /* ── iOS / Mobile optimizations ───────────────────── */

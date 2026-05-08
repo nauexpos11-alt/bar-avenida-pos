@@ -436,6 +436,10 @@ namespace BarAvenida.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Area")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<decimal>("Cambio")
                         .HasColumnType("decimal(10,2)");
 

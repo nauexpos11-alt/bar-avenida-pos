@@ -16,10 +16,21 @@ New-Item -ItemType Directory -Path $Destino -Force | Out-Null
 # Limpiar contenido viejo
 Get-ChildItem $Destino -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
+# Busca dinamicamente la version mas reciente de cada instalador (.exe sin .blockmap)
+function Buscar-InstaladorMasReciente {
+    param([string]$Carpeta, [string]$Patron)
+    if (-not (Test-Path $Carpeta)) { return $null }
+    $exe = Get-ChildItem -Path $Carpeta -Filter $Patron -ErrorAction SilentlyContinue |
+           Where-Object { $_.Name -notlike "*.blockmap" } |
+           Sort-Object LastWriteTime -Descending |
+           Select-Object -First 1
+    return $exe.FullName
+}
+
 $Origenes = @(
-    @{ Origen = "F:\BarAvenida\BarAvenida.Desktop\dist\Bar Avenida Admin Setup 1.1.0.exe";     Etiqueta = "Admin"  },
-    @{ Origen = "F:\BarAvenida\BarAvenida.KDS.Desktop\dist\Bar Avenida KDS Setup 1.1.0.exe";   Etiqueta = "KDS"    },
-    @{ Origen = "F:\BarAvenida\Installer\dist\Bar Avenida Server Setup 1.0.0.exe";              Etiqueta = "Server" }
+    @{ Origen = (Buscar-InstaladorMasReciente "F:\BarAvenida\BarAvenida.Desktop\dist"     "Bar Avenida Admin Setup *.exe");  Etiqueta = "Admin"  },
+    @{ Origen = (Buscar-InstaladorMasReciente "F:\BarAvenida\BarAvenida.KDS.Desktop\dist" "Bar Avenida KDS Setup *.exe");    Etiqueta = "KDS"    },
+    @{ Origen = (Buscar-InstaladorMasReciente "F:\BarAvenida\Installer\dist"              "Bar Avenida Server Setup *.exe"); Etiqueta = "Server" }
 )
 
 Write-Host ""

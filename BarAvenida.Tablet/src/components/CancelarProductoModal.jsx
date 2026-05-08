@@ -95,50 +95,37 @@ export default function CancelarProductoModal({ cuenta, token, onConfirmar, onCa
           {seleccionados.size} de {productos.length} seleccionado{seleccionados.size !== 1 ? 's' : ''}
         </div>
 
-        {/* Tabla con checkboxes */}
+        {/* Cards seleccionables */}
         <div className="cp-tabla-wrapper">
-          <table className="cp-tabla">
-            <thead>
-              <tr>
-                <th style={{ width: 32 }}></th>
-                <th>CANT</th>
-                <th>DESCRIPCIÓN</th>
-                <th>PRECIO</th>
-                <th>IMPORTE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.length === 0 ? (
-                <tr><td colSpan={5} className="cp-vacio">Sin productos</td></tr>
-              ) : (
-                productos.map(p => {
-                  const key    = p.id ?? p.idx
-                  const activo = seleccionados.has(key)
-                  return (
-                    <tr
-                      key={p.idx}
-                      className={`cp-tr ${activo ? 'cp-tr-sel' : ''}`}
-                      onClick={() => toggleSeleccion(key)}
-                    >
-                      <td style={{ textAlign: 'center', paddingRight: 4 }}>
-                        <input
-                          type="checkbox"
-                          checked={activo}
-                          onChange={() => toggleSeleccion(key)}
-                          onClick={e => e.stopPropagation()}
-                          style={{ accentColor: '#f0c842', width: 16, height: 16 }}
-                        />
-                      </td>
-                      <td className="cp-td-cant">{p.cantidad}</td>
-                      <td className="cp-td-desc">{p.descripcion}</td>
-                      <td className="cp-td-precio">${p.precio.toFixed(2)}</td>
-                      <td className="cp-td-imp">${p.importe.toFixed(2)}</td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+          {productos.length === 0 ? (
+            <div className="cp-vacio">Sin productos</div>
+          ) : (
+            <div className="cpm-lista">
+              {productos.map(p => {
+                const key    = p.id ?? p.idx
+                const activo = seleccionados.has(key)
+                return (
+                  <label
+                    key={p.idx}
+                    className={`cpm-card ${activo ? 'cpm-card-sel' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="cpm-checkbox"
+                      checked={activo}
+                      onChange={() => toggleSeleccion(key)}
+                    />
+                    <div className="cpm-card-cantidad">{p.cantidad}</div>
+                    <div className="cpm-card-info">
+                      <div className="cpm-card-nombre">{p.descripcion}</div>
+                      <div className="cpm-card-precio">${p.precio.toFixed(2)} c/u</div>
+                    </div>
+                    <div className="cpm-card-importe">${p.importe.toFixed(2)}</div>
+                  </label>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Motivo */}
@@ -168,7 +155,7 @@ export default function CancelarProductoModal({ cuenta, token, onConfirmar, onCa
             CANCELAR
           </button>
           <button
-            className="cp-btn-siguiente"
+            className="cp-btn-siguiente cpm-btn-solicitar"
             disabled={!puedeEnviar}
             onClick={handleSolicitar}
           >

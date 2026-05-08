@@ -16,7 +16,10 @@ public class Cuenta
     public int NumeroPersonas { get; set; } = 1;
 
     [MaxLength(100)]
-    public string? NombreCliente { get; set; } // Opcional, ej: "Diablo"
+    public string? NombreCliente { get; set; } // Opcional, ej: "Diablo" / alias de la cuenta
+
+    [MaxLength(50)]
+    public string? Area { get; set; } // Opcional. Si la mesera escoge un area distinta a la de la mesa, se guarda aqui.
 
     public DateTime FechaApertura { get; set; } = DateTime.Now;
 

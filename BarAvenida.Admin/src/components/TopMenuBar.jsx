@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useServerClock } from '../hooks/useServerClock'
 import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import AlertasDrawer from './AlertasDrawer'
@@ -147,18 +148,13 @@ function fmtClock(d) {
 
 export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
   const [openMenu, setOpenMenu]               = useState(null)
-  const [clock, setClock]                     = useState(new Date())
+  const clock                                  = useServerClock()
   const [pendientesCount, setPendientesCount] = useState(0)
   // PROMPT C.2 — Alertas activas de caja
   const [alertas, setAlertas]                 = useState([])
   const [drawerAbierto, setDrawerAbierto]     = useState(false)
   const barRef                                = useRef(null)
   const connRef                               = useRef(null)
-
-  useEffect(() => {
-    const id = setInterval(() => setClock(new Date()), 1000)
-    return () => clearInterval(id)
-  }, [])
 
   // ── Contador de solicitudes pendientes (PROMPT B3) ──
   const cargarPendientes = useCallback(async () => {
@@ -251,10 +247,7 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
 
   const handleItemClick = (item) => {
     setOpenMenu(null)
-    if (item.placeholder) {
-      alert(`"${item.label}" — función próximamente disponible`)
-      return
-    }
+    if (item.placeholder) return
     if (item.screen) onIrPantalla(item.screen, item.label)
   }
 
@@ -292,6 +285,7 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
                         className={`tmb-drop-item${item.placeholder ? ' tmb-item-dim' : ''}`}
                         style={{ animationDelay: `${idx * 30}ms` }}
                         onClick={() => handleItemClick(item)}
+                        title={item.placeholder ? 'Próximamente' : undefined}
                       >
                         <span className="tmb-item-label">
                           {item.label}

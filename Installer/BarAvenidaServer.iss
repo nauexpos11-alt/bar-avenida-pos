@@ -15,8 +15,8 @@ OutputDir=F:\BarAvenida\Installer\dist
 OutputBaseFilename=Bar Avenida Server Setup 1.0.0
 ; SetupIconFile: descomentar cuando exista F:\BarAvenida\BarAvenida.Desktop\assets\icon.ico
 ; SetupIconFile=F:\BarAvenida\BarAvenida.Desktop\assets\icon.ico
-Compression=lzma2/ultra64
-SolidCompression=yes
+Compression=zip/9
+SolidCompression=no
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=admin

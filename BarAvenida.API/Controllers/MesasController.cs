@@ -26,6 +26,7 @@ public class MesasController : ControllerBase
             .Include(m => m.Area)
             .Where(m => m.Activa)
             .OrderBy(m => m.AreaId)
+            .ThenBy(m => m.Numero.Length)
             .ThenBy(m => m.Numero)
             .ToListAsync();
 

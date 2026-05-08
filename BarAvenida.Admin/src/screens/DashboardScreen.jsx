@@ -37,6 +37,8 @@ export default function DashboardScreen({ auth, onLogout }) {
   const [showReportes, setShowReportes]         = useState(false)
   const [showCobrar, setShowCobrar]             = useState(false)
   const [toasts, setToasts]                     = useState([])
+  const [cancelModal, setCancelModal]           = useState(null)
+  const [cancelando, setCancelando]             = useState(false)
 
   const cuentaSelRef = useRef(null)
   const reloadRef    = useRef(null)
@@ -167,6 +169,22 @@ export default function DashboardScreen({ auth, onLogout }) {
     reloadRef.current()
   }, [auth.token, cuentaSel])
 
+  // ── Cancelar mesa vacía (FIX-4) ────────────────────────
+  const handleCancelarVacia = useCallback(async () => {
+    if (!cancelModal) return
+    setCancelando(true)
+    try {
+      await api.adminCancelarCuenta(auth.token, cancelModal.cuentaId, { motivo: 'Mesa vacía — cancelada desde Admin' })
+      setCancelModal(null)
+      addToast(`Mesa ${cancelModal.mesaN} cerrada ✓`, 'success')
+      reloadRef.current()
+    } catch (e) {
+      addToast('Error al cancelar: ' + e.message, 'warn')
+    } finally {
+      setCancelando(false)
+    }
+  }, [auth.token, cancelModal, addToast])
+
   // ── Derivados ──────────────────────────────────────────
   const ocupadas = mesas.filter(m => m.estado === 'Ocupada' || !!m.cuentaId).length
   const resumen  = getResumen(cuentaSel)
@@ -232,6 +250,19 @@ export default function DashboardScreen({ auth, onLogout }) {
                       <span className="cr-hora">{fmtHora(c.fechaApertura ?? c.createdAt)}</span>
                     </div>
                     <span className="cr-total">{fmt(c.total)}</span>
+                    {(c.total === 0 || c.total === '0') && (
+                      <button
+                        className="cr-cancel-btn"
+                        title="Cancelar mesa vacía"
+                        onClick={e => {
+                          e.stopPropagation()
+                          const mins = Math.round((Date.now() - new Date(c.fechaApertura ?? c.createdAt).getTime()) / 60000)
+                          setCancelModal({ cuentaId: c.id, mesaN, minutosAbierta: mins })
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 )
               })
@@ -249,11 +280,11 @@ export default function DashboardScreen({ auth, onLogout }) {
               <span className="ms-item ms-libres">{mesas.length - ocupadas} libres</span>
               <span className="ms-item ms-total">{mesas.length} total</span>
               <button className="btn-reportes ripple" onClick={() => setShowReportes(true)}>
-                📊 REPORTES
+                📊 RESUMEN HOY
               </button>
             </div>
             <div className="mesas-grid">
-              {mesas.map(mesa => {
+              {[...mesas].sort((a, b) => Number(a.numero) - Number(b.numero)).map(mesa => {
                 const ocu   = mesa.estado === 'Ocupada' || !!mesa.cuentaId || !!mesa.cuentaActualId
                 const isSel = mesaSel?.id === mesa.id
                 return (
@@ -340,6 +371,34 @@ export default function DashboardScreen({ auth, onLogout }) {
           onCobrar={handleCobrar}
           onCancel={() => setShowCobrar(false)}
         />
+      )}
+
+      {cancelModal && (
+        <div className="cancel-overlay">
+          <div className="cancel-box">
+            <div className="cancel-title">¿Cancelar Mesa {cancelModal.mesaN}?</div>
+            <div className="cancel-msg">
+              Está vacía y lleva {cancelModal.minutosAbierta} min abierta.
+              Esta acción no se puede deshacer.
+            </div>
+            <div className="cancel-actions">
+              <button
+                className="cancel-btn-no"
+                onClick={() => setCancelModal(null)}
+                disabled={cancelando}
+              >
+                No, volver
+              </button>
+              <button
+                className="cancel-btn-si"
+                onClick={handleCancelarVacia}
+                disabled={cancelando}
+              >
+                {cancelando ? 'Cancelando...' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

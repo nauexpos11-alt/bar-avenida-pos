@@ -412,3 +412,93 @@
 }
 .btn-cobrar-det:active:not(:disabled) { background: var(--gold-dark); transform: scale(0.97); }
 .btn-cobrar-det:disabled { opacity: 0.3; cursor: default; }
+
+/* ── FIX-4: Cancelar mesa vacía ───────────────────── */
+.cr-cancel-btn {
+  margin-left: 6px;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3b0000;
+  border: 1.5px solid #ef4444;
+  color: #fca5a5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  padding: 0;
+}
+.cr-cancel-btn:hover { background: #5a0000; }
+
+.cancel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.cancel-box {
+  background: var(--surface);
+  border: 2px solid #ef4444;
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  max-width: 380px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cancel-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fca5a5;
+  letter-spacing: 0.04em;
+}
+
+.cancel-msg {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.cancel-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cancel-btn-no {
+  padding: 9px 20px;
+  background: none;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.cancel-btn-no:hover { border-color: var(--text-dim); color: var(--text); }
+
+.cancel-btn-si {
+  padding: 9px 20px;
+  background: #3b0000;
+  border: 1.5px solid #ef4444;
+  border-radius: var(--radius);
+  color: #fca5a5;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+.cancel-btn-si:hover { background: #5a0000; }
+.cancel-btn-si:disabled, .cancel-btn-no:disabled { opacity: 0.5; cursor: default; }

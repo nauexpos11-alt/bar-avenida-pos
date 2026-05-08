@@ -92,6 +92,14 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
   const cambiar = (campo, valor) => setCfg(c => ({ ...c, [campo]: valor }))
 
   const guardar = async () => {
+    if (cfg.impresionHabilitada && cfg.tipoConexion === 'USB' && !cfg.nombreImpresoraUsb) {
+      toast('Selecciona una impresora antes de habilitar la impresión', 'error')
+      return
+    }
+    if (cfg.impresionHabilitada && cfg.tipoConexion === 'Red' && !cfg.ipImpresora) {
+      toast('Ingresa la IP de la impresora antes de habilitar la impresión', 'error')
+      return
+    }
     setGuardando(true)
     try {
       await api.adminUpdateConfiguracion(auth.token, {

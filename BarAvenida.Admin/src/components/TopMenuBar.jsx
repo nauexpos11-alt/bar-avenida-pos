@@ -20,14 +20,6 @@ const MENUS = [
     ],
   },
   {
-    label: 'EDICIÓN',
-    items: [
-      { label: 'Deshacer', shortcut: 'CTRL+Z', placeholder: true },
-      { label: 'Copiar',   shortcut: 'CTRL+C', placeholder: true },
-      { label: 'Pegar',    shortcut: 'CTRL+V', placeholder: true },
-    ],
-  },
-  {
     label: 'CATÁLOGOS',
     items: [
       { label: 'Productos para venta',          screen: 'cat-productos' },

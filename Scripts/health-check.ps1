@@ -9,27 +9,40 @@
 #   - Espacio en disco suficiente para Backups y Logs
 #   - Logs sin errores recientes
 #
-# Uso (PowerShell normal, no requiere admin):
+# Uso interactivo (PowerShell normal):
 #   F:\BarAvenida\Scripts\health-check.ps1
+#
+# Uso silencioso (para tarea programada - escribe a F:\BarAvenida\Logs\health-check.log):
+#   F:\BarAvenida\Scripts\health-check.ps1 -Silent
 # ============================================================================
 
+param([switch]$Silent)
+
 $ErrorActionPreference = "Continue"
+
+$LogFile = "F:\BarAvenida\Logs\health-check.log"
+$resultados = @()
 
 function Print-Result {
     param([string]$titulo, [bool]$ok, [string]$detalle = "")
     $estado = if ($ok) { "[OK]   " } else { "[FAIL] " }
     $color  = if ($ok) { "Green" } else { "Red" }
-    Write-Host -NoNewline $estado -ForegroundColor $color
-    Write-Host -NoNewline ("{0,-40}" -f $titulo)
-    if ($detalle) { Write-Host $detalle -ForegroundColor Gray } else { Write-Host "" }
+    if (-not $Silent) {
+        Write-Host -NoNewline $estado -ForegroundColor $color
+        Write-Host -NoNewline ("{0,-40}" -f $titulo)
+        if ($detalle) { Write-Host $detalle -ForegroundColor Gray } else { Write-Host "" }
+    }
+    $script:resultados += "$estado $titulo $detalle"
     return $ok
 }
 
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  HEALTH CHECK BAR AVENIDA - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+if (-not $Silent) {
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "  HEALTH CHECK BAR AVENIDA - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 $todo = $true
 
@@ -133,14 +146,25 @@ try {
 } catch {}
 
 # -- Resumen ----------------------------------------------------------------
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Cyan
-if ($todo) {
-    Write-Host "  TODO SANO" -ForegroundColor Green
-} else {
-    Write-Host "  HAY PROBLEMAS - revisa los [FAIL] arriba" -ForegroundColor Red
+if (-not $Silent) {
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Cyan
+    if ($todo) {
+        Write-Host "  TODO SANO" -ForegroundColor Green
+    } else {
+        Write-Host "  HAY PROBLEMAS - revisa los [FAIL] arriba" -ForegroundColor Red
+    }
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host ""
 }
-Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host ""
+
+# Escribir al log siempre (interactivo o silencioso)
+$ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+$resumen = if ($todo) { "TODO_SANO" } else { "PROBLEMAS" }
+$linea = "[$ts] $resumen - " + ($resultados -join " | ")
+try {
+    New-Item -ItemType Directory -Path (Split-Path $LogFile) -Force -ErrorAction SilentlyContinue | Out-Null
+    Add-Content -Path $LogFile -Value $linea -Encoding UTF8
+} catch {}
 
 if (-not $todo) { exit 1 }

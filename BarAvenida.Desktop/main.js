@@ -156,9 +156,14 @@ ipcMain.handle('abrir-carpeta-tickets', () => {
 app.whenReady().then(async () => {
   cargarConfig()
 
+  // Limpiar TODO el storage en cada arranque para evitar caches viejos del bundle
+  // (mismo fix aplicado al KDS — sino se queda con assets viejos despues de un deploy)
   try {
     await session.defaultSession.clearCache()
-    await session.defaultSession.clearStorageData({ storages: ['cachestorage', 'shadercache'] })
+    await session.defaultSession.clearStorageData({
+      storages: ['appcache', 'cookies', 'filesystem', 'indexdb', 'localstorage',
+                 'shadercache', 'websql', 'serviceworkers', 'cachestorage']
+    })
   } catch (e) {
     console.log('Cache clear failed:', e.message)
   }

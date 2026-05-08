@@ -56,6 +56,15 @@ F:\BarAvenida\
 └── CLAUDE.md                  (este archivo)
 ```
 
+## 3.5. Repositorio Git
+
+- **GitHub privado:** https://github.com/nauexpos11-alt/bar-avenida-pos
+- **Owner GitHub:** `nauexpos11-alt`
+- **Branch principal:** `main`
+- **Push rápido:** `F:\BarAvenida\Scripts\git-push.ps1 "mensaje"`
+- **.gitignore** excluye `node_modules`, `bin/obj`, `dist`, `*.bak`, `Logs/`, `TicketsImpresos/`, `appsettings.Production.json`
+- API key Claude vive en User Secrets de .NET, NO en el repo
+
 ## 4. Credenciales por defecto
 
 - **Admin:** `ADMIN` / PIN `1234` (rol="Admin")

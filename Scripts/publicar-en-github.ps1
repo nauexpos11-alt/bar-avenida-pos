@@ -107,10 +107,12 @@ Write-Host ""
 Write-Host "[6/6] Creando repo privado en GitHub y haciendo push..." -ForegroundColor Yellow
 
 $repoName = "bar-avenida-pos"
-$repoExists = $false
-gh repo view "$user/$repoName" 2>&1 | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    $repoExists = $true
+$prevPref = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+gh repo view "$user/$repoName" *> $null
+$repoExists = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevPref
+if ($repoExists) {
     Write-Host "El repo $user/$repoName ya existe. Solo agrego remote y hago push." -ForegroundColor Yellow
 }
 

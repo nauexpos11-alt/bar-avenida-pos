@@ -1,0 +1,94 @@
+# ============================================================================
+# Bar Avenida — CI: validar que los 4 proyectos compilen 0/0 en cada push
+# ============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (.NET 8)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        working-directory: BarAvenida.API
+        run: dotnet restore
+
+      - name: Build (Release)
+        working-directory: BarAvenida.API
+        run: dotnet build --configuration Release --no-restore --warnaserror
+
+  tablet:
+    name: Tablet PWA (Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: BarAvenida.Tablet/package-lock.json
+
+      - name: Install
+        working-directory: BarAvenida.Tablet
+        run: npm ci
+
+      - name: Build
+        working-directory: BarAvenida.Tablet
+        run: npm run build
+
+  admin:
+    name: Admin Web (Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: BarAvenida.Admin/package-lock.json
+
+      - name: Install
+        working-directory: BarAvenida.Admin
+        run: npm ci
+
+      - name: Build
+        working-directory: BarAvenida.Admin
+        run: npm run build
+
+  kds:
+    name: KDS Web (Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: BarAvenida.KDS/package-lock.json
+
+      - name: Install
+        working-directory: BarAvenida.KDS
+        run: npm ci
+
+      - name: Build
+        working-directory: BarAvenida.KDS
+        run: npm run build

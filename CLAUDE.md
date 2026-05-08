@@ -317,6 +317,46 @@ dotnet build
 - **API key configurada en `appsettings.json` directamente** (Coronado decidió, simple para arrancar). Migrar a User Secrets / variables de entorno cuando se empaquete en .exe.
 - **Roadmap restante:**
   - Fase 3 IA: chat asistente flotante (siguiente extensión natural — usar mismo `AsistenteService` con prompts contextuales).
-  - Limpieza de mesas viejas en BD (M6 con 1717 min sin actividad sigue saliendo en alertas).
-  - Fase 4: PWA mobile + empaquetado .exe Admin con Electron.
   - Fase 5: WhatsApp del bar, loyalty, Pidemusic.
+
+### Sesión Cowork, Mayo 7-8, 2026 — Fase 4 Distribución + Round 1 y 2 de fixes Admin
+
+**Producción ready (OLA 1):**
+- ✅ Backend como Servicio Windows "BarAvenidaAPI" con auto-start al boot. Spec: `specs/prod1_servicio_windows_serilog.md`. Logs persistentes en `F:\BarAvenida\Logs\baravenida-YYYY-MM-DD.log` con rotación diaria + retención 30 días. Scripts: `Scripts/install-service.ps1`, `uninstall-service.ps1`, `publish-y-reinstalar.ps1`.
+- ✅ Backups automáticos cada hora con tarea programada Windows. Scripts: `Backups/backup-baravenida.ps1`, `install-tarea-backup.ps1`, `restore-baravenida.ps1`. Retención 7 días. La tarea `BarAvenida_BackupHorario` corre como SYSTEM 24/7.
+- ✅ API key Claude migrada a **User Secrets** (.NET). UserSecretsId: `baravenida-api-secrets-2026`. La API key NO está en el repo.
+- ✅ Permisos SQL fixados: el login `NT AUTHORITY\SYSTEM` tiene `db_owner` sobre `BarAvenida` para que el servicio Windows se conecte. Script: `Backups/fix-permisos-sql-system.sql`.
+- ✅ Limpieza pre-producción ejecutada: cuentas/órdenes/cierres de prueba borrados, identidades reseteadas. Script: `Backups/limpieza-pre-produccion.sql`.
+
+**Distribución pro (OLA 2):**
+- ✅ **Tablet PWA** instalable desde Chrome móvil. Spec: `specs/prod2_pwa_tablet_offline.md`. URL: `http://192.168.100.10:7000/tablet/`. Offline queue en IndexedDB (lib `offlineQueue.js` + `syncOfflineQueue.js`), `IndicadorConexion` en header (verde online / rojo pulsante offline + badge contador), service worker con SHELL pre-cacheado. Iconos PNG generados con `public/generar-iconos.py`. Build via `Scripts/deploy-tablet.ps1`.
+- ✅ **Admin Electron** instalable como `.exe` 1.1.0. Spec: `specs/prod3_admin_instalador_pro.md`. Auto-detecta backend (`localhost`, `192.168.100.10`, `192.168.1.10`, `192.168.0.10`). Persistencia en `%APPDATA%\Bar Avenida\config.json`. Pantalla de configuración manual al primer arranque si no detecta. Atajo `Ctrl+Shift+S` para reconfigurar. Setup: `BarAvenida.Desktop/dist/Bar Avenida Admin Setup 1.1.0.exe`. Build via `Scripts/deploy-admin.ps1`.
+- ✅ **KDS Electron** instalable como `.exe` 1.1.0. Spec: `specs/prod4_kds_instalador.md`. Mismo patrón que Admin pero apuntando a `/kds`. Setup: `BarAvenida.KDS.Desktop/dist/Bar Avenida KDS Setup 1.1.0.exe`. Bug detectado y arreglado: el `clearCache()` simple no era suficiente — había que hacer `clearStorageData` total (cookies + indexdb + serviceworkers + cachestorage) para evitar bundle JS viejo después de un deploy. Script de actualización rápida sin reinstalar: `Scripts/update-kds-instalado.ps1`. Build via `Scripts/deploy-kds.ps1`.
+- ✅ Spec del **instalador todo-en-uno del Backend** (`specs/prod5_instalador_backend.md`) listo con Inno Setup. `Installer/BarAvenidaServer.iss` generado por Claude Code. Pendiente: Coronado instala Inno Setup y compila el .exe final cuando quiera distribuir a otra PC.
+
+**GitHub privado:**
+- Repo: https://github.com/nauexpos11-alt/bar-avenida-pos
+- Owner: `nauexpos11-alt`. Branch: `main`.
+- `.gitignore` listo (excluye `node_modules`, `bin/obj`, `dist`, `*.bak`, `Logs/`, `TicketsImpresos/`).
+- Helper para commits/push rápidos: `Scripts/git-push.ps1 "mensaje"`.
+
+**Audit Admin + Round 1 y 2 de fixes (11 fixes en total):**
+Spec: `specs/fixes_admin_round_1.md` + `specs/fixes_admin_round_2.md`. Auditados con Chrome MCP pantalla por pantalla.
+1. ✅ Mesas ordenadas numéricamente (`1, 2, 3, ..., 50`) en el grid del Dashboard. Sort en `DashboardScreen.jsx`.
+2. ✅ Login Admin con teclado **QWERTY** alfanumérico (botón "abc Letras / 123 Números"). El campo CÓDIGO admite "ADMIN" sin teclado físico.
+3. ✅ Validación: si "Impresión habilitada" está ON sin impresora seleccionada, el botón Guardar muestra toast rojo y bloquea el guardado.
+4. ✅ Mesa M1 fantasma cancelada (cleanup automatizado en `Backups/fixes-admin-round1-cleanup.sql` + Claude Code agregó botón "Cancelar mesa vacía" en `DashboardScreen.jsx` para futuras ocurrencias).
+5. ✅ Menú EDICIÓN entero quitado del header (Deshacer/Copiar/Pegar funcionan via shortcuts del browser).
+6. ✅ Items en gris en CONFIG/CAJA/VENTAS ahora tienen `title="Próximamente"` como tooltip nativo.
+7. ✅ Producto residual "Cerveza Heineken Test" (id 1003) borrado.
+8. 🟡 **Manual:** Coronado completa los datos del bar en Admin → Configuración → Datos del negocio (dirección completa, teléfono, RFC).
+9. ✅ Reloj viene del **servidor**, no del cliente. Endpoint `GET /api/sistema/hora` (en `SistemaController.cs`) + hook `useServerClock.js` con offset y resync cada 5 min.
+10. ✅ Iconos SVG en KPIs del Dashboard vivo (Ventas con $, Cuentas con doc, Ticket prom con tags, Productos con caja, MESERA TOP con medalla, HORA PICO con reloj). Antes eran caracteres ASCII.
+11. ✅ Botón "REPORTES" del Dashboard renombrado a "RESUMEN HOY" para diferenciarlo del menú top REPORTES.
+
+### Aprendizajes de la sesión Mayo 7-8, 2026
+- **`session.defaultSession.clearCache()` solo limpia HTTP cache** — para limpiar el bundle JS viejo en Electron hay que hacer `clearStorageData({ storages: ['appcache','cookies','filesystem','indexdb','localstorage','shadercache','websql','serviceworkers','cachestorage'] })`. Sin eso, el deploy nuevo no se reflejaba y la pantalla aparecía en negro.
+- **Vite con `outDir` apuntando directo al backend** (como hizo el KDS y luego el Admin/Tablet) ahorra el paso de copia y evita inconsistencias entre `dist/` viejo y `wwwroot/` nuevo. Recomendado para todos los frontends del proyecto.
+- **PowerShell + `gh` con stderr disparan `ErrorActionPreference="Stop"`** falsamente. Hay que envolver con `$ErrorActionPreference = "Continue"` cuando el comando puede escribir a stderr sin error real (ej: `gh auth status` cuando no hay sesión).
+- **Pipeline Cowork + Claude Code rinde excelente cuando hay specs detallados.** Ronda 1 (7 fixes) + Ronda 2 (3 fixes) ejecutados sin necesidad de iteración, validados visualmente con Chrome MCP en una sola pasada.
+- **El servicio Windows corre como `NT AUTHORITY\SYSTEM`**, no como el usuario que lo instaló. Hay que dar permisos explícitos en SQL Server o el servicio se traba con error 4060 al consultar BD.

@@ -7,7 +7,7 @@ public class Cuenta
 {
     public int Id { get; set; }
 
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public Mesa? Mesa { get; set; }
 
     public int MeseraId { get; set; }

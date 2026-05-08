@@ -42,16 +42,80 @@ html, body, #root {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
 
+/* ── Animaciones globales ─────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade-in para pantallas al cargar */
+.screen-fade-in { animation: fadeInUp 0.22s ease-out; }
+
+/* Hover de filas en tablas */
+tr:hover td { background: rgba(240, 200, 66, 0.04); }
+
+/* Botones primarios con gradiente dorado */
+button.btn-primary {
+  background: linear-gradient(135deg, #f0c842 0%, #d4a017 100%);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  transition: all 0.2s ease;
+}
+button.btn-primary:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #f0c842 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 200, 66, 0.3);
+}
+
 ::-webkit-scrollbar          { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track    { background: transparent; }
 ::-webkit-scrollbar-thumb    { background: #2a2a2a; border-radius: 3px; }
+
+/* ── Modal overlay ────────────────────────────────── */
+/* ── ModalConfirmar ───────────────────────────────── */
+.mc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+.mc-box {
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 28px 22px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: scaleIn 0.15s ease-out;
+}
+.mc-titulo { font-size: 1rem; font-weight: 800; color: #f0f0f0; }
+.mc-msg    { font-size: 0.88rem; color: #999; line-height: 1.5; }
+.mc-btns   { display: flex; gap: 10px; margin-top: 6px; }
+.mc-btn-no { flex:1; padding:9px; border:1px solid #2a2a2a; background:transparent; color:#888; border-radius:7px; cursor:pointer; font-weight:700; font-size:0.85rem; }
+.mc-btn-no:hover { border-color:#444; color:#ccc; }
+.mc-btn-si { flex:1; padding:9px; border:none; border-radius:7px; cursor:pointer; font-weight:700; font-size:0.85rem; color:#fff; }
+.mc-btn-danger { background: #ef4444; }
+.mc-btn-danger:hover { background: #dc2626; }
+.mc-btn-warn   { background: #f97316; }
+.mc-btn-warn:hover   { background: #ea6c00; }
 
 /* ── Modal overlay ────────────────────────────────── */
 .modal-overlay {

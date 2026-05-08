@@ -149,6 +149,20 @@
 }
 .rcs-toggle-off:hover { background: #351a1a; }
 
+/* ── Botones acción fila ─────────────────── */
+.rcs-btn-edit {
+  background: none;
+  border: none;
+  color: #f0c842;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: background 0.1s;
+  margin-right: 2px;
+}
+.rcs-btn-edit:hover { background: #1a1600; }
+
 /* ── Botón eliminar ──────────────────────── */
 .rcs-btn-del {
   background: none;

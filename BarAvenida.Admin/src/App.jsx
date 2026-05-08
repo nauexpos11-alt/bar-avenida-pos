@@ -132,6 +132,8 @@ export default function App() {
         return <SolicitudesPendientesScreen auth={auth} onVolver={() => irPantalla('dashboard', 'Dashboard')} />
       case 'cat-reglas-crosssell':
         return <ReglasCrossSellScreen auth={auth} onVolver={() => irPantalla('dashboard', 'Dashboard')} />
+      case 'ventas-rapido':
+        return <CuentasPorCobrarScreen auth={auth} onVolver={() => irPantalla('dashboard', 'Dashboard')} />
       case 'rep-dashboard-live':
         return <DashboardLiveScreen auth={auth} onVolver={() => irPantalla('dashboard', 'Dashboard')} />
       case 'rep-informe-dia':

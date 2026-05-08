@@ -18,7 +18,7 @@ const IcoVerPrecios = () => (
   </svg>
 )
 
-export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, onVerPrecios }) {
+export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, onVerPrecios, onIrBarra }) {
   const [mesas, setMesas]         = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
@@ -203,6 +203,14 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
           <button className="action-btn" onClick={() => onVerPrecios?.()}>
             <IcoVerPrecios />
             <span>VER PRECIOS</span>
+          </button>
+          <button
+            className="action-btn action-btn-barra"
+            onClick={() => onIrBarra?.()}
+            style={{ border: '1px solid #f0c842', color: '#f0c842' }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>🍺</span>
+            <span>BARRA RÁPIDA</span>
           </button>
         </div>
 

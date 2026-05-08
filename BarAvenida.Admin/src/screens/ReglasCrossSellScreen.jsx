@@ -11,6 +11,7 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
   const [cargando,   setCargando]   = useState(true)
   const [guardando,  setGuardando]  = useState(false)
   const [modal,      setModal]      = useState(false)
+  const [editandoId, setEditandoId] = useState(null)
   const [form,       setForm]       = useState(VACIO_FORM)
   const [toasts,     setToasts]     = useState([])
 
@@ -38,7 +39,18 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
 
   useEffect(() => { cargar() }, [cargar])
 
-  const abrirModal = () => { setForm(VACIO_FORM); setModal(true) }
+  const abrirModal = () => { setEditandoId(null); setForm(VACIO_FORM); setModal(true) }
+
+  const abrirEditar = (r) => {
+    setEditandoId(r.id)
+    setForm({
+      productoOrigenId:   String(r.productoOrigenId),
+      productoSugeridoId: String(r.productoSugeridoId),
+      prioridad:          r.prioridad,
+      activo:             r.activo,
+    })
+    setModal(true)
+  }
 
   const handleGuardar = async () => {
     if (!form.productoOrigenId)   { toast('Selecciona producto origen', 'error'); return }
@@ -51,13 +63,19 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
 
     setGuardando(true)
     try {
-      await api.adminCrearReglaCrossSell(auth.token, {
+      const payload = {
         productoOrigenId:   Number(form.productoOrigenId),
         productoSugeridoId: Number(form.productoSugeridoId),
         prioridad,
         activo: form.activo,
-      })
-      toast('Regla creada')
+      }
+      if (editandoId) {
+        await api.adminUpdateReglaCrossSell(auth.token, editandoId, payload)
+        toast('Regla actualizada')
+      } else {
+        await api.adminCrearReglaCrossSell(auth.token, payload)
+        toast('Regla creada')
+      }
       setModal(false)
       cargar()
     } catch (e) {
@@ -148,6 +166,13 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
                   </td>
                   <td className="rcs-td-acc">
                     <button
+                      className="rcs-btn-edit"
+                      onClick={() => abrirEditar(r)}
+                      title="Editar regla"
+                    >
+                      ✏
+                    </button>
+                    <button
                       className="rcs-btn-del"
                       onClick={() => handleEliminar(r)}
                       title="Eliminar regla"
@@ -166,7 +191,7 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
         <div className="rcs-overlay" onClick={() => setModal(false)}>
           <div className="rcs-modal" onClick={e => e.stopPropagation()}>
             <div className="rcs-modal-header">
-              <span>Nueva regla de sugerencia</span>
+              <span>{editandoId ? 'Editar regla de sugerencia' : 'Nueva regla de sugerencia'}</span>
               <button className="rcs-btn-x" onClick={() => setModal(false)}>✕</button>
             </div>
 

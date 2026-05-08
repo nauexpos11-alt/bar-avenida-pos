@@ -8,6 +8,7 @@ import MesasScreen from './screens/MesasScreen'
 import CuentaScreen from './screens/CuentaScreen'
 import ResumenCuentaScreen from './screens/ResumenCuentaScreen'
 import VerPreciosScreen from './screens/VerPreciosScreen'
+import BarraRapidaScreen from './screens/BarraRapidaScreen'
 import './App.css'
 
 const SESSION_KEY = 'ba_auth'
@@ -92,6 +93,8 @@ export default function App() {
     setScreen('resumen')
   }
 
+  const handleIrBarra = () => setScreen('barra-rapida')
+
   const handleVolverMesas = () => {
     setMesaCtx(null)
     setCuentaCtx(null)
@@ -118,6 +121,7 @@ export default function App() {
           onIrCuenta={handleIrCuenta}
           onIrResumen={handleIrResumen}
           onVerPrecios={handleVerPrecios}
+          onIrBarra={handleIrBarra}
         />
       )
 
@@ -150,6 +154,15 @@ export default function App() {
         <VerPreciosScreen
           auth={auth}
           onVolver={handleVolverMesas}
+        />
+      )
+
+    if (screen === 'barra-rapida')
+      return (
+        <BarraRapidaScreen
+          auth={auth}
+          onVolver={handleVolverMesas}
+          onIrCuenta={handleIrCuenta}
         />
       )
 

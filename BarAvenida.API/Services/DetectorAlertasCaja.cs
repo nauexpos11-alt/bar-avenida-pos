@@ -211,7 +211,7 @@ public class DetectorAlertasCaja : BackgroundService
             {
                 Tipo           = "MesaInactiva",
                 Severidad      = "Amarilla",
-                Mensaje        = $"Mesa {c.Mesa?.Numero ?? c.MesaId.ToString()} ({c.Mesera?.Nombre ?? "?"}) " +
+                Mensaje        = $"Mesa {c.Mesa?.Numero ?? c.NombreCliente ?? c.MesaId?.ToString() ?? "BARRA"} ({c.Mesera?.Nombre ?? "?"}) " +
                                  $"lleva {minutos} min sin actividad. Total: ${c.Total:N0}.",
                 AccionSugerida = "Ver mesas",
                 AccionScreen   = "dashboard",

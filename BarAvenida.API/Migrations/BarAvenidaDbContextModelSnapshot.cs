@@ -465,7 +465,7 @@ namespace BarAvenida.API.Migrations
                     b.Property<int>("Folio")
                         .HasColumnType("int");
 
-                    b.Property<int>("MesaId")
+                    b.Property<int?>("MesaId")
                         .HasColumnType("int");
 
                     b.Property<int>("MeseraId")
@@ -3109,7 +3109,7 @@ namespace BarAvenida.API.Migrations
                     b.Property<DateTime>("FechaSolicitud")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("MesaId")
+                    b.Property<int?>("MesaId")
                         .HasColumnType("int");
 
                     b.Property<int>("MeseraId")
@@ -3267,9 +3267,7 @@ namespace BarAvenida.API.Migrations
                 {
                     b.HasOne("BarAvenida.API.Models.Mesa", "Mesa")
                         .WithMany("Cuentas")
-                        .HasForeignKey("MesaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("MesaId");
 
                     b.HasOne("BarAvenida.API.Models.Usuario", "Mesera")
                         .WithMany()
@@ -3476,8 +3474,7 @@ namespace BarAvenida.API.Migrations
                     b.HasOne("BarAvenida.API.Models.Mesa", "Mesa")
                         .WithMany()
                         .HasForeignKey("MesaId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("BarAvenida.API.Models.Usuario", "Mesera")
                         .WithMany()

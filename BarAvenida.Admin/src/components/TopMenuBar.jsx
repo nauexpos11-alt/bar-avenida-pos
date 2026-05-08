@@ -10,31 +10,18 @@ const MENUS = [
   {
     label: 'CONFIGURACIÓN',
     items: [
-      { label: 'Configuración general',            screen: 'config-general' },
-      { label: 'Configuración de estaciones',      screen: 'config-estaciones' },
-      { label: 'Áreas de venta',                   screen: 'config-areas-venta' },
-      { label: '🚧 Áreas de impresión de comandas',  placeholder: true },
-      { label: 'Formas de pago',                   screen: 'config-formas-pago' },
-      { label: 'Folio de ticket',                  screen: 'config-folios' },
-      { label: 'Contabilidad',                     screen: 'config-contabilidad' },
-      { label: 'Configurar formatos de impresión', screen: 'config-formatos' },
+      { label: 'Configuración general', screen: 'config-general' },
+      { label: 'Áreas de venta',        screen: 'config-areas-venta' },
+      { label: 'Formas de pago',        screen: 'config-formas-pago' },
+      { label: 'Folio de ticket',       screen: 'config-folios' },
     ],
   },
   {
     label: 'CATÁLOGOS',
     items: [
-      { label: 'Productos para venta',          screen: 'cat-productos' },
-      { label: '🎯 Reglas de sugerencias',      screen: 'cat-reglas-crosssell' },
-      { label: 'Meseros / Repartidores',        screen: 'cat-meseros' },
-      { label: 'Clientes',                      screen: 'cat-clientes' },
-      { label: 'Promociones',                   screen: 'cat-promociones' },
-      { label: 'Tipos de descuento a clientes', screen: 'cat-descuentos' },
-      { label: 'Insumos (materia prima)',        screen: 'cat-insumos' },
-      { label: 'Almacenes',                     screen: 'cat-almacenes' },
-      { label: 'Tipo de proveedores',           screen: 'cat-tipo-proveedores' },
-      { label: 'Proveedores',                   screen: 'cat-proveedores' },
-      { label: 'Tipo de mesa',                  screen: 'cat-tipo-mesa' },
-      { label: 'Mesas',                         screen: 'cat-mesas' },
+      { label: 'Productos para venta',    screen: 'cat-productos' },
+      { label: '🎯 Reglas de sugerencias', screen: 'cat-reglas-crosssell' },
+      { label: 'Mesas',                   screen: 'cat-mesas' },
     ],
   },
   {
@@ -56,49 +43,19 @@ const MENUS = [
   {
     label: 'VENTAS',
     items: [
-      { label: 'Servicio COMEDOR',         screen: 'ventas-comedor',    shortcut: 'F7' },
-      { label: 'Pago agrupado',            placeholder: true },
-      { label: 'Folios de comandas',       screen: 'ventas-folios' },
-      { label: 'Servicio DOMICILIO',       placeholder: true,           shortcut: 'F8' },
-      { label: 'Servicio RÁPIDO',          placeholder: true,           shortcut: 'F9' },
-      { label: 'Facturación',              screen: 'ventas-facturacion' },
-      { label: '💵 Cuentas por cobrar',    screen: 'cuentas-por-cobrar' },
+      { label: 'Servicio COMEDOR',          screen: 'ventas-comedor',          shortcut: 'F7' },
+      { label: 'Servicio RÁPIDO',           screen: 'ventas-rapido',           shortcut: 'F9' },
+      { label: 'Folios de comandas',        screen: 'ventas-folios' },
+      { label: 'Facturación',               screen: 'ventas-facturacion' },
+      { label: '💵 Cuentas por cobrar',     screen: 'cuentas-por-cobrar' },
       { label: '🔔 Solicitudes pendientes', screen: 'solicitudes-pendientes' },
-      { label: 'Imprimir nota de consumo', placeholder: true },
-      { label: 'Reimprimir folios',        placeholder: true },
-      { label: 'Tarjeta de crédito',       placeholder: true },
-    ],
-  },
-  {
-    label: 'OPERACIONES',
-    items: [
-      { label: 'Gastos',                        screen: 'op-gastos' },
-      { label: 'Cuentas por cobrar (consulta)', screen: 'op-cobrar' },
-      { label: 'Cuentas por pagar',             screen: 'op-pagar' },
-      { label: 'Pago de comisiones de agentes', screen: 'op-comisiones' },
-      { label: 'Cortesías',                     screen: 'op-cortesias' },
-    ],
-  },
-  {
-    label: 'ALMACÉN',
-    items: [
-      { label: 'Pedidos',                   screen: 'alm-pedidos' },
-      { label: 'Órdenes de compra',         screen: 'alm-ordenes' },
-      { label: 'Compras',                   screen: 'alm-compras' },
-      { label: 'Movimientos de almacén',    screen: 'alm-movimientos' },
-      { label: 'Traspasos entre almacenes', screen: 'alm-traspasos' },
-      { label: 'Inventario físico',         screen: 'alm-inventario' },
-      { label: 'Elaboración de insumos',    screen: 'alm-elaboracion' },
-      { label: 'Desperdicios',              screen: 'alm-desperdicios' },
-      { label: 'Explosión de productos',    screen: 'alm-explosion' },
     ],
   },
   {
     label: 'CONSULTAS',
     items: [
-      { label: 'Consulta de cuentas', screen: 'cons-cuentas' },
-      { label: 'Movimientos',         screen: 'cons-movimientos' },
-      { label: 'Estado de mesas',     screen: 'dashboard' },
+      { label: 'Histórico de cuentas', screen: 'cons-cuentas' },
+      { label: 'Histórico de cortes',  screen: 'caja-historico-cortes' },
     ],
   },
   {
@@ -126,10 +83,8 @@ const MENUS = [
   {
     label: 'MANTENIMIENTO',
     items: [
-      { label: 'Base de datos',                    screen: 'mant-bd' },
-      { label: 'Exportar / Importar datos',        screen: 'mant-export' },
+      { label: 'Base de datos',                     screen: 'mant-bd' },
       { label: 'Herramientas para administradores', screen: 'mant-admin' },
-      { label: 'Sincronizar catálogo (admin)',     screen: 'mant-sync-catalogo' },
     ],
   },
   {
@@ -222,14 +177,14 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
   const handleKeyNav = useCallback((e) => {
     if (e.key === 'Escape') { setOpenMenu(null); return }
 
-    const fnKeys = { F2: 'caja-apertura-turno', F3: 'caja-cierre-diario', F6: 'caja-corte-x', F7: 'ventas-comedor' }
+    const fnKeys = { F2: 'caja-apertura-turno', F3: 'caja-cierre-diario', F6: 'caja-corte-x', F7: 'ventas-comedor', F9: 'ventas-rapido' }
     if (fnKeys[e.key]) {
       e.preventDefault()
       onIrPantalla(fnKeys[e.key], e.key)
       setOpenMenu(null)
       return
     }
-    if (['F8', 'F9'].includes(e.key)) { e.preventDefault(); return }
+    if (e.key === 'F8') { e.preventDefault(); return }
 
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
       e.preventDefault()

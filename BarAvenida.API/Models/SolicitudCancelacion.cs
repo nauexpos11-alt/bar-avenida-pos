@@ -9,7 +9,7 @@ public class SolicitudCancelacion
     public int CuentaId { get; set; }
     public Cuenta? Cuenta { get; set; }
 
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public Mesa? Mesa { get; set; }
 
     public int MeseraId { get; set; }

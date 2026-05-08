@@ -23,7 +23,7 @@ public class SolicitudCompletaDto
 {
     public int Id { get; set; }
     public int CuentaId { get; set; }
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public int Folio { get; set; }
     public string MesaNumero { get; set; } = "";
     public string MeseraNombre { get; set; } = "";

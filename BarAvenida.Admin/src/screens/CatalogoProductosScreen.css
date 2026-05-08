@@ -278,6 +278,35 @@
 .cat-empty-icon { font-size: 2.4rem; opacity: 0.3; }
 .cat-empty-msg  { font-size: 0.88rem; color: var(--text-muted); text-align: center; }
 
+/* ── Confirm overlay ──────────────────────────────────── */
+.cat-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+.cat-confirm-box {
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 28px 22px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cat-confirm-title { font-size: 1rem; font-weight: 800; color: #f0f0f0; }
+.cat-confirm-msg   { font-size: 0.88rem; color: #999; line-height: 1.5; }
+.cat-confirm-msg strong { color: #f0c842; }
+.cat-confirm-btns  { display: flex; gap: 10px; margin-top: 6px; }
+.cat-confirm-no  { flex: 1; padding: 9px; border: 1px solid #2a2a2a; background: transparent; color: #888; border-radius: 7px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+.cat-confirm-no:hover  { border-color: #444; color: #ccc; }
+.cat-confirm-si  { flex: 1; padding: 9px; border: none; background: #ef4444; color: #fff; border-radius: 7px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+.cat-confirm-si:hover  { background: #dc2626; }
+
 /* ── Modal styles (pm-* / cm-*) ──────────────────────── */
 .pm-box {
   max-width: 480px;

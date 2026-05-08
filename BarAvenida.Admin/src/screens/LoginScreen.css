@@ -181,68 +181,6 @@
 }
 .np-ok:active:not(:disabled) { background: var(--gold-dark); border-color: var(--gold-dark); }
 
-/* ── Toggle alfa / numérico ──────────────────────── */
-.np-alfa-toggle {
-  width: 100%;
-  height: 34px;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  aspect-ratio: unset;
-  background: #181818;
-  border-color: var(--border);
-  color: var(--text-dim);
-}
-.np-alfa-toggle:hover { background: #222; color: var(--text); }
-
-/* ── Teclado QWERTY ──────────────────────────────── */
-.qwerty-pad {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.qwerty-row {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-}
-
-/* Tecla individual QWERTY */
-.qw-key {
-  aspect-ratio: unset !important;
-  width: 28px;
-  height: 34px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  padding: 0;
-}
-
-/* Fila de dígitos un poco más angosta */
-.qw-digit {
-  width: 27px;
-  font-size: 0.74rem;
-}
-
-/* Fila de acciones: 🔢 y OK */
-.qwerty-actions {
-  margin-top: 2px;
-  gap: 8px;
-}
-
-.qw-back {
-  width: 46px !important;
-  font-size: 0.9rem;
-}
-
-.qw-ok {
-  flex: 1;
-  max-width: 140px;
-  height: 34px;
-  font-size: 0.82rem;
-  aspect-ratio: unset !important;
-}
 
 /* ── Link volver ──────────────────────────────────── */
 .link-volver {

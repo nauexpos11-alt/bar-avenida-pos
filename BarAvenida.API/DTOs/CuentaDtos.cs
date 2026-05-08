@@ -9,6 +9,9 @@ public class AbrirCuentaDto
     public string? NombreCliente { get; set; }
 }
 
+// ===== ABRIR CUENTA RÁPIDA (BARRA) — sin mesa =====
+public record AbrirCuentaRapidaDto(int MeseraId);
+
 // ===== ENVIAR ORDEN (cada vez que mesera presiona ENVIAR) =====
 public class EnviarOrdenDto
 {
@@ -28,7 +31,7 @@ public class DetalleOrdenDto
 public class CuentaCompletaDto
 {
     public int Id { get; set; }
-    public int MesaId { get; set; }
+    public int? MesaId { get; set; }
     public string MesaNumero { get; set; } = string.Empty;
     public int MeseraId { get; set; }
     public string MeseraNombre { get; set; } = string.Empty;

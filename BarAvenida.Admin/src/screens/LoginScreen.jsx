@@ -5,13 +5,6 @@ import './LoginScreen.css'
 
 const KEYS = ['1','2','3','4','5','6','7','8','9','⌫','0','OK']
 
-const QWERTY_ROWS = [
-  ['Q','W','E','R','T','Y','U','I','O','P'],
-  ['A','S','D','F','G','H','J','K','L','⌫'],
-  ['Z','X','C','V','B','N','M'],
-]
-
-const QWERTY_NUMS = ['1','2','3','4','5','6','7','8','9','0']
 
 export default function LoginScreen({ onLogin }) {
   const [step, setStep]       = useState('codigo')
@@ -19,8 +12,6 @@ export default function LoginScreen({ onLogin }) {
   const [pin, setPin]         = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
-  const [modoAlfa, setModoAlfa] = useState(false)
-
   const codigoRef = useRef(null)
   const pinRef    = useRef(null)
 
@@ -175,92 +166,28 @@ export default function LoginScreen({ onLogin }) {
 
         {error && <div className="login-error">{error}</div>}
 
-        {/* ── Toggle alfa / numérico (solo en paso código) ── */}
-        {step === 'codigo' && (
-          <button
-            className="np-key np-alfa-toggle"
-            onMouseDown={e => e.preventDefault()}
-            onClick={() => setModoAlfa(a => !a)}
-            disabled={loading}
-          >
-            {modoAlfa ? '🔢 Números' : '🔤 Letras'}
-          </button>
-        )}
-
         {/* ── Teclado numérico en pantalla ── */}
-        {!modoAlfa ? (
-          <div className="numpad">
-            {KEYS.map(k => {
-              const isOk  = k === 'OK'
-              const isDel = k === '⌫'
-              const disabled = loading
-                || (isOk && step === 'codigo' && !codigo)
-                || (isOk && step === 'pin' && !pin)
+        <div className="numpad">
+          {KEYS.map(k => {
+            const isOk  = k === 'OK'
+            const isDel = k === '⌫'
+            const disabled = loading
+              || (isOk && step === 'codigo' && !codigo)
+              || (isOk && step === 'pin' && !pin)
 
-              return (
-                <button
-                  key={k}
-                  className={`np-key ${isOk ? 'np-ok' : ''} ${isDel ? 'np-del' : ''}`}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleNumpadKey(k)}
-                  disabled={disabled}
-                >
-                  {isOk ? (loading ? '...' : step === 'codigo' ? 'OK' : 'ENTRAR') : k}
-                </button>
-              )
-            })}
-          </div>
-        ) : (
-          /* ── Teclado QWERTY (solo en paso código) ── */
-          <div className="qwerty-pad">
-            {QWERTY_ROWS.map((row, ri) => (
-              <div key={ri} className="qwerty-row">
-                {row.map(k => (
-                  <button
-                    key={k}
-                    className={`np-key qw-key${k === '⌫' ? ' np-del' : ''}`}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => handleNumpadKey(k)}
-                    disabled={loading}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-            ))}
-            <div className="qwerty-row">
-              {QWERTY_NUMS.map(k => (
-                <button
-                  key={k}
-                  className="np-key qw-key qw-digit"
-                  onMouseDown={e => e.preventDefault()}
-                  onClick={() => handleNumpadKey(k)}
-                  disabled={loading}
-                >
-                  {k}
-                </button>
-              ))}
-            </div>
-            <div className="qwerty-row qwerty-actions">
+            return (
               <button
-                className="np-key qw-key qw-back"
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => setModoAlfa(false)}
-                disabled={loading}
+                key={k}
+                className={`np-key ${isOk ? 'np-ok' : ''} ${isDel ? 'np-del' : ''}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleNumpadKey(k)}
+                disabled={disabled}
               >
-                🔢
+                {isOk ? (loading ? '...' : step === 'codigo' ? 'OK' : 'ENTRAR') : k}
               </button>
-              <button
-                className="np-key np-ok qw-ok"
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => handleNumpadKey('OK')}
-                disabled={loading || !codigo}
-              >
-                {loading ? '...' : 'OK'}
-              </button>
-            </div>
-          </div>
-        )}
+            )
+          })}
+        </div>
 
         {step === 'pin' && (
           <button className="link-volver" onClick={volverCodigo}>

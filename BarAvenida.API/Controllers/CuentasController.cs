@@ -166,7 +166,7 @@ public class CuentasController : ControllerBase
         // 🔔 NOTIFICAR AL MÓVIL DEL DUEÑO
         await _hub.Clients.Group("Movil").SendAsync("VentaRegistrada", new
         {
-            mesa = cuenta.Mesa!.Numero,
+            mesa = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             mesera = cuenta.Mesera!.Nombre,
             total = subtotalOrden,
             esAgregado = esAgregado
@@ -441,7 +441,8 @@ public class CuentasController : ControllerBase
         await _context.SaveChangesAsync();
 
         await _hub.Clients.Group("Admin").SendAsync("CuentaCancelada", cuenta.Id);
-        await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
+        if (cuenta.MesaId.HasValue)
+            await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
 
         return Ok(new { mensaje = "Cuenta cancelada" });
     }
@@ -507,7 +508,7 @@ public class CuentasController : ControllerBase
         {
             Id             = cuenta.Id,
             Folio          = cuenta.Folio,
-            MesaNumero     = cuenta.Mesa!.Numero,
+            MesaNumero     = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             MeseraNombre   = cuenta.Mesera!.Nombre,
             Estado         = cuenta.Estado,
             Total          = cuenta.Total,
@@ -628,7 +629,7 @@ public class CuentasController : ControllerBase
             CuentaId       = id,
             MesaId         = cuenta.MesaId,
             Folio          = cuenta.Folio,
-            MesaNumero     = cuenta.Mesa!.Numero,
+            MesaNumero     = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             MeseraNombre   = cuenta.Mesera!.Nombre,
             Tipo           = solicitud.Tipo,
             Motivo         = solicitud.Motivo,
@@ -695,7 +696,7 @@ public class CuentasController : ControllerBase
             CuentaId       = id,
             MesaId         = cuenta.MesaId,
             Folio          = cuenta.Folio,
-            MesaNumero     = cuenta.Mesa!.Numero,
+            MesaNumero     = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             MeseraNombre   = cuenta.Mesera!.Nombre,
             Tipo           = solicitud.Tipo,
             Motivo         = solicitud.Motivo,
@@ -714,6 +715,71 @@ public class CuentasController : ControllerBase
             Estado         = solicitud.Estado,
             FechaSolicitud = solicitud.FechaSolicitud,
         });
+    }
+
+    // ========================================================================
+    // ABRIR CUENTA RÁPIDA (BARRA) — sin mesa asignada
+    // ========================================================================
+    [HttpPost("abrir-rapido")]
+    [Authorize]
+    public async Task<ActionResult<CuentaCompletaDto>> AbrirCuentaRapida([FromBody] AbrirCuentaRapidaDto dto)
+    {
+        var mesera = await _context.Usuarios.FindAsync(dto.MeseraId);
+        if (mesera == null)
+            return BadRequest(new { mensaje = "Usuario no válido" });
+
+        int ultimoFolio = await _context.Cuentas.MaxAsync(c => (int?)c.Folio) ?? 0;
+        int barrasAbiertas = await _context.Cuentas
+            .CountAsync(c => c.MesaId == null && c.Estado == "Abierta");
+
+        var cuenta = new Cuenta
+        {
+            MesaId         = null,
+            MeseraId       = dto.MeseraId,
+            FechaApertura  = DateTime.Now,
+            Estado         = "Abierta",
+            Folio          = ultimoFolio + 1,
+            NombreCliente  = $"BARRA #{barrasAbiertas + 1}"
+        };
+
+        _context.Cuentas.Add(cuenta);
+        await _context.SaveChangesAsync();
+
+        await _hub.Clients.Group("Admin").SendAsync("CuentaAbierta", new
+        {
+            cuentaId   = cuenta.Id,
+            mesaId     = (int?)null,
+            mesaNumero = cuenta.NombreCliente,
+            mesera     = mesera.Nombre,
+            fecha      = cuenta.FechaApertura
+        });
+        await _hub.Clients.Group("Meseras").SendAsync("CuentaBarraAbierta", cuenta.Id);
+
+        return Ok(await ObtenerCuentaCompleta(cuenta.Id));
+    }
+
+    // ========================================================================
+    // LISTAR CUENTAS RÁPIDAS ABIERTAS
+    // ========================================================================
+    [HttpGet("rapidas-abiertas")]
+    [Authorize]
+    public async Task<ActionResult> GetCuentasRapidasAbiertas()
+    {
+        var cuentas = await _context.Cuentas
+            .Include(c => c.Mesera)
+            .Include(c => c.Ordenes).ThenInclude(o => o.Detalles).ThenInclude(d => d.Producto)
+            .Where(c => c.MesaId == null && c.Estado == "Abierta")
+            .OrderBy(c => c.FechaApertura)
+            .ToListAsync();
+
+        return Ok(cuentas.Select(c => new {
+            id            = c.Id,
+            nombre        = c.NombreCliente ?? "BARRA",
+            mesera        = c.Mesera != null ? c.Mesera.Nombre : "",
+            folio         = c.Folio,
+            fechaApertura = c.FechaApertura,
+            total         = c.Total
+        }));
     }
 
     // ========================================================================
@@ -770,10 +836,11 @@ public class CuentasController : ControllerBase
     private async Task NotificarCobro(Cuenta cuenta)
     {
         await _hub.Clients.Group("Admin").SendAsync("CuentaCobrada", cuenta.Id);
-        await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
+        if (cuenta.MesaId.HasValue)
+            await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
         await _hub.Clients.Group("Movil").SendAsync("VentaCobrada", new
         {
-            mesa       = cuenta.Mesa!.Numero,
+            mesa       = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             total      = cuenta.Total,
             metodoPago = cuenta.MetodoPago
         });
@@ -797,7 +864,7 @@ public class CuentasController : ControllerBase
         {
             Id                      = cuenta.Id,
             MesaId                  = cuenta.MesaId,
-            MesaNumero              = cuenta.Mesa!.Numero,
+            MesaNumero              = cuenta.Mesa?.Numero ?? cuenta.NombreCliente ?? "BARRA",
             MeseraId                = cuenta.MeseraId,
             MeseraNombre            = cuenta.Mesera!.Nombre,
             NumeroPersonas          = cuenta.NumeroPersonas,

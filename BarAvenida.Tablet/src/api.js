@@ -130,4 +130,9 @@ export const api = {
   getProductosPorCategoria:   (id, t)  => req(`/api/Categorias/${id}/productos`, {}, t),
 
   getSugerencias: (t, productoId) => req(`/api/Productos/${productoId}/sugerencias`, {}, t),
+
+  abrirCuentaRapida: (t, dto) =>
+    req('/api/Cuentas/abrir-rapido', { method: 'POST', body: JSON.stringify(dto) }, t),
+  getCuentasRapidasAbiertas: (t) =>
+    req('/api/Cuentas/rapidas-abiertas', {}, t),
 }

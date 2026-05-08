@@ -171,8 +171,8 @@ function TablaCategorias({ categorias, loading, onEditar, onEliminar }) {
                 <BtnAccion onClick={() => onEditar(c)} titulo="Editar" variante="edit">✏</BtnAccion>
                 <BtnAccion
                   onClick={() => onEliminar(c)}
-                  titulo={c.cantidadProductosTotales > 0 ? 'No se puede eliminar: tiene productos' : 'Eliminar'}
-                  variante={c.cantidadProductosTotales > 0 ? 'disabled' : 'danger'}
+                  titulo={c.cantidadProductosTotales > 0 ? `Tiene ${c.cantidadProductosTotales} productos — reasígnalos antes` : 'Eliminar categoría'}
+                  variante={c.cantidadProductosTotales > 0 ? 'warn' : 'danger'}
                 >🗑</BtnAccion>
               </td>
             </tr>
@@ -258,12 +258,19 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
   }
 
   // ── Acciones categorías ────────────────────────────────
-  const handleEliminarCat = async (c) => {
+  const [confirmarElimCat, setConfirmarElimCat] = useState(null)
+
+  const handleEliminarCat = (c) => {
     if (c.cantidadProductosTotales > 0) {
-      addToast(`No se puede eliminar: "${c.nombre}" tiene productos asociados`, 'error')
+      addToast(`"${c.nombre}" tiene ${c.cantidadProductosTotales} producto${c.cantidadProductosTotales !== 1 ? 's' : ''}. Reasígnalos antes de eliminar.`, 'error')
       return
     }
-    if (!window.confirm(`¿Eliminar la categoría "${c.nombre}"? Esta acción no se puede deshacer.`)) return
+    setConfirmarElimCat(c)
+  }
+
+  const confirmarYEliminarCat = async () => {
+    const c = confirmarElimCat
+    setConfirmarElimCat(null)
     try {
       await api.adminEliminarCategoria(auth.token, c.id)
       setCategorias(prev => prev.filter(x => x.id !== c.id))
@@ -418,6 +425,22 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
           onCerrar={() => setModalCat(null)}
           onError={msg => addToast(msg, 'error')}
         />
+      )}
+
+      {/* ── Modal confirmar eliminar categoría ── */}
+      {confirmarElimCat && (
+        <div className="cat-confirm-overlay">
+          <div className="cat-confirm-box">
+            <p className="cat-confirm-title">¿Eliminar categoría?</p>
+            <p className="cat-confirm-msg">
+              Se eliminará <strong>"{confirmarElimCat.nombre}"</strong>. Esta acción no se puede deshacer.
+            </p>
+            <div className="cat-confirm-btns">
+              <button className="cat-confirm-no"  onClick={() => setConfirmarElimCat(null)}>Cancelar</button>
+              <button className="cat-confirm-si"  onClick={confirmarYEliminarCat}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Toasts ── */}

@@ -1,4 +1,14 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:7000'
+// Resolver URL del backend de forma robusta:
+// 1. VITE_API_URL si está bien formada (con host real, no solo "http://")
+// 2. window.location.origin (mismo origen donde se sirve la app — caso normal en producción)
+// 3. Fallback a localhost solo en dev/SSR
+function resolverApiUrl() {
+  const fromEnv = import.meta.env.VITE_API_URL
+  if (fromEnv && /^https?:\/\/.+/.test(fromEnv)) return fromEnv.replace(/\/+$/, '')
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin
+  return 'http://localhost:7000'
+}
+export const API_URL = resolverApiUrl()
 
 async function req(path, opts = {}, token = null) {
   const headers = { 'Content-Type': 'application/json' }

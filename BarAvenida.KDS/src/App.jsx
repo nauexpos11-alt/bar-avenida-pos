@@ -5,10 +5,15 @@ import MesaCard from './components/MesaCard'
 import { playBeep, unlockAudio } from './utils/sound'
 import './App.css'
 
-// API_URL: si VITE_API_URL viene del .env, lo usa (modo dev con npm run dev).
-// Si no, usa el origen actual (cuando el KDS se sirve desde el backend en /kds,
-// queda http://192.168.100.10:7000 sin importar la IP del bar).
-const API_URL = import.meta.env.VITE_API_URL || window.location.origin
+// API_URL robusta: ignora VITE_API_URL si es invalida (ej. "http://" sin host).
+// Cuando el KDS se sirve desde el backend en /kds, window.location.origin es la URL correcta.
+function resolverApiUrl() {
+  const fromEnv = import.meta.env.VITE_API_URL
+  if (fromEnv && /^https?:\/\/.+/.test(fromEnv)) return fromEnv.replace(/\/+$/, '')
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin
+  return 'http://localhost:7000'
+}
+const API_URL = resolverApiUrl()
 
 export default function App() {
   const [ordenes, setOrdenes] = useState([])

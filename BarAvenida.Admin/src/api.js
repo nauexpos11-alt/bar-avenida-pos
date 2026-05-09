@@ -19,7 +19,7 @@ async function req(path, opts = {}, token = null) {
   })
   if (!resp.ok) {
     let msg = `HTTP ${resp.status}`
-    try { const j = await resp.json(); msg = j.message || j.title || msg } catch {}
+    try { const j = await resp.json(); msg = j.mensaje || j.message || j.title || msg } catch {}
     throw new Error(msg)
   }
   const text = await resp.text()
@@ -203,6 +203,11 @@ export const api = {
   // Admin — Cuentas por cobrar (flujo de cobro)
   adminGetCuentasPorCobrar: (t) => req('/api/Cuentas/por-cobrar', {}, t),
 
+  // Admin — Barra Rápida (pos-barra)
+  adminGetCuentasRapidasAbiertas: (t) => req('/api/Cuentas/rapidas-abiertas', {}, t),
+  adminAbrirCuentaRapida: (t, dto) => req('/api/Cuentas/abrir-rapido', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminEnviarOrden: (t, dto) => req('/api/Cuentas/enviar-orden', { method: 'POST', body: JSON.stringify(dto) }, t),
+
   adminCobrarCuenta: async (token, cuentaId, dto) => {
     const headers = {
       'Content-Type': 'application/json',
@@ -236,6 +241,20 @@ export const api = {
     const qs = p.toString()
     return req(`/api/Cuentas${qs ? '?' + qs : ''}`, {}, t)
   },
+  getCuentasFiltradas: (t, { desde, hasta, estado, folio, meseraId } = {}) => {
+    const p = new URLSearchParams()
+    if (desde)              p.set('desde', desde)
+    if (hasta)              p.set('hasta', hasta)
+    if (estado)             p.set('estado', estado)
+    if (folio != null)      p.set('folio', folio)
+    if (meseraId != null)   p.set('meseraId', meseraId)
+    const qs = p.toString()
+    return req(`/api/Cuentas${qs ? '?' + qs : ''}`, {}, t)
+  },
+  cancelarCobrada: (t, id, motivo) =>
+    req(`/api/Cuentas/${id}/cancelar-cobrada`, { method: 'POST', body: JSON.stringify({ motivo }) }, t),
+  reabrirCuenta: (t, id) =>
+    req(`/api/Cuentas/${id}/reabrir`, { method: 'POST' }, t),
   adminGetCuentaDetalle:          (t, id)      => req(`/api/Cuentas/${id}`, {}, t),
   adminReimprimirCuenta:          (t, id)      => req(`/api/Cuentas/${id}/reimprimir`, { method: 'POST' }, t),
   adminCancelarCuenta:            (t, id, dto) => req(`/api/Cuentas/${id}/cancelar`, { method: 'POST', body: JSON.stringify(dto) }, t),
@@ -257,6 +276,10 @@ export const api = {
   adminUpdateReglaCrossSell: (t, id, dto) => req(`/api/admin/reglas-crosssell/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
   adminDeleteReglaCrossSell: (t, id)      => req(`/api/admin/reglas-crosssell/${id}`, { method: 'DELETE' }, t),
 
+  // Admin — Monitor de Ventas (B3)
+  adminGetMonitorVentas: (t, periodo = 'hoy') =>
+    req(`/api/admin/monitor-ventas?periodo=${periodo}`, {}, t),
+
   // Admin — Dashboard Vivo (PROMPT D)
   adminGetDashboardLive: (t) => req('/api/admin/dashboard/live', {}, t),
 
@@ -276,4 +299,11 @@ export const api = {
   getSolicitudesPendientes: (t)     => req('/api/SolicitudesCancelacion/pendientes', {}, t),
   aprobarSolicitud:         (t, id) => req(`/api/SolicitudesCancelacion/${id}/aprobar`,  { method: 'POST' }, t),
   rechazarSolicitud:        (t, id) => req(`/api/SolicitudesCancelacion/${id}/rechazar`, { method: 'POST' }, t),
+
+  // Centro de Operación (B1)
+  adminGetCuentasActivas: (t) => req('/api/Cuentas/activas', {}, t),
+  editarInfoCuenta: (t, id, dto) =>
+    req(`/api/Cuentas/${id}/editar-info`, { method: 'POST', body: JSON.stringify(dto) }, t),
+  moverAreaCuenta: (t, id, areaNueva) =>
+    req(`/api/Cuentas/${id}/mover-area`, { method: 'POST', body: JSON.stringify({ areaNueva }) }, t),
 }

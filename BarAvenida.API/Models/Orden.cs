@@ -9,6 +9,8 @@ public class Orden
     public int CuentaId { get; set; }
     public Cuenta? Cuenta { get; set; }
 
+    public int NumeroOrden { get; set; }
+
     public DateTime FechaEnvio { get; set; } = DateTime.Now;
 
     public DateTime? FechaListo { get; set; }

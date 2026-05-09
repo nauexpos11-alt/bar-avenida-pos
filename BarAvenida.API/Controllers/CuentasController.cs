@@ -113,12 +113,18 @@ public class CuentasController : ControllerBase
         // Es agregado si la cuenta ya tiene órdenes anteriores
         bool esAgregado = cuenta.Ordenes.Any();
 
+        // Número incremental dentro de esta cuenta (1, 2, 3...)
+        int siguienteNumero = cuenta.Ordenes.Any()
+            ? cuenta.Ordenes.Max(o => o.NumeroOrden) + 1
+            : 1;
+
         var orden = new Orden
         {
-            CuentaId = cuenta.Id,
-            FechaEnvio = DateTime.Now,
-            Estado = "Pendiente",
-            EsAgregado = esAgregado,
+            CuentaId      = cuenta.Id,
+            NumeroOrden   = siguienteNumero,
+            FechaEnvio    = DateTime.Now,
+            Estado        = "Pendiente",
+            EsAgregado    = esAgregado,
             Observaciones = dto.Observaciones
         };
 
@@ -158,6 +164,11 @@ public class CuentasController : ControllerBase
         // Construir el DTO de respuesta
         var ordenDto = await ObtenerOrdenDto(orden.Id);
 
+        // Ticket de barra: fire-and-forget (no bloquea si la impresora falla)
+        var cfgTicket = await _context.ConfiguracionesTicket.FindAsync(1);
+        if (cfgTicket is not null)
+            _ = _escPos.ImprimirTicketAsync(_ticket.GenerarTicketOrden(ordenDto, cuenta, cfgTicket));
+
         // 🔔 NOTIFICAR AL MONITOR DE BARRA EN TIEMPO REAL
         await _hub.Clients.Group("Barra").SendAsync("NuevaOrden", ordenDto);
 
@@ -185,7 +196,8 @@ public class CuentasController : ControllerBase
         [FromQuery] DateTime? desde,
         [FromQuery] DateTime? hasta,
         [FromQuery] string?   estado,
-        [FromQuery] int?      folio)
+        [FromQuery] int?      folio,
+        [FromQuery] int?      meseraId)
     {
         var q = _context.Cuentas
             .Include(c => c.Mesa)
@@ -196,6 +208,7 @@ public class CuentasController : ControllerBase
         if (hasta.HasValue)              q = q.Where(c => c.FechaApertura <= hasta.Value);
         if (!string.IsNullOrEmpty(estado)) q = q.Where(c => c.Estado == estado);
         if (folio.HasValue)              q = q.Where(c => c.Folio == folio.Value);
+        if (meseraId.HasValue)           q = q.Where(c => c.MeseraId == meseraId.Value);
 
         var cuentas = await q
             .OrderByDescending(c => c.FechaApertura)
@@ -760,6 +773,78 @@ public class CuentasController : ControllerBase
     }
 
     // ========================================================================
+    // CUENTAS ACTIVAS (Abierta + PorCobrar) — para Centro de Operación
+    // ========================================================================
+    [HttpGet("activas")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<CuentaResumenDto>>> ObtenerCuentasActivas()
+    {
+        var cuentas = await _context.Cuentas
+            .Include(c => c.Mesa)
+            .Include(c => c.Mesera)
+            .Include(c => c.Ordenes)
+                .ThenInclude(o => o.Detalles)
+            .Where(c => c.Estado == "Abierta" || c.Estado == "PorCobrar")
+            .OrderBy(c => c.FechaApertura)
+            .ToListAsync();
+
+        return Ok(cuentas.Select(c => new CuentaResumenDto
+        {
+            Id             = c.Id,
+            MesaId         = c.MesaId,
+            Folio          = c.Folio,
+            MesaNumero     = c.Mesa?.Numero ?? "",
+            NombreCliente  = c.NombreCliente,
+            MeseraNombre   = c.Mesera?.Nombre ?? "",
+            Estado         = c.Estado,
+            Total          = c.Total,
+            FechaApertura  = c.FechaApertura,
+            OrdenesCount   = c.Ordenes.Count,
+            ProductosCount = c.Ordenes.Sum(o => o.Detalles.Sum(d => d.Cantidad)),
+            NumeroPersonas = c.NumeroPersonas,
+        }));
+    }
+
+    // ========================================================================
+    // EDITAR INFO DE CUENTA — nombre, personas, área
+    // ========================================================================
+    [HttpPost("{id}/editar-info")]
+    [Authorize]
+    public async Task<IActionResult> EditarInfo(int id, [FromBody] EditarInfoCuentaDto dto)
+    {
+        var cuenta = await _context.Cuentas.FindAsync(id);
+        if (cuenta == null) return NotFound();
+        if (cuenta.Estado != "Abierta") return BadRequest(new { mensaje = "Cuenta no abierta" });
+
+        if (dto.NombreCliente  != null)      cuenta.NombreCliente  = dto.NombreCliente.Trim();
+        if (dto.NumeroPersonas.HasValue)      cuenta.NumeroPersonas = dto.NumeroPersonas.Value;
+        if (dto.Area           != null)       cuenta.Area           = dto.Area.Trim();
+
+        await _context.SaveChangesAsync();
+        await _hub.Clients.Group("Admin").SendAsync("CuentaActualizada", cuenta.Id);
+        return Ok(new { mensaje = "Info actualizada" });
+    }
+
+    // ========================================================================
+    // MOVER ÁREA
+    // ========================================================================
+    [HttpPost("{id}/mover-area")]
+    [Authorize]
+    public async Task<IActionResult> MoverArea(int id, [FromBody] MoverAreaDto dto)
+    {
+        var cuenta = await _context.Cuentas.FindAsync(id);
+        if (cuenta == null) return NotFound();
+        if (string.IsNullOrWhiteSpace(dto.AreaNueva))
+            return BadRequest(new { mensaje = "Área inválida" });
+
+        var areaAnterior = cuenta.Area;
+        cuenta.Area = dto.AreaNueva.Trim();
+        await _context.SaveChangesAsync();
+        await _hub.Clients.Group("Admin").SendAsync("CuentaActualizada", cuenta.Id);
+        return Ok(new { areaAnterior, areaNueva = cuenta.Area });
+    }
+
+    // ========================================================================
     // LISTAR CUENTAS RÁPIDAS ABIERTAS
     // ========================================================================
     [HttpGet("rapidas-abiertas")]
@@ -781,6 +866,61 @@ public class CuentasController : ControllerBase
             fechaApertura = c.FechaApertura,
             total         = c.Total
         }));
+    }
+
+    // ========================================================================
+    // CANCELAR CUENTA YA COBRADA — admin anula post-cobro (error de cobro, devolución, etc.)
+    // ========================================================================
+    [HttpPost("{id}/cancelar-cobrada")]
+    [Authorize]
+    public async Task<IActionResult> CancelarCobrada(int id, [FromBody] CancelarCobradaDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Motivo) || dto.Motivo.Trim().Length < 10)
+            return BadRequest(new { mensaje = "Motivo de mín 10 caracteres" });
+
+        var cuenta = await _context.Cuentas.FindAsync(id);
+        if (cuenta == null) return NotFound(new { mensaje = "Cuenta no encontrada" });
+        if (cuenta.Estado != "Cobrada")
+            return BadRequest(new { mensaje = "Solo cuentas cobradas se pueden cancelar aquí" });
+
+        cuenta.Estado            = "Cancelada";
+        cuenta.MotivoCancelacion = dto.Motivo.Trim();
+        cuenta.FechaCancelacion  = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        await _hub.Clients.Group("Admin").SendAsync("CuentaCancelada", id);
+        return Ok(new { mensaje = "Cuenta cancelada" });
+    }
+
+    // ========================================================================
+    // REABRIR CUENTA COBRADA — revierte a Abierta para corregir (solo < 30 min)
+    // ========================================================================
+    [HttpPost("{id}/reabrir")]
+    [Authorize]
+    public async Task<IActionResult> ReabrirCuenta(int id)
+    {
+        var cuenta = await _context.Cuentas.FindAsync(id);
+        if (cuenta == null) return NotFound(new { mensaje = "Cuenta no encontrada" });
+        if (cuenta.Estado != "Cobrada")
+            return BadRequest(new { mensaje = "Solo cuentas cobradas se reabren" });
+        if (!cuenta.FechaCierre.HasValue || (DateTime.Now - cuenta.FechaCierre.Value).TotalMinutes > 30)
+            return BadRequest(new { mensaje = "Pasaron más de 30 min, ya no se puede reabrir" });
+
+        cuenta.Estado          = "Abierta";
+        cuenta.FechaCierre     = null;
+        cuenta.MetodoPago      = null;
+        cuenta.MontoEfectivo   = null;
+        cuenta.MontoTarjeta    = null;
+        cuenta.Cambio          = 0;
+        cuenta.ComisionTarjeta = 0;
+        cuenta.TicketImpreso   = false;
+        cuenta.FechaImpresion  = null;
+        await _context.SaveChangesAsync();
+
+        await _hub.Clients.Group("Admin").SendAsync("CuentaActualizada", id);
+        if (cuenta.MesaId.HasValue)
+            await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
+        return Ok(new { mensaje = "Cuenta reabierta" });
     }
 
     // ========================================================================
@@ -914,9 +1054,10 @@ public class CuentasController : ControllerBase
 
         return new OrdenDto
         {
-            Id = orden.Id,
-            CuentaId = orden.CuentaId,
-            MesaNumero = orden.Cuenta?.Mesa?.Numero ?? "",
+            Id           = orden.Id,
+            CuentaId     = orden.CuentaId,
+            NumeroOrden  = orden.NumeroOrden,
+            MesaNumero   = orden.Cuenta?.Mesa?.Numero ?? "",
             MeseraNombre = orden.Cuenta?.Mesera?.Nombre ?? "",
             FechaEnvio = orden.FechaEnvio,
             FechaListo = orden.FechaListo,

@@ -80,6 +80,46 @@ public class TicketService
         };
     }
 
+    // ── Ticket de barra (por orden enviada) ─────────────────────────────────
+
+    public TicketGenerado GenerarTicketOrden(OrdenDto ordenDto, Cuenta cuenta, ConfiguracionTicket cfg)
+    {
+        int w  = cfg.AnchoTicket;
+        var sb = new StringBuilder();
+
+        sb.AppendLine(Centrar(cfg.NombreNegocio.ToUpper(), w));
+        sb.AppendLine(Linea(w));
+
+        string titulo = $"*** ORDEN #{ordenDto.NumeroOrden} ***";
+        sb.AppendLine(Centrar(titulo, w));
+        if (ordenDto.EsAgregado)
+            sb.AppendLine(Centrar("(AGREGADO)", w));
+        sb.AppendLine(Linea(w));
+
+        string mesaInfo = !string.IsNullOrEmpty(cuenta.NombreCliente)
+            ? cuenta.NombreCliente
+            : (cuenta.Mesa != null ? $"Mesa {cuenta.Mesa.Numero}" : "BARRA");
+        sb.AppendLine($"{mesaInfo} · {cuenta.Mesera?.Nombre ?? ""}");
+        sb.AppendLine($"{ordenDto.FechaEnvio:dd/MMM/yyyy HH:mm}");
+        sb.AppendLine(Linea(w));
+
+        foreach (var det in ordenDto.Detalles)
+            sb.AppendLine($"{det.Cantidad}x {Truncar(det.ProductoNombre, w - 4)}");
+
+        sb.AppendLine(Linea(w));
+        sb.AppendLine($"Folio cuenta: #{cuenta.Folio:D4}");
+        sb.AppendLine();
+
+        string texto = sb.ToString().Replace("\r\n", "\n");
+
+        return new TicketGenerado
+        {
+            TextoPlano  = texto,
+            EscPosBytes = TextoAEscPos(texto),
+            Folio       = $"barra-ord{ordenDto.NumeroOrden}-c{cuenta.Folio:D4}",
+        };
+    }
+
     // ── Ticket de prueba ─────────────────────────────────────────────────────
 
     public TicketGenerado GenerarTicketPrueba(ConfiguracionTicket cfg)

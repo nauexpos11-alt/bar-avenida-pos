@@ -66,6 +66,7 @@ public class OrdenDto
 {
     public int Id { get; set; }
     public int CuentaId { get; set; }
+    public int NumeroOrden { get; set; }
     public string MesaNumero { get; set; } = string.Empty;
     public string MeseraNombre { get; set; } = string.Empty;
     public DateTime FechaEnvio { get; set; }
@@ -124,8 +125,10 @@ public class CuentaCobradaDto
 public class CuentaResumenDto
 {
     public int Id { get; set; }
+    public int? MesaId { get; set; }
     public int Folio { get; set; }
     public string MesaNumero { get; set; } = "";
+    public string? NombreCliente { get; set; }
     public string MeseraNombre { get; set; } = "";
     public string Estado { get; set; } = "";
     public decimal Total { get; set; }
@@ -136,6 +139,16 @@ public class CuentaResumenDto
     public int NumeroPersonas { get; set; }
     public int ProductosCount { get; set; }
 }
+
+// ===== EDITAR INFO DE CUENTA =====
+public record EditarInfoCuentaDto(
+    string? NombreCliente,
+    int?    NumeroPersonas,
+    string? Area
+);
+
+// ===== MOVER ÁREA =====
+public record MoverAreaDto(string AreaNueva);
 
 // ===== CANCELAR CUENTA (admin con PIN) =====
 public class CancelarCuentaDto
@@ -151,4 +164,10 @@ public class TicketSimuladoCuentaDto
     public DateTime Fecha { get; set; }
     public string Tipo { get; set; } = ""; // original | reimpr
     public string[] Extensiones { get; set; } = [];
+}
+
+// ===== CANCELAR CUENTA YA COBRADA (admin, post-cobro) =====
+public class CancelarCobradaDto
+{
+    public string Motivo { get; set; } = "";
 }

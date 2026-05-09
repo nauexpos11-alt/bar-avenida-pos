@@ -52,13 +52,15 @@ function aplanarDetalles(cuenta) {
     detalles.forEach(d => {
       const precio = d.precioUnitario ?? d.precio ?? 0
       filas.push({
-        mov:         mov++,
-        comanda:     oi + 1,
-        cantidad:    d.cantidad,
-        clave:       String(d.productoId ?? '—'),
-        descripcion: d.productoNombre ?? d.nombreProducto ?? d.producto?.nombre ?? '—',
+        mov:          mov++,
+        comanda:      orden.numeroOrden ?? (oi + 1),
+        ordenFecha:   orden.fechaEnvio,
+        esAgregado:   orden.esAgregado,
+        cantidad:     d.cantidad,
+        clave:        String(d.productoId ?? '—'),
+        descripcion:  d.productoNombre ?? d.nombreProducto ?? d.producto?.nombre ?? '—',
         precio,
-        importe:     d.cantidad * precio,
+        importe:      d.cantidad * precio,
       })
     })
   })
@@ -321,16 +323,33 @@ export default function ResumenCuentaScreen({
                 </td>
               </tr>
             ) : (
-              filas.map((f, i) => (
-                <tr key={i} className={i % 2 === 0 ? 'rc-tr-par' : 'rc-tr-impar'}>
-                  <td className="td-mov rc-col-sm">{f.mov}</td>
-                  <td className="td-cant">{f.cantidad}</td>
-                  <td className="td-clave rc-col-md">{f.clave}</td>
-                  <td className="td-desc">{f.descripcion}</td>
-                  <td className="td-precio rc-col-md">${f.precio.toFixed(2)}</td>
-                  <td className="td-imp">${f.importe.toFixed(2)}</td>
-                </tr>
-              ))
+              filas.flatMap((f, i) => {
+                const isNuevaComanda = i === 0 || f.comanda !== filas[i - 1].comanda
+                const hora = f.ordenFecha
+                  ? new Date(f.ordenFecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                  : ''
+                const rows = []
+                if (isNuevaComanda) {
+                  rows.push(
+                    <tr key={`hdr-${f.comanda}`} className="rc-tr-comanda-header">
+                      <td colSpan={6}>
+                        Orden {f.comanda}{hora ? ` · ${hora}` : ''}{f.esAgregado ? ' (Agregado)' : ''}
+                      </td>
+                    </tr>
+                  )
+                }
+                rows.push(
+                  <tr key={i} className={i % 2 === 0 ? 'rc-tr-par' : 'rc-tr-impar'}>
+                    <td className="td-mov rc-col-sm">{f.mov}</td>
+                    <td className="td-cant">{f.cantidad}</td>
+                    <td className="td-clave rc-col-md">{f.clave}</td>
+                    <td className="td-desc">{f.descripcion}</td>
+                    <td className="td-precio rc-col-md">${f.precio.toFixed(2)}</td>
+                    <td className="td-imp">${f.importe.toFixed(2)}</td>
+                  </tr>
+                )
+                return rows
+              })
             )}
           </tbody>
         </table>

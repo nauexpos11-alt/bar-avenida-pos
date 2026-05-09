@@ -1,0 +1,357 @@
+/* ═══════════════════════════════════════════════════════
+   MonitorVentasScreen — B3
+   ═══════════════════════════════════════════════════════ */
+
+.mv-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg, #0a0a0a);
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.mv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.mv-titulo {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #f0c842;
+}
+
+.mv-periodos {
+  display: flex;
+  gap: 4px;
+}
+
+.mv-periodo-btn {
+  padding: 5px 14px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 5px;
+  color: #666;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.mv-periodo-btn:hover {
+  border-color: #444;
+  color: #ccc;
+}
+
+.mv-periodo-btn.activo {
+  border-color: #f0c842;
+  color: #f0c842;
+  background: rgba(240, 200, 66, 0.08);
+}
+
+/* ── Body ────────────────────────────────────────────── */
+.mv-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mv-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #ef4444;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+}
+
+.mv-vacio {
+  color: #444;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.mv-cargando {
+  color: #444;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ── KPI principal ───────────────────────────────────── */
+.mv-kpi-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.mv-kpi-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mv-kpi-monto {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #f0c842;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.mv-kpi-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.mv-kpi-delta {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.mv-delta-pos { color: #4ade80; }
+.mv-delta-neg { color: #f87171; }
+
+.mv-kpi-cuentas {
+  font-size: 0.85rem;
+  color: #666;
+  margin-left: auto;
+}
+
+/* ── Fila de 2 cards ─────────────────────────────────── */
+.mv-seccion-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mv-card {
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.mv-card-titulo {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.mv-tipo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mv-tipo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mv-tipo-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mv-tipo-nombre {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #ccc;
+  flex: 1;
+}
+
+.mv-tipo-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #888;
+  min-width: 38px;
+  text-align: right;
+}
+
+.mv-tipo-monto {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #ddd;
+  font-variant-numeric: tabular-nums;
+  min-width: 72px;
+  text-align: right;
+}
+
+.mv-tipo-sub {
+  font-size: 0.72rem;
+  color: #444;
+  padding-left: 2px;
+}
+
+/* ── Barra de progreso ───────────────────────────────── */
+.mv-barra-fondo {
+  height: 5px;
+  background: #1e1e1e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mv-barra-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Sección con título ──────────────────────────────── */
+.mv-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mv-seccion-titulo {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #555;
+}
+
+/* ── Por área ────────────────────────────────────────── */
+.mv-area-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mv-area-card {
+  flex: 1;
+  min-width: 120px;
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mv-area-nombre {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #888;
+}
+
+.mv-area-monto {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f0c842;
+  font-variant-numeric: tabular-nums;
+}
+
+.mv-area-pct {
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.mv-area-cuentas {
+  font-size: 0.7rem;
+  color: #444;
+  margin-top: 2px;
+}
+
+/* ── Por categoría ───────────────────────────────────── */
+.mv-cat-tabla {
+  background: #111;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mv-cat-header-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 52px 1fr;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #1e1e1e;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #444;
+}
+
+.mv-cat-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 52px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid #161616;
+  transition: background 0.12s;
+}
+
+.mv-cat-row:last-child { border-bottom: none; }
+.mv-cat-row:hover      { background: #161616; }
+
+.mv-cat-nombre {
+  font-size: 0.83rem;
+  color: #ccc;
+}
+
+.mv-cat-monto {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #ddd;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.mv-cat-pct {
+  font-size: 0.78rem;
+  color: #888;
+  text-align: right;
+}
+
+.mv-cat-barra-wrap {
+  height: 5px;
+  background: #1e1e1e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mv-cat-barra {
+  height: 100%;
+  background: #f0c842;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 700px) {
+  .mv-seccion-row {
+    grid-template-columns: 1fr;
+  }
+  .mv-kpi-monto { font-size: 1.5rem; }
+}

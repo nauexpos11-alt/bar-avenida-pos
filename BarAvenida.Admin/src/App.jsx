@@ -18,7 +18,12 @@ import CuentasPorCobrarScreen     from './screens/CuentasPorCobrarScreen'
 import SolicitudesPendientesScreen from './screens/SolicitudesPendientesScreen'
 import ReglasCrossSellScreen       from './screens/ReglasCrossSellScreen'
 import DashboardLiveScreen         from './screens/DashboardLiveScreen'
+import MonitorVentasScreen         from './screens/MonitorVentasScreen'
 import InformeDiaScreen            from './screens/InformeDiaScreen'
+import ConsultaCuentasScreen       from './screens/ConsultaCuentasScreen'
+import BarraRapidaAdminScreen      from './screens/BarraRapidaAdminScreen'
+import CentroOperacionScreen       from './screens/CentroOperacionScreen'
+import PuntoVentaHomeScreen        from './screens/PuntoVentaHomeScreen'
 import CambioUsuarioModal         from './components/CambioUsuarioModal'
 import TopMenuBar                 from './components/TopMenuBar'
 import EnConstruccionScreen       from './screens/EnConstruccionScreen'
@@ -31,7 +36,7 @@ const LS_SECCION  = 'ba_admin_seccion'
 export default function App() {
   const [auth, setAuth]                     = useState(null)
   const [pantallaActual, setPantallaActual] = useState(
-    () => localStorage.getItem(LS_PANTALLA) || 'pos-mesas'
+    () => localStorage.getItem(LS_PANTALLA) || 'pos-home'
   )
   const [pantallaNombre, setPantallaNombre] = useState('Mesas')
   const [modalCambioUser, setModalCambioUser] = useState(false)
@@ -67,8 +72,8 @@ export default function App() {
     localStorage.removeItem(LS_PANTALLA)
     localStorage.removeItem(LS_SECCION)
     setAuth(null)
-    setPantallaActual('pos-mesas')
-    setPantallaNombre('Mesas')
+    setPantallaActual('pos-home')
+    setPantallaNombre('Inicio')
   }
 
   const irPantalla = (screen, nombre) => {
@@ -82,6 +87,10 @@ export default function App() {
 
   function renderPantalla() {
     switch (pantallaActual) {
+      case 'pos-home':
+        return <PuntoVentaHomeScreen auth={auth} onIrPantalla={irPantalla} />
+      case 'pos-centro':
+        return <CentroOperacionScreen auth={auth} onIrPantalla={irPantalla} />
       case 'pos-mesas':
       case 'dashboard':
         return <DashboardScreen auth={auth} onLogout={handleLogout} />
@@ -128,16 +137,24 @@ export default function App() {
         return <ReportesScreen auth={auth} initialTab="hora"       onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'rep-metodos-pago':
         return <ReportesScreen auth={auth} initialTab="metodos"    onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'pos-barra':
+        return auth.rol === 'Admin'
+          ? <BarraRapidaAdminScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+          : <EnConstruccionScreen nombrePantalla="Acceso restringido" onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'cuentas-por-cobrar':
         return <CuentasPorCobrarScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'solicitudes-pendientes':
         return <SolicitudesPendientesScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'cat-reglas-crosssell':
         return <ReglasCrossSellScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'rep-monitor-ventas':
+        return <MonitorVentasScreen auth={auth} />
       case 'rep-dashboard-live':
         return <DashboardLiveScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'rep-informe-dia':
         return <InformeDiaScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'consulta-cuentas':
+        return <ConsultaCuentasScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       default:
         return (
           <EnConstruccionScreen
@@ -158,8 +175,8 @@ export default function App() {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(authObj))
     setAuth(authObj)
     setModalCambioUser(false)
-    setPantallaActual('pos-mesas')
-    setPantallaNombre('Mesas')
+    setPantallaActual('pos-home')
+    setPantallaNombre('Inicio')
   }
 
   return (

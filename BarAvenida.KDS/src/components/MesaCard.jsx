@@ -62,7 +62,8 @@ export default function MesaCard({ grupo, now, onListo }) {
             >
               <div className="mc-orden-header">
                 <span className="mc-orden-num">
-                  {orden.esAgregado ? 'AGREGADO' : `Comanda #${idx + 1}`}
+                  ORDEN #{orden.numeroOrden ?? (idx + 1)}
+                  {orden.esAgregado && <span className="mc-orden-agr"> AGRE.</span>}
                 </span>
                 <span className="mc-orden-hora">{formatHora(orden.fechaEnvio)}</span>
               </div>

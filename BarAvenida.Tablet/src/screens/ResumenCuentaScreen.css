@@ -217,6 +217,18 @@
 .rc-tr-par   { background: #080808; }
 .rc-tr-impar { background: #0c0c0c; }
 
+/* Encabezado de grupo por orden */
+.rc-tr-comanda-header td {
+  background: #1a1400;
+  color: #f0c842;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 5px 10px;
+  text-transform: uppercase;
+  border-top: 1px solid #2a2000;
+}
+
 .rc-tabla tbody tr:hover { background: #1a1400; cursor: default; }
 
 .rc-tabla td {

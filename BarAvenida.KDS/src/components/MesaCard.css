@@ -98,14 +98,34 @@
 .mc-orden-header {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #a0820d;
+  align-items: center;
+  letter-spacing: 0.06em;
 }
 
-.mc-orden-num  { text-transform: uppercase; }
-.mc-orden-hora { color: #888; font-variant-numeric: tabular-nums; }
+.mc-orden-num {
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: #f0c842;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.mc-orden-agr {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.1em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.mc-orden-hora {
+  color: #888;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
 
 /* -- Productos -------------------------------------------- */
 .mc-detalles {

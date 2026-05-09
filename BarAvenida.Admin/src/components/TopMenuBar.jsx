@@ -12,7 +12,10 @@ const SECCIONES = [
     label: 'PUNTO DE VENTA',
     icon: '🍺',
     tabs: [
+      { id: 'pos-home',        label: '🏠 Inicio',             screen: 'pos-home' },
+      { id: 'pos-centro',      label: '🎯 Centro',             screen: 'pos-centro', shortcut: 'F1' },
       { id: 'pos-mesas',       label: '🍽️ Mesas',              screen: 'pos-mesas' },
+      { id: 'pos-barra',       label: '🍺 Barra',              screen: 'pos-barra', shortcut: 'F9' },
       { id: 'pos-cobrar',      label: '💵 Cuentas por cobrar', screen: 'cuentas-por-cobrar' },
       { id: 'pos-solicitudes', label: '🔔 Solicitudes',        screen: 'solicitudes-pendientes' },
       {
@@ -41,9 +44,11 @@ const SECCIONES = [
       {
         id: 'adm-reportes', label: '📊 Reportes', hub: true,
         sub: [
-          { label: 'Dashboard vivo',    screen: 'rep-dashboard-live' },
-          { label: 'Informe del día',   screen: 'rep-informe-dia' },
-          { label: 'Resumen ventas',    screen: 'rep-ventas-resumen' },
+          { label: 'Monitor de Ventas',   screen: 'rep-monitor-ventas' },
+          { label: 'Dashboard vivo',     screen: 'rep-dashboard-live' },
+          { label: 'Informe del día',    screen: 'rep-informe-dia' },
+          { label: 'Histórico cuentas',  screen: 'consulta-cuentas' },
+          { label: 'Resumen ventas',     screen: 'rep-ventas-resumen' },
           { label: 'Productos top',     screen: 'rep-productos-top' },
           { label: 'Ventas por mesera', screen: 'rep-ventas-mesera' },
           { label: 'Ventas categoría',  screen: 'rep-categorias' },
@@ -163,9 +168,11 @@ export default function TopMenuBar({ auth, pantallaActual, onIrPantalla, onLogou
 
     // Atajos de teclado del Admin v2 (alineados con el menu nuevo)
     const fnKeys = {
-      F2: 'caja-apertura-turno', // PUNTO DE VENTA → Caja → Apertura turno
-      F3: 'caja-corte-z',        // PUNTO DE VENTA → Caja → Corte Z (cierre diario)
-      F6: 'caja-corte-x',        // PUNTO DE VENTA → Caja → Corte X (parcial)
+      F1: 'pos-centro',
+      F2: 'caja-apertura-turno',
+      F3: 'caja-corte-z',
+      F6: 'caja-corte-x',
+      F9: 'pos-barra',
     }
     if (fnKeys[e.key]) {
       e.preventDefault()
@@ -230,7 +237,13 @@ export default function TopMenuBar({ auth, pantallaActual, onIrPantalla, onLogou
 
       {/* ── Row 1: Header ── */}
       <div className="tmb-header-row">
-        <div className="tmb-brand">
+        <div
+          className="tmb-brand tmb-brand-link"
+          onClick={() => { onIrPantalla('pos-home', 'Inicio'); localStorage.setItem(LS_PANTALLA, 'pos-home') }}
+          role="button"
+          tabIndex={0}
+          title="Ir al inicio"
+        >
           <img src={logoBar} className="tmb-logo" alt="Bar Avenida" />
           <span className="tmb-title">BAR AVENIDA <span className="tmb-sep">·</span> ADMIN</span>
         </div>

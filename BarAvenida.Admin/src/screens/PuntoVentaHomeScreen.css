@@ -1,0 +1,209 @@
+/* ═══════════════════════════════════════════════════════
+   PuntoVentaHomeScreen — Dashboard de acceso rápido
+   ═══════════════════════════════════════════════════════ */
+
+.pvh-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ── Bienvenida ─────────────────────────────────────────── */
+.pvh-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.pvh-welcome-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pvh-saludo {
+  font-size: 0.92rem;
+  color: #bbb;
+}
+.pvh-saludo strong { color: var(--gold-light); }
+
+.pvh-fecha {
+  font-size: 0.72rem;
+  color: #555;
+  letter-spacing: 0.06em;
+}
+
+.pvh-turno-info { font-size: 0.78rem; }
+
+.pvh-turno-abierto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4ade80;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+.pvh-turno-sep    { color: #1a1a1a; }
+.pvh-turno-cerrado { color: #f87171; font-weight: 700; }
+.pvh-turno-cargando { color: #555; }
+
+/* ── Grid 2×2 ───────────────────────────────────────────── */
+.pvh-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  min-height: 0;
+  background: #060606;
+}
+
+/* ── Card base ──────────────────────────────────────────── */
+.pvh-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #0c0c0c;
+  border: 2px solid transparent;
+  border-radius: 0;
+  cursor: pointer;
+  padding: 24px 20px;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: center;
+  outline: none;
+}
+.pvh-card:hover {
+  background: #121200;
+  border-color: var(--gold-dark);
+}
+.pvh-card:active { background: #1a1800; }
+.pvh-card:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+
+.pvh-card-ico {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(240,200,66,0.2));
+}
+
+.pvh-card-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: var(--gold-light);
+  text-transform: uppercase;
+}
+
+.pvh-card-div {
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
+  opacity: 0.4;
+}
+
+.pvh-card-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  justify-content: center;
+}
+
+.pvh-stat-main {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  font-variant-numeric: tabular-nums;
+}
+.pvh-stat-sub {
+  font-size: 0.82rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+.pvh-stat-cargando { font-size: 0.82rem; color: #444; }
+.pvh-stat-alerta   { font-size: 0.9rem; color: #f87171; font-weight: 700; }
+
+.pvh-delta-pos { color: #4ade80; }
+.pvh-delta-neg { color: #f87171; }
+
+/* Shortcut badge */
+.pvh-shortcut {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #333;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Card variants — accent corners */
+.pvh-card-centro:hover { border-color: #f0c842; }
+.pvh-card-barra:hover  { border-color: #f97316; }
+.pvh-card-caja:hover   { border-color: #4ade80; }
+.pvh-card-rep:hover    { border-color: #818cf8; }
+
+/* ── Footer ─────────────────────────────────────────────── */
+.pvh-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: #090909;
+  border-top: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+.pvh-footer-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+.pvh-footer-btn:hover { background: #1a1a1a; }
+
+.pvh-footer-sol  { color: #c084fc; }
+
+.pvh-footer-ok {
+  font-size: 0.78rem;
+  color: #444;
+  letter-spacing: 0.06em;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .pvh-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 1fr);
+  }
+  .pvh-card-title { font-size: 0.9rem; }
+  .pvh-card-ico   { font-size: 2.5rem; }
+  .pvh-welcome    { flex-direction: column; align-items: flex-start; }
+}
+
+@media (min-width: 1200px) {
+  .pvh-card-title { font-size: 1.15rem; }
+  .pvh-card-ico   { font-size: 4rem; }
+  .pvh-stat-main  { font-size: 1.15rem; }
+}

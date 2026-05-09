@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
-import ProductoModal  from '../components/ProductoModal'
 import CategoriaModal from '../components/CategoriaModal'
 import ToastContainer from '../components/Toast'
 import './CatalogoProductosScreen.css'
 
-// ── Helpers ───────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function contrastColor(hex) {
   if (!hex || hex.length < 7) return '#fff'
   const r = parseInt(hex.slice(1, 3), 16)
@@ -34,11 +33,7 @@ function BadgeEstado({ activo }) {
 
 function BtnAccion({ onClick, titulo, children, variante = 'default' }) {
   return (
-    <button
-      className={`cat-btn-accion bta-${variante}`}
-      onClick={onClick}
-      title={titulo}
-    >
+    <button className={`cat-btn-accion bta-${variante}`} onClick={onClick} title={titulo}>
       {children}
     </button>
   )
@@ -54,69 +49,51 @@ function ShimmerRows({ cols, n = 10 }) {
   ))
 }
 
-function EmptyState({ mensaje, onCrear, labelCrear }) {
+function EmptyState({ mensaje }) {
   return (
     <tr>
       <td colSpan={20} className="cat-empty-cell">
         <div className="cat-empty">
           <span className="cat-empty-icon">📦</span>
           <p className="cat-empty-msg">{mensaje}</p>
-          {onCrear && (
-            <button className="cat-btn-nuevo" onClick={onCrear}>{labelCrear}</button>
-          )}
         </div>
       </td>
     </tr>
   )
 }
 
-// ── Tabla Productos ───────────────────────────────────────
-function TablaProductos({ productos, loading, onEditar, onDesactivar, onActivar }) {
+// ── Tabla simplificada de productos (layout Soft Restaurant) ──
+function TablaProductosLista({ productos, loading, selectedId, onSeleccionar }) {
   return (
     <table className="cat-table">
       <thead>
         <tr>
-          <th className="cat-th cat-th-num">#</th>
-          <th className="cat-th">NOMBRE</th>
-          <th className="cat-th">CATEGORÍA</th>
-          <th className="cat-th cat-th-centro">TIPO</th>
+          <th className="cat-th cat-th-num">CLAVE</th>
+          <th className="cat-th">GRUPO</th>
+          <th className="cat-th">DESCRIPCIÓN</th>
           <th className="cat-th cat-th-num">PRECIO</th>
-          <th className="cat-th cat-th-centro">ESTADO</th>
-          <th className="cat-th cat-th-acciones">ACCIONES</th>
         </tr>
       </thead>
       <tbody>
         {loading ? (
-          <ShimmerRows cols={7} n={12} />
+          <ShimmerRows cols={4} n={12} />
         ) : productos.length === 0 ? (
           <EmptyState mensaje="No hay productos que coincidan con los filtros." />
         ) : (
           productos.map((p, i) => (
             <tr
               key={p.id}
-              className={`cat-tr${!p.activo ? ' cat-tr-inactivo' : ''}`}
+              className={`cat-tr cat-tr-clickable${selectedId === p.id ? ' cat-tr-selected' : ''}${!p.activo ? ' cat-tr-inactivo' : ''}`}
               style={{ animationDelay: `${Math.min(i, 30) * 20}ms` }}
+              onClick={() => onSeleccionar(p)}
             >
               <td className="cat-td cat-td-num">{p.id}</td>
-              <td className="cat-td cat-td-nombre">{p.nombre}</td>
               <td className="cat-td">
                 <BadgeCat nombre={p.categoriaNombre} colorHex={p.categoriaColor} />
               </td>
-              <td className="cat-td cat-td-centro">
-                <span className="cat-tipo">{p.tipoVenta}</span>
-              </td>
+              <td className="cat-td cat-td-nombre">{p.nombre}</td>
               <td className="cat-td cat-td-precio">
                 ${Number(p.precio).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-              </td>
-              <td className="cat-td cat-td-centro">
-                <BadgeEstado activo={p.activo} />
-              </td>
-              <td className="cat-td cat-td-acciones">
-                <BtnAccion onClick={() => onEditar(p)} titulo="Editar" variante="edit">✏</BtnAccion>
-                {p.activo
-                  ? <BtnAccion onClick={() => onDesactivar(p)} titulo="Desactivar" variante="warn">⏸</BtnAccion>
-                  : <BtnAccion onClick={() => onActivar(p)}   titulo="Activar"    variante="ok">▶</BtnAccion>
-                }
               </td>
             </tr>
           ))
@@ -126,7 +103,7 @@ function TablaProductos({ productos, loading, onEditar, onDesactivar, onActivar 
   )
 }
 
-// ── Tabla Categorías ──────────────────────────────────────
+// ── Tabla de categorías (sin cambios) ──────────────────────────
 function TablaCategorias({ categorias, loading, onEditar, onEliminar }) {
   return (
     <table className="cat-table">
@@ -183,18 +160,170 @@ function TablaCategorias({ categorias, loading, onEditar, onEliminar }) {
   )
 }
 
-// ── Screen Principal ──────────────────────────────────────
-export default function CatalogoProductosScreen({ auth, onVolver }) {
-  const [tab, setTab]             = useState('productos')
-  const [productos, setProductos] = useState([])
+// ── Editor inline de producto (estilo Soft Restaurant) ────────
+const TIPOS = ['Pieza', 'Shot', 'Botella']
+
+function EditorProducto({ producto, categorias, auth, onGuardado, onCancelar, onError }) {
+  const esNuevo = !producto?.id
+  const [form, setForm] = useState({
+    nombre:            producto?.nombre            ?? '',
+    categoriaId:       producto?.categoriaId       ?? (categorias[0]?.id ?? ''),
+    precio:            producto?.precio            ?? '',
+    tipoVenta:         producto?.tipoVenta         ?? 'Pieza',
+    cantidadDescuento: producto?.cantidadDescuento ?? 1,
+    orden:             producto?.orden             ?? 0,
+    activo:            producto?.activo            ?? true,
+  })
+  const [guardando, setGuardando] = useState(false)
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const mostrarCantidad = form.tipoVenta === 'Shot' || form.tipoVenta === 'Botella'
+
+  const handleGuardar = async () => {
+    if (!form.nombre.trim()) return
+    setGuardando(true)
+    try {
+      const dto = {
+        nombre:            form.nombre.trim(),
+        categoriaId:       Number(form.categoriaId),
+        precio:            Number(form.precio) || 0,
+        tipoVenta:         form.tipoVenta,
+        cantidadDescuento: Number(form.cantidadDescuento) || 1,
+        orden:             Number(form.orden) || 0,
+        ...(!esNuevo && { activo: form.activo }),
+      }
+      const result = esNuevo
+        ? await api.adminCrearProducto(auth.token, dto)
+        : await api.adminActualizarProducto(auth.token, producto.id, dto)
+      onGuardado(result, esNuevo)
+    } catch (e) {
+      onError(e.message)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <div className="ep-root">
+      <div className="ep-header">
+        <span className="ep-titulo">{esNuevo ? 'NUEVO PRODUCTO' : 'EDITAR PRODUCTO'}</span>
+        <button className="ep-close" onClick={onCancelar} title="Cerrar editor">✕</button>
+      </div>
+
+      <div className="ep-fields">
+        <label className="ep-label">NOMBRE</label>
+        <input
+          className="ep-input"
+          value={form.nombre}
+          onChange={e => set('nombre', e.target.value)}
+          maxLength={100}
+          placeholder="Nombre del producto"
+          autoFocus
+        />
+
+        <label className="ep-label">CATEGORÍA</label>
+        <select
+          className="ep-select"
+          value={form.categoriaId}
+          onChange={e => set('categoriaId', e.target.value)}
+        >
+          {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+
+        <label className="ep-label">PRECIO</label>
+        <div className="ep-prefix-wrap">
+          <span className="ep-prefix">$</span>
+          <input
+            className="ep-input ep-input-pfx"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.precio}
+            onChange={e => set('precio', e.target.value)}
+            placeholder="0.00"
+          />
+        </div>
+
+        <label className="ep-label">TIPO DE VENTA</label>
+        <div className="ep-tipo-grid">
+          {TIPOS.map(t => (
+            <button
+              key={t}
+              type="button"
+              className={`ep-tipo-btn${form.tipoVenta === t ? ' ep-tipo-act' : ''}`}
+              onClick={() => set('tipoVenta', t)}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {mostrarCantidad && (
+          <>
+            <label className="ep-label">
+              CANTIDAD DESCUENTO
+              <span className="ep-hint"> (shots por servicio o unidades por botella)</span>
+            </label>
+            <input
+              className="ep-input"
+              type="number"
+              min="1"
+              step="0.5"
+              value={form.cantidadDescuento}
+              onChange={e => set('cantidadDescuento', e.target.value)}
+            />
+          </>
+        )}
+
+        <label className="ep-label">ORDEN</label>
+        <input
+          className="ep-input"
+          type="number"
+          value={form.orden}
+          onChange={e => set('orden', e.target.value)}
+        />
+
+        {!esNuevo && (
+          <>
+            <label className="ep-label">ESTADO</label>
+            <button
+              type="button"
+              className={`ep-toggle${form.activo ? ' ep-toggle-on' : ' ep-toggle-off'}`}
+              onClick={() => set('activo', !form.activo)}
+            >
+              {form.activo ? 'ACTIVO' : 'INACTIVO'}
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="ep-actions">
+        <button className="ep-btn-cancel" onClick={onCancelar}>CANCELAR</button>
+        <button
+          className="ep-btn-save"
+          onClick={handleGuardar}
+          disabled={!form.nombre.trim() || guardando}
+        >
+          {guardando ? '...' : 'GUARDAR'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Screen Principal ──────────────────────────────────────────
+export default function CatalogoProductosScreen({ auth }) {
+  const [tab, setTab]               = useState('productos')
+  const [productos, setProductos]   = useState([])
   const [categorias, setCategorias] = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [busqueda, setBusqueda]   = useState('')
-  const [filtroCat, setFiltroCat] = useState('')
-  const [filtroAct, setFiltroAct] = useState('all')
-  const [modalProd, setModalProd] = useState(null)
-  const [modalCat, setModalCat]   = useState(null)
-  const [toasts, setToasts]       = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [busqueda, setBusqueda]     = useState('')
+  const [filtroCat, setFiltroCat]   = useState('')
+  const [filtroAct, setFiltroAct]   = useState('all')
+  const [productoEdicion, setProductoEdicion] = useState(null)
+  const [modalCat, setModalCat]     = useState(null)
+  const [toasts, setToasts]         = useState([])
+  const [confirmarElimCat, setConfirmarElimCat] = useState(null)
 
   const addToast = useCallback((mensaje, tipo = 'info') => {
     const id = Date.now() + Math.random()
@@ -223,9 +352,15 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
 
   useEffect(() => { cargar() }, [cargar])
 
-  // ── Filtros ────────────────────────────────────────────
+  // ── Filtros ────────────────────────────────────────────────
   const prodsFiltrados = productos.filter(p => {
-    if (busqueda && !p.nombre.toLowerCase().includes(busqueda.toLowerCase())) return false
+    if (busqueda) {
+      const q = busqueda.toLowerCase()
+      const enNombre = p.nombre.toLowerCase().includes(q)
+      const enCat    = (p.categoriaNombre ?? '').toLowerCase().includes(q)
+      const enPrecio = String(p.precio).includes(q)
+      if (!enNombre && !enCat && !enPrecio) return false
+    }
     if (filtroCat && p.categoriaId !== Number(filtroCat)) return false
     if (filtroAct === 'true'  && !p.activo) return false
     if (filtroAct === 'false' &&  p.activo) return false
@@ -236,7 +371,7 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
     !busqueda || c.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  // ── Acciones productos ─────────────────────────────────
+  // ── Handlers productos ─────────────────────────────────────
   const handleDesactivar = async (p) => {
     try {
       await api.adminDesactivarProducto(auth.token, p.id)
@@ -257,9 +392,17 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
     }
   }
 
-  // ── Acciones categorías ────────────────────────────────
-  const [confirmarElimCat, setConfirmarElimCat] = useState(null)
+  const onProductoGuardado = (prod, esNuevo) => {
+    if (esNuevo) {
+      setProductos(prev => [...prev, prod])
+    } else {
+      setProductos(prev => prev.map(p => p.id === prod.id ? prod : p))
+    }
+    setProductoEdicion(null)
+    addToast(esNuevo ? `Producto "${prod.nombre}" creado` : `"${prod.nombre}" actualizado`, 'success')
+  }
 
+  // ── Handlers categorías ────────────────────────────────────
   const handleEliminarCat = (c) => {
     if (c.cantidadProductosTotales > 0) {
       addToast(`"${c.nombre}" tiene ${c.cantidadProductosTotales} producto${c.cantidadProductosTotales !== 1 ? 's' : ''}. Reasígnalos antes de eliminar.`, 'error')
@@ -280,17 +423,6 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
     }
   }
 
-  // ── Callbacks de modales ────────────────────────────────
-  const onProductoGuardado = (prod, esNuevo) => {
-    if (esNuevo) {
-      setProductos(prev => [...prev, prod])
-    } else {
-      setProductos(prev => prev.map(p => p.id === prod.id ? prod : p))
-    }
-    setModalProd(null)
-    addToast(esNuevo ? `Producto "${prod.nombre}" creado` : `"${prod.nombre}" actualizado`, 'success')
-  }
-
   const onCategoriaGuardada = (cat, esNuevo) => {
     if (esNuevo) {
       setCategorias(prev => [...prev, cat])
@@ -301,15 +433,21 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
     addToast(esNuevo ? `Categoría "${cat.nombre}" creada` : `"${cat.nombre}" actualizada`, 'success')
   }
 
-  const cambiarTab = (t) => { setTab(t); setBusqueda(''); setFiltroCat(''); setFiltroAct('all') }
+  const cambiarTab = (t) => {
+    setTab(t)
+    setBusqueda('')
+    setFiltroCat('')
+    setFiltroAct('all')
+    setProductoEdicion(null)
+  }
 
   const totalActivos = productos.filter(p => p.activo).length
 
-  // ── Render ─────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────
   return (
     <div className="cat-root">
 
-      {/* ── Header ── */}
+      {/* ── Header con tabs internos ── */}
       <div className="cat-header">
         <div className="cat-header-left">
           <h1 className="cat-titulo">
@@ -324,11 +462,7 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
             </span>
           )}
         </div>
-        <div className="cat-tabs" style={{ display:'flex', alignItems:'center', gap:4 }}>
-          {onVolver && (
-            <button onClick={onVolver} title="Volver al dashboard"
-              style={{ background:'none', border:'none', color:'#666', fontSize:'1.1rem', cursor:'pointer', padding:'4px 8px', borderRadius:4, marginRight:8 }}>✕</button>
-          )}
+        <div className="cat-tabs">
           <button
             className={`cat-tab${tab === 'productos' ? ' cat-tab-act' : ''}`}
             onClick={() => cambiarTab('productos')}
@@ -346,77 +480,100 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
 
       {/* ── Toolbar ── */}
       <div className="cat-toolbar">
+        {tab === 'productos' && (
+          <select
+            className="cat-filtro-select"
+            value={filtroCat}
+            onChange={e => setFiltroCat(e.target.value)}
+          >
+            <option value="">Todos los grupos</option>
+            {categorias.map(c => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
+        )}
+
         <input
           className="cat-busqueda"
-          placeholder={`Buscar ${tab === 'productos' ? 'productos' : 'categorías'}…`}
+          placeholder={`Buscar ${tab === 'productos' ? 'por nombre, grupo o precio' : 'categorías'}…`}
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
         />
 
         {tab === 'productos' && (
-          <>
-            <select
-              className="cat-filtro-select"
-              value={filtroCat}
-              onChange={e => setFiltroCat(e.target.value)}
-            >
-              <option value="">Todas las categorías</option>
-              {categorias.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
-            </select>
-            <select
-              className="cat-filtro-select"
-              value={filtroAct}
-              onChange={e => setFiltroAct(e.target.value)}
-            >
-              <option value="all">Todos los estados</option>
-              <option value="true">Activos</option>
-              <option value="false">Inactivos</option>
-            </select>
-          </>
+          <select
+            className="cat-filtro-select"
+            value={filtroAct}
+            onChange={e => setFiltroAct(e.target.value)}
+          >
+            <option value="all">Todos los estados</option>
+            <option value="true">Activos</option>
+            <option value="false">Inactivos</option>
+          </select>
         )}
 
         <button
           className="cat-btn-nuevo ripple"
-          onClick={() => tab === 'productos' ? setModalProd({ producto: null }) : setModalCat({ categoria: null })}
+          onClick={() => {
+            if (tab === 'productos') {
+              setProductoEdicion({})
+            } else {
+              setModalCat({ categoria: null })
+            }
+          }}
         >
           + {tab === 'productos' ? 'NUEVO PRODUCTO' : 'NUEVA CATEGORÍA'}
         </button>
       </div>
 
       {/* ── Body ── */}
-      <div className="cat-body">
-        {tab === 'productos' ? (
-          <TablaProductos
-            productos={prodsFiltrados}
-            loading={loading}
-            onEditar={p => setModalProd({ producto: p })}
-            onDesactivar={handleDesactivar}
-            onActivar={handleActivar}
-          />
-        ) : (
+      {tab === 'productos' ? (
+        <div className="cat-split">
+          {/* Lista izquierda */}
+          <div className="cat-lista">
+            <TablaProductosLista
+              productos={prodsFiltrados}
+              loading={loading}
+              selectedId={productoEdicion?.id ?? null}
+              onSeleccionar={(p) => setProductoEdicion(p)}
+            />
+          </div>
+
+          {/* Editor derecho */}
+          <div className="cat-editor-panel">
+            {productoEdicion !== null ? (
+              <EditorProducto
+                key={productoEdicion?.id ?? 'nuevo'}
+                producto={productoEdicion?.id ? productoEdicion : null}
+                categorias={categorias.filter(c => c.activa)}
+                auth={auth}
+                onGuardado={onProductoGuardado}
+                onCancelar={() => setProductoEdicion(null)}
+                onError={msg => addToast(msg, 'error')}
+              />
+            ) : (
+              <div className="cat-editor-vacio">
+                <span className="cat-editor-vacio-ico">📦</span>
+                <p className="cat-editor-vacio-msg">
+                  Haz clic en un producto<br />para editar, o presiona<br />
+                  <strong>+ Nuevo Producto</strong>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="cat-body">
           <TablaCategorias
             categorias={catsFiltradas}
             loading={loading}
             onEditar={c => setModalCat({ categoria: c })}
             onEliminar={handleEliminarCat}
           />
-        )}
-      </div>
-
-      {/* ── Modales ── */}
-      {modalProd && (
-        <ProductoModal
-          auth={auth}
-          producto={modalProd.producto}
-          categorias={categorias.filter(c => c.activa)}
-          onGuardado={onProductoGuardado}
-          onCerrar={() => setModalProd(null)}
-          onError={msg => addToast(msg, 'error')}
-        />
+        </div>
       )}
 
+      {/* ── Modal categoría ── */}
       {modalCat && (
         <CategoriaModal
           auth={auth}
@@ -436,14 +593,13 @@ export default function CatalogoProductosScreen({ auth, onVolver }) {
               Se eliminará <strong>"{confirmarElimCat.nombre}"</strong>. Esta acción no se puede deshacer.
             </p>
             <div className="cat-confirm-btns">
-              <button className="cat-confirm-no"  onClick={() => setConfirmarElimCat(null)}>Cancelar</button>
-              <button className="cat-confirm-si"  onClick={confirmarYEliminarCat}>Sí, eliminar</button>
+              <button className="cat-confirm-no" onClick={() => setConfirmarElimCat(null)}>Cancelar</button>
+              <button className="cat-confirm-si" onClick={confirmarYEliminarCat}>Sí, eliminar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Toasts ── */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   )

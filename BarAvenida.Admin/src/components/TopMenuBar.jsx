@@ -6,129 +6,123 @@ import AlertasDrawer from './AlertasDrawer'
 import logoBar from '../assets/logo-bar-avenida.jpeg'
 import './TopMenuBar.css'
 
-const MENUS = [
+const SECCIONES = [
   {
-    label: 'CONFIGURACIÓN',
-    items: [
-      { label: 'Configuración general', screen: 'config-general' },
-      { label: 'Áreas de venta',        screen: 'config-areas-venta' },
-      { label: 'Formas de pago',        screen: 'config-formas-pago' },
-      { label: 'Folio de ticket',       screen: 'config-folios' },
+    id: 'pos',
+    label: 'PUNTO DE VENTA',
+    icon: '🍺',
+    tabs: [
+      { id: 'pos-mesas',       label: '🍽️ Mesas',              screen: 'pos-mesas' },
+      { id: 'pos-cobrar',      label: '💵 Cuentas por cobrar', screen: 'cuentas-por-cobrar' },
+      { id: 'pos-solicitudes', label: '🔔 Solicitudes',        screen: 'solicitudes-pendientes' },
+      {
+        id: 'pos-caja', label: '💰 Caja', hub: true,
+        sub: [
+          { label: 'Apertura turno',   screen: 'caja-apertura-turno', shortcut: 'F2' },
+          { label: 'Corte X',          screen: 'caja-corte-x',        shortcut: 'F6' },
+          { label: 'Corte Z',          screen: 'caja-corte-z' },
+          { label: 'Retiros',          screen: 'caja-retiros' },
+          { label: 'Histórico cajón',  screen: 'historial-cajon' },
+          { label: 'Histórico cortes', screen: 'caja-historico-cortes' },
+          { label: 'Incidentes',       screen: 'caja-incidentes' },
+        ],
+      },
     ],
   },
   {
-    label: 'CATÁLOGOS',
-    items: [
-      { label: 'Productos para venta',    screen: 'cat-productos' },
-      { label: '🎯 Reglas de sugerencias', screen: 'cat-reglas-crosssell' },
-      { label: 'Mesas',                   screen: 'cat-mesas' },
-    ],
-  },
-  {
-    label: 'CAJA',
-    items: [
-      { label: 'Apertura de turno',                       screen: 'caja-apertura-turno', shortcut: 'F2' },
-      { label: 'Cierre diario',                           screen: 'caja-cierre-diario',  shortcut: 'F3' },
-      { label: 'Registrar/modificar propina en efectivo', screen: 'caja-propinas' },
-      { label: 'Pagar propinas de meseros',               screen: 'caja-pagar-propinas' },
-      { label: 'Retiros y depósitos de efectivo',         screen: 'caja-retiros' },
-      { label: 'Corte de caja X (parcial)',               screen: 'caja-corte-x',        shortcut: 'F6' },
-      { label: 'Corte de caja Z (cierre)',                screen: 'caja-corte-z' },
-      { label: 'Histórico de cortes',                     screen: 'caja-historico-cortes' },
-      { label: 'Historial de cajón',                      screen: 'historial-cajon' },
-      { label: 'Histórico de incidentes',                 screen: 'caja-incidentes' },
-      { label: 'Abrir cajón de dinero',                   placeholder: true },
-    ],
-  },
-  {
-    label: 'VENTAS',
-    items: [
-      { label: 'Servicio COMEDOR',          screen: 'ventas-comedor',          shortcut: 'F7' },
-      { label: 'Servicio RÁPIDO',           screen: 'ventas-rapido',           shortcut: 'F9' },
-      { label: 'Folios de comandas',        screen: 'ventas-folios' },
-      { label: 'Facturación',               screen: 'ventas-facturacion' },
-      { label: '💵 Cuentas por cobrar',     screen: 'cuentas-por-cobrar' },
-      { label: '🔔 Solicitudes pendientes', screen: 'solicitudes-pendientes' },
-    ],
-  },
-  {
-    label: 'CONSULTAS',
-    items: [
-      { label: 'Histórico de cuentas', screen: 'cons-cuentas' },
-      { label: 'Histórico de cortes',  screen: 'caja-historico-cortes' },
-    ],
-  },
-  {
-    label: 'REPORTES',
-    items: [
-      { label: 'Dashboard vivo',         screen: 'rep-dashboard-live' },
-      { label: 'Informe del dia',        screen: 'rep-informe-dia' },
-      { label: 'Resumen de ventas',      screen: 'rep-ventas-resumen' },
-      { label: 'Productos más vendidos', screen: 'rep-productos-top' },
-      { label: 'Ventas por mesero',      screen: 'rep-ventas-mesera' },
-      { label: 'Ventas por categoría',   screen: 'rep-categorias' },
-      { label: 'Ventas por hora',        screen: 'rep-ventas-hora' },
-      { label: 'Métodos de pago',        screen: 'rep-metodos-pago' },
-    ],
-  },
-  {
-    label: 'SEGURIDAD',
-    items: [
-      { label: 'Usuarios',              screen: 'usuarios' },
-      { label: 'Perfiles de seguridad', screen: 'seg-perfiles' },
-      { label: 'Cambiar contraseña',    screen: 'seg-contrasena' },
-      { label: 'Cambio de usuario',     screen: 'seg-cambio-usuario', shortcut: 'CTRL+U' },
-    ],
-  },
-  {
-    label: 'MANTENIMIENTO',
-    items: [
-      { label: 'Base de datos',                     screen: 'mant-bd' },
-      { label: 'Herramientas para administradores', screen: 'mant-admin' },
-    ],
-  },
-  {
-    label: 'AYUDA',
-    items: [
-      { label: 'Soporte técnico',         screen: 'ayuda-soporte' },
-      { label: 'Información del sistema', screen: 'ayuda-info' },
-      { label: 'Acerca de',               screen: 'ayuda-acerca' },
+    id: 'admin',
+    label: 'ADMINISTRACIÓN',
+    icon: '⚙️',
+    tabs: [
+      { id: 'adm-productos', label: '📦 Productos',   screen: 'cat-productos' },
+      { id: 'adm-mesas',     label: '🪑 Mesas',       screen: 'cat-mesas' },
+      { id: 'adm-areas',     label: '🗺️ Áreas',       screen: 'config-areas-venta' },
+      { id: 'adm-reglas',    label: '🎯 Sugerencias', screen: 'cat-reglas-crosssell' },
+      {
+        id: 'adm-reportes', label: '📊 Reportes', hub: true,
+        sub: [
+          { label: 'Dashboard vivo',    screen: 'rep-dashboard-live' },
+          { label: 'Informe del día',   screen: 'rep-informe-dia' },
+          { label: 'Resumen ventas',    screen: 'rep-ventas-resumen' },
+          { label: 'Productos top',     screen: 'rep-productos-top' },
+          { label: 'Ventas por mesera', screen: 'rep-ventas-mesera' },
+          { label: 'Ventas categoría',  screen: 'rep-categorias' },
+          { label: 'Ventas por hora',   screen: 'rep-ventas-hora' },
+          { label: 'Métodos de pago',   screen: 'rep-metodos-pago' },
+        ],
+      },
+      { id: 'adm-usuarios', label: '🛡️ Usuarios', screen: 'usuarios' },
+      {
+        id: 'adm-config', label: '⚙️ Configuración', hub: true,
+        sub: [
+          { label: 'General',        screen: 'config-general' },
+          { label: 'Formas de pago', screen: 'config-formas-pago' },
+          { label: 'Folio ticket',   screen: 'config-folios' },
+          { label: 'Cambiar PIN',    screen: 'seg-contrasena' },
+        ],
+      },
     ],
   },
 ]
+
+const LS_SECCION  = 'ba_admin_seccion'
+const LS_PANTALLA = 'ba_admin_ultima_pantalla'
 
 function fmtClock(d) {
   return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
-  const [openMenu, setOpenMenu]               = useState(null)
+function findSeccionForScreen(screen) {
+  for (const s of SECCIONES) {
+    for (const tab of s.tabs) {
+      if (tab.hub) {
+        if (tab.sub.some(sub => sub.screen === screen)) return s.id
+      } else {
+        if (tab.screen === screen) return s.id
+      }
+    }
+  }
+  return null
+}
+
+export default function TopMenuBar({ auth, pantallaActual, onIrPantalla, onLogout }) {
+  const [seccionActiva, setSeccionActiva] = useState(
+    () => localStorage.getItem(LS_SECCION) || 'pos'
+  )
+  const [openHub, setOpenHub]                 = useState(null)
   const clock                                  = useServerClock()
   const [pendientesCount, setPendientesCount] = useState(0)
-  // PROMPT C.2 — Alertas activas de caja
   const [alertas, setAlertas]                 = useState([])
   const [drawerAbierto, setDrawerAbierto]     = useState(false)
   const barRef                                = useRef(null)
   const connRef                               = useRef(null)
 
-  // ── Contador de solicitudes pendientes (PROMPT B3) ──
+  const seccionData = SECCIONES.find(s => s.id === seccionActiva) || SECCIONES[0]
+
+  // Auto-switch section when pantallaActual changes (e.g. via keyboard shortcut)
+  useEffect(() => {
+    if (!pantallaActual) return
+    const found = findSeccionForScreen(pantallaActual)
+    if (found && found !== seccionActiva) {
+      setSeccionActiva(found)
+      localStorage.setItem(LS_SECCION, found)
+    }
+  }, [pantallaActual, seccionActiva])
+
+  // ── Contador de solicitudes pendientes ──
   const cargarPendientes = useCallback(async () => {
     if (!auth?.token) return
     try {
       const data = await api.getSolicitudesPendientes(auth.token)
       setPendientesCount(Array.isArray(data) ? data.length : 0)
-    } catch {
-      // Silencioso: el badge no debe romper el header si la API falla
-    }
+    } catch {}
   }, [auth?.token])
 
-  useEffect(() => {
-    cargarPendientes()
-  }, [cargarPendientes])
+  useEffect(() => { cargarPendientes() }, [cargarPendientes])
 
+  // ── SignalR ──
   useEffect(() => {
     if (!auth?.token) return
-
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(`${API_URL}/barhub`, { accessTokenFactory: () => auth.token })
       .withAutomaticReconnect([0, 2000, 5000, 15000])
@@ -137,8 +131,6 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
 
     conn.on('SolicitudCancelacion', () => cargarPendientes())
     conn.on('SolicitudResuelta',    () => cargarPendientes())
-
-    // PROMPT C.2 — recibir alertas activas de caja
     conn.on('AlertaCaja', (alerta) => {
       if (!alerta?.id) return
       setAlertas(prev => prev.some(a => a.id === alerta.id) ? prev : [alerta, ...prev])
@@ -152,36 +144,33 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
     return () => { conn.stop() }
   }, [auth?.token, cargarPendientes])
 
-  // PROMPT C.2 — handlers del drawer de alertas
-  const descartarAlerta = useCallback((id) => {
-    setAlertas(prev => prev.filter(a => a.id !== id))
-  }, [])
+  const descartarAlerta = useCallback((id) => setAlertas(prev => prev.filter(a => a.id !== id)), [])
   const descartarTodas  = useCallback(() => setAlertas([]), [])
 
+  // Close hub dropdown on outside click
   useEffect(() => {
-    if (!openMenu) return
+    if (!openHub) return
     const handler = (e) => {
-      if (barRef.current && !barRef.current.contains(e.target)) {
-        setOpenMenu(null)
-      }
+      if (barRef.current && !barRef.current.contains(e.target)) setOpenHub(null)
     }
-    const t = setTimeout(() => {
-      document.addEventListener('click', handler)
-    }, 0)
-    return () => {
-      clearTimeout(t)
-      document.removeEventListener('click', handler)
-    }
-  }, [openMenu])
+    const t = setTimeout(() => document.addEventListener('click', handler), 0)
+    return () => { clearTimeout(t); document.removeEventListener('click', handler) }
+  }, [openHub])
 
+  // Keyboard shortcuts
   const handleKeyNav = useCallback((e) => {
-    if (e.key === 'Escape') { setOpenMenu(null); return }
+    if (e.key === 'Escape') { setOpenHub(null); return }
 
-    const fnKeys = { F2: 'caja-apertura-turno', F3: 'caja-cierre-diario', F6: 'caja-corte-x', F7: 'ventas-comedor', F9: 'ventas-rapido' }
+    // Atajos de teclado del Admin v2 (alineados con el menu nuevo)
+    const fnKeys = {
+      F2: 'caja-apertura-turno', // PUNTO DE VENTA → Caja → Apertura turno
+      F3: 'caja-corte-z',        // PUNTO DE VENTA → Caja → Corte Z (cierre diario)
+      F6: 'caja-corte-x',        // PUNTO DE VENTA → Caja → Corte X (parcial)
+    }
     if (fnKeys[e.key]) {
       e.preventDefault()
       onIrPantalla(fnKeys[e.key], e.key)
-      setOpenMenu(null)
+      setOpenHub(null)
       return
     }
     if (e.key === 'F8') { e.preventDefault(); return }
@@ -189,7 +178,7 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
       e.preventDefault()
       onIrPantalla('seg-cambio-usuario', 'Cambio de usuario')
-      setOpenMenu(null)
+      setOpenHub(null)
     }
   }, [onIrPantalla])
 
@@ -198,84 +187,129 @@ export default function TopMenuBar({ auth, onIrPantalla, onLogout }) {
     return () => document.removeEventListener('keydown', handleKeyNav)
   }, [handleKeyNav])
 
-  const toggleMenu = (label) => setOpenMenu(prev => prev === label ? null : label)
+  const cambiarSeccion = (id) => {
+    setSeccionActiva(id)
+    localStorage.setItem(LS_SECCION, id)
+    setOpenHub(null)
+    const seccion = SECCIONES.find(s => s.id === id)
+    if (!seccion) return
+    const primerTab = seccion.tabs[0]
+    if (primerTab.hub) {
+      const sub = primerTab.sub[0]
+      onIrPantalla(sub.screen, sub.label)
+      localStorage.setItem(LS_PANTALLA, sub.screen)
+    } else {
+      onIrPantalla(primerTab.screen, primerTab.label)
+      localStorage.setItem(LS_PANTALLA, primerTab.screen)
+    }
+  }
 
-  const handleItemClick = (item) => {
-    setOpenMenu(null)
-    if (item.placeholder) return
-    if (item.screen) onIrPantalla(item.screen, item.label)
+  const handleTabClick = (tab) => {
+    if (tab.hub) {
+      setOpenHub(prev => prev === tab.id ? null : tab.id)
+    } else {
+      setOpenHub(null)
+      onIrPantalla(tab.screen, tab.label)
+      localStorage.setItem(LS_PANTALLA, tab.screen)
+    }
+  }
+
+  const handleSubClick = (sub) => {
+    setOpenHub(null)
+    onIrPantalla(sub.screen, sub.label)
+    localStorage.setItem(LS_PANTALLA, sub.screen)
+  }
+
+  const isTabActive = (tab) => {
+    if (tab.hub) return tab.sub.some(s => s.screen === pantallaActual)
+    return tab.screen === pantallaActual
   }
 
   return (
     <header className="top-menu-bar" ref={barRef}>
-      <div className="tmb-brand">
-        <img src={logoBar} className="tmb-logo" alt="Bar Avenida" />
-        <span className="tmb-title">BAR AVENIDA <span className="tmb-sep">·</span> ADMIN</span>
+
+      {/* ── Row 1: Header ── */}
+      <div className="tmb-header-row">
+        <div className="tmb-brand">
+          <img src={logoBar} className="tmb-logo" alt="Bar Avenida" />
+          <span className="tmb-title">BAR AVENIDA <span className="tmb-sep">·</span> ADMIN</span>
+        </div>
+
+        <div className="tmb-right">
+          {alertas.length > 0 && (
+            <button
+              className="tmb-alerta-btn"
+              onClick={() => setDrawerAbierto(true)}
+              title={`${alertas.length} alerta${alertas.length !== 1 ? 's' : ''} de caja`}
+            >
+              <span className="tmb-alerta-ico">⚠</span>
+              <span className="tmb-alerta-badge">{alertas.length}</span>
+            </button>
+          )}
+          <span className="tmb-online"><span className="tmb-dot">●</span> EN LÍNEA</span>
+          <span className="tmb-clock">{fmtClock(clock)}</span>
+          <span className="tmb-user">{auth?.nombre}</span>
+          <button className="tmb-logout" onClick={onLogout}>SALIR</button>
+        </div>
       </div>
 
-      <nav className="tmb-nav">
-        {MENUS.map((menu) => {
-          const showBadge = menu.label === 'VENTAS' && pendientesCount > 0
+      {/* ── Row 2: Section selector ── */}
+      <div className="seccion-selector">
+        {SECCIONES.map(s => (
+          <button
+            key={s.id}
+            className={`seccion-btn${seccionActiva === s.id ? ' activa' : ''}`}
+            onClick={() => cambiarSeccion(s.id)}
+          >
+            <span className="seccion-icon">{s.icon}</span>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Row 3: Sub-tabs of active section ── */}
+      <div className="sub-tabs">
+        {seccionData.tabs.map(tab => {
+          const isActive  = isTabActive(tab)
+          const showBadge = tab.id === 'pos-solicitudes' && pendientesCount > 0
           return (
-            <div
-              key={menu.label}
-              className={`tmb-menu-wrap${openMenu === menu.label ? ' tmb-menu-open' : ''}`}
-            >
-              <button className="tmb-menu-btn" onClick={() => toggleMenu(menu.label)}>
-                {menu.label}
+            <div key={tab.id} className="sub-tab-wrap">
+              <button
+                className={`sub-tab${isActive ? ' activa' : ''}${tab.hub ? ' hub' : ''}`}
+                onClick={() => handleTabClick(tab)}
+              >
+                {tab.label}
                 {showBadge && (
-                  <span className="tmb-badge" title={`${pendientesCount} solicitud${pendientesCount !== 1 ? 'es' : ''} pendiente${pendientesCount !== 1 ? 's' : ''}`}>
+                  <span
+                    className="tmb-badge"
+                    title={`${pendientesCount} solicitud${pendientesCount !== 1 ? 'es' : ''} pendiente${pendientesCount !== 1 ? 's' : ''}`}
+                  >
                     {pendientesCount}
                   </span>
                 )}
+                {tab.hub && <span className="sub-tab-arrow">▾</span>}
               </button>
 
-              {openMenu === menu.label && (
-                <div className="tmb-dropdown">
-                  {menu.items.map((item, idx) => {
-                    const itemBadge = item.screen === 'solicitudes-pendientes' && pendientesCount > 0
-                    return (
-                      <button
-                        key={idx}
-                        className={`tmb-drop-item${item.placeholder ? ' tmb-item-dim' : ''}`}
-                        style={{ animationDelay: `${idx * 30}ms` }}
-                        onClick={() => handleItemClick(item)}
-                        title={item.placeholder ? 'Próximamente' : undefined}
-                      >
-                        <span className="tmb-item-label">
-                          {item.label}
-                          {itemBadge && <span className="tmb-item-badge">{pendientesCount}</span>}
-                        </span>
-                        {item.shortcut && <span className="tmb-item-sc">{item.shortcut}</span>}
-                      </button>
-                    )
-                  })}
+              {tab.hub && openHub === tab.id && (
+                <div className="sub-tab-dropdown">
+                  {tab.sub.map((sub, idx) => (
+                    <button
+                      key={idx}
+                      className="sub-tab-dropdown-item"
+                      onClick={() => handleSubClick(sub)}
+                    >
+                      <span>{sub.label}</span>
+                      {sub.shortcut && <span className="sub-tab-sc">{sub.shortcut}</span>}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           )
         })}
-      </nav>
-
-      <div className="tmb-right">
-        {/* PROMPT C.2 — Botón de alertas de caja con badge */}
-        {alertas.length > 0 && (
-          <button
-            className="tmb-alerta-btn"
-            onClick={() => setDrawerAbierto(true)}
-            title={`${alertas.length} alerta${alertas.length !== 1 ? 's' : ''} de caja`}
-          >
-            <span className="tmb-alerta-ico">⚠</span>
-            <span className="tmb-alerta-badge">{alertas.length}</span>
-          </button>
-        )}
-        <span className="tmb-online"><span className="tmb-dot">●</span> EN LÍNEA</span>
-        <span className="tmb-clock">{fmtClock(clock)}</span>
-        <span className="tmb-user">{auth?.nombre}</span>
-        <button className="tmb-logout" onClick={onLogout}>SALIR</button>
       </div>
 
-      {/* PROMPT C.2 — Drawer lateral de alertas */}
+      {/* ── Drawer lateral de alertas ── */}
       {drawerAbierto && (
         <AlertasDrawer
           alertas={alertas}

@@ -19,9 +19,11 @@ if (-not $esAdmin) {
     exit 1
 }
 
-$AdminDir    = "F:\BarAvenida\BarAvenida.Admin"
-$ApiDir      = "F:\BarAvenida\BarAvenida.API"
-$WwwrootApi  = Join-Path $ApiDir "wwwroot\admin"
+$AdminDir      = "F:\BarAvenida\BarAvenida.Admin"
+$ApiDir        = "F:\BarAvenida\BarAvenida.API"
+$WwwrootApi    = Join-Path $ApiDir "wwwroot\admin"
+$ProdServerWww = "C:\Program Files\Bar Avenida\Server\wwwroot"
+$tieneProd     = Test-Path "C:\Program Files\Bar Avenida\Server\BarAvenida.API.exe"
 
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Cyan
@@ -50,6 +52,19 @@ if ($LASTEXITCODE -ne 0) {
 Pop-Location
 Write-Host "[OK] Admin compilado, $((Get-ChildItem $WwwrootApi -Recurse -File).Count) archivos en $WwwrootApi" -ForegroundColor Green
 Write-Host ""
+
+# 2.5 Mirror a Program Files (donde corre el servicio Windows real)
+if ($tieneProd) {
+    Write-Host "[2.5/3] Copiando wwwroot/admin a Program Files..." -ForegroundColor Yellow
+    Stop-Service -Name "BarAvenidaAPI" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+    $dstProd = Join-Path $ProdServerWww "admin"
+    if (Test-Path $dstProd) { Remove-Item -Recurse -Force $dstProd }
+    New-Item -ItemType Directory -Path $dstProd -Force | Out-Null
+    Copy-Item -Recurse -Force "$WwwrootApi\*" $dstProd
+    Write-Host "[OK] Mirror a Program Files completo" -ForegroundColor Green
+    Write-Host ""
+}
 
 # 3. Republicar backend + reiniciar servicio
 Write-Host "[3/3] Republicando backend y reiniciando servicio..." -ForegroundColor Yellow

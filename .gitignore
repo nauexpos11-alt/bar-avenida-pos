@@ -65,3 +65,5 @@ TestResults/
 # Build outputs de Admin y KDS (vite escribe directo a wwwroot/)
 BarAvenida.API/wwwroot/admin/
 BarAvenida.API/wwwroot/kds/
+# wwwroot/tablet (build output del Tablet PWA)
+BarAvenida.API/wwwroot/tablet/

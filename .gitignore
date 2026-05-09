@@ -61,3 +61,7 @@ TestResults/
 # IDE
 .idea/
 *.iml
+
+# Build outputs de Admin y KDS (vite escribe directo a wwwroot/)
+BarAvenida.API/wwwroot/admin/
+BarAvenida.API/wwwroot/kds/

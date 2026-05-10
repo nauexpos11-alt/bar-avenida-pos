@@ -360,3 +360,196 @@ Spec: `specs/fixes_admin_round_1.md` + `specs/fixes_admin_round_2.md`. Auditados
 - **PowerShell + `gh` con stderr disparan `ErrorActionPreference="Stop"`** falsamente. Hay que envolver con `$ErrorActionPreference = "Continue"` cuando el comando puede escribir a stderr sin error real (ej: `gh auth status` cuando no hay sesión).
 - **Pipeline Cowork + Claude Code rinde excelente cuando hay specs detallados.** Ronda 1 (7 fixes) + Ronda 2 (3 fixes) ejecutados sin necesidad de iteración, validados visualmente con Chrome MCP en una sola pasada.
 - **El servicio Windows corre como `NT AUTHORITY\SYSTEM`**, no como el usuario que lo instaló. Hay que dar permisos explícitos en SQL Server o el servicio se traba con error 4060 al consultar BD.
+
+### Sesión Cowork, Mayo 9, 2026 — Rediseño Soft Restaurant (B1-B6)
+Coronado mandó 17 capturas del POS comercial Soft Restaurant 8.1.0 para inspirar
+el rediseño del Admin. Cowork generó el spec maestro y 6 specs hijos.
+Claude Code implementó todo en sesión maratón.
+
+**Specs nuevos en `specs/`:**
+- `redesign_master.md` — filosofía + 6 bloques + dependencias
+- `redesign_b1_centro_operacion.md` (~90 min)
+- `redesign_b2_servicio_rapido_v2.md` (~60 min)
+- `redesign_b3_monitor_ventas.md` (~60 min)
+- `redesign_b4_historico_cuentas.md` (~60 min)
+- `redesign_b5_folio_orden.md` (~30 min, CRITICO)
+- `redesign_b6_dashboard_pov.md` (~30 min)
+
+**Implementado:**
+- **B1 Centro de Operación** — `CentroOperacionScreen.jsx/css`. Vista unificada
+  de cuentas con split panel, filtros con persistencia localStorage, endpoints
+  `GET activas / editar-info / mover-area`, modales `EditarInfoCuentaModal` y
+  `MoverAreaModal`, SignalR auto-refresh. Migración `AgregarAreaACuenta`.
+- **B2 Servicio Rápido v2** — `BarraRapidaAdminScreen.jsx/css` con tabs categorías
+  + grid productos + carrito inline + ENVIAR ORDEN AL BAR. Shortcut F9 en `TopMenuBar`.
+- **B3 Monitor de Ventas** — `MonitorVentasController.cs` con períodos
+  hoy/ayer/semana/mes/turno, desglose por tipo producto / servicio / área / categoría
+  con barras horizontales. `MonitorVentasScreen.jsx/css`.
+- **B4 Histórico de Cuentas** — refactor split panel con filtros. Modales nuevos:
+  `CancelarCobradaModal` (motivo mín 10 chars) y `ReabrirCuentaModal` (límite 30 min).
+  Endpoints `POST cancelar-cobrada` y `reabrir`. `ConsultaCuentasScreen.jsx/css`.
+- **B5 Folio = Orden Mesera (CRÍTICO)** — `Orden.NumeroOrden` agregado al modelo.
+  Migración `20260509082629_OrdenNumeroOrden` con backfill `ROW_NUMBER() PARTITION
+  BY CuentaId`. `TicketService.GenerarTicketOrden` con "ORDEN #N", fire-and-forget
+  print. KDS `MesaCard.jsx/css` muestra "ORDEN #N" grande dorado 1.55rem. Tablet
+  `ResumenCuentaScreen` agrupa productos por orden con header HH:MM.
+- **B6 Dashboard PoV** — `PuntoVentaHomeScreen.jsx/css` con 4 botones gigantes live
+  (Centro / Barra / Caja / Reportes). Logo del header navega a `pos-home`. Default
+  post-login cambió a `pos-home`.
+
+**Migraciones nuevas:**
+- `20260508074521_CuentaMesaIdNullable` — Cuenta.MesaId pasó a nullable (para
+  cuentas sin mesa, ej. servicio rápido en barra).
+- `20260508103122_AgregarAreaACuenta` — Cuenta.Area agregado para B1 (Salón, Terraza,
+  Barra, etc.).
+- `20260509082629_OrdenNumeroOrden` — Orden.NumeroOrden con backfill por cuenta.
+
+**Bug crítico de deploy descubierto y arreglado:** `dotnet publish` escribe a
+`bin/Release/net8.0/publish/` pero el servicio Windows `BarAvenidaAPI` corre desde
+`C:\Program Files\Bar Avenida\Server\`. Sin copia explícita los cambios del backend
+nunca llegaban a producción — B5 quedó deployado en frontend pero el backend no
+emitía `numeroOrden`. Arreglado en `Scripts/deploy-todo.ps1`, `deploy-admin.ps1` y
+`deploy-kds.ps1` con `robocopy` que excluye `appsettings.json`, `wwwroot/` y `Logs/`.
+
+**Builds:** Backend 0/0, Admin 0/0, KDS 0/0, Tablet 0/0.
+
+**Validación E2E:**
+- B2 con Chrome MCP (Cowork)
+- B5 por API + visual del KDS
+- B1, B3, B4, B6 por API
+
+**Versiones después de Mayo 9:**
+- BarAvenida.Desktop: 1.1.1
+- BarAvenida.KDS.Desktop: 1.1.0
+- BarAvenida.Admin (vite): 0.0.0 (sin bump)
+- BarAvenida.Tablet (vite): 0.0.0 (sin bump)
+
+**Commits:** 5 commits + push a `main`. Script de rescate
+`Scripts/commit-trabajo-mayo-9-rescate.ps1` quedó en repo porque el script original
+`commit-trabajo-mayo-9.ps1` murió por `$ErrorActionPreference="Stop"` al ver
+stderr de git (mismo bug de Mayo 7-8 con `gh`).
+
+### Sesión Cowork, Mayo 10, 2026 — Audit completo del sistema
+**Pedido de Coronado:** "checa si todo funciona perfecto y si encuentras errores corrígelos".
+
+**Estado real del código vs las instrucciones del proyecto:**
+Las `<project_instructions>` del system prompt afirman cosas que NO están en el
+código del repo. Esto pasó porque las instrucciones se actualizaron con planes
+que aún no se implementaron. Lo que el system prompt dice y la realidad:
+
+| System prompt afirma                              | Realidad del código                                |
+|---------------------------------------------------|----------------------------------------------------|
+| Versión deployada 1.3.0                           | Desktop 1.1.1, KDS 1.1.0, Admin/Tablet sin bump   |
+| Auto-update funcional (electron-updater)          | No instalado en ningún package.json                |
+| Round 1 seguridad (lockout, auditoría, rate limit, headers, bind LAN) | Nada de eso en el código              |
+| Round 2 (HTTPS LAN :7443, PinValidator, JWT 8h, refresh, CORS estricto, PIN destructivos, AES-256 backups) | Solo HTTP:7000, CORS abierto (`_ => true`), JWT 12h sin refresh, sin PinValidator |
+| Servicio Windows + cert HTTPS generado            | Servicio Windows sí, cert HTTPS no                 |
+| Backups AES-256                                   | Script `backup-baravenida.ps1` no usa cifrado      |
+| Tablet PWA instalable                             | Sí, real                                           |
+| Admin/KDS como .exe Electron con auto-detect      | Sí, real                                           |
+
+`Program.cs` tiene `app.UseHttpsRedirection()` pero ningún endpoint HTTPS
+configurado, así que la línea queda inerte (middleware loguea warning y deja
+pasar HTTP). Probable resto de un intento previo de Round 2.
+
+**Hallazgos secundarios:**
+- Carpeta huérfana `E:\bar-avenida-pos\Bar Avenida\BarAvenida.Tablet\public\` con
+  `icon-192.png` y `icon-512.png` duplicados. Los originales correctos viven en
+  `BarAvenida.Tablet\public\` sin el folder extra. La basura se generó al copiar mal.
+- `appsettings.json` connection string apunta a `localhost\MSSQLSERVER01` —
+  no a LocalDB. Coronado debe tener esa instancia montada.
+- `Asistente.Claude.ApiKey` vacía en `appsettings.json` → la API key vive en User
+  Secrets (UserSecretsId `baravenida-api-secrets-2026`) y eso está OK; pero si
+  no está ahí, el botón IA cae a Mock automáticamente.
+- AuthController: sin lockout, sin auditoría de intentos fallidos, sin rate limit.
+  Confirmado: la lógica de seguridad Round 1+2 nunca se implementó.
+
+**Acciones tomadas en esta sesión:**
+1. Actualizado este CLAUDE.md con la sesión Mayo 9 (rediseño B1-B6) que faltaba.
+2. Generado script `Scripts/cleanup-carpetas-huerfanas.ps1` para que Coronado
+   borre la carpeta basura `E:\bar-avenida-pos\Bar Avenida\`.
+3. Documentada la discrepancia entre system prompt y código para que las
+   próximas sesiones sepan qué hay y qué falta de verdad.
+
+**Pendientes que requieren decisión de Coronado:**
+- ¿Implementar Round 1 + Round 2 de seguridad realmente? (lockout, rate limit,
+  audit, HTTPS LAN, JWT con refresh, headers seguros, PinValidator).
+- ¿Cifrar los backups con AES-256?
+- ¿Cambiar PIN admin de 1234?
+- ¿Completar datos del bar en Admin (RFC, dirección, teléfono)?
+- ¿Actualizar las `<project_instructions>` para que reflejen el estado real?
+
+### Sesión Cowork, Mayo 10, 2026 — Pipeline Release + Auto-Update (continuación)
+**Meta del owner:** "Llegar al bar, instalar en otra compu con un clic, y desde
+casa mandar actualizaciones."
+
+**Solución implementada — flujo "Llave en Mano":**
+
+1. **Distribución vía GitHub Releases.** Repo `nauexpos11-alt/bar-avenida-pos`
+   ya privado; los Releases pueden ser públicos (los .exe sí, código no).
+   Esto evita necesitar VPN al bar — funciona desde cualquier red con internet.
+
+2. **Scripts nuevos en `Scripts/`:**
+   - **`release-total.ps1`** — script unificado que corre en la PC personal
+     (NAU). Bumpa versión en todos los package.json + `BarAvenidaServer.iss`,
+     compila los 3 frontends, hace `dotnet publish` self-contained del backend,
+     compila Inno Setup (Server.exe), corre electron-builder (Admin.exe + KDS.exe),
+     junta los 3 en `Releases/`, y publica `gh release create v$Version` con
+     los .exe como assets. Flags: `-SkipGitHubRelease`, `-SkipBackend`, `-SkipAdmin`, `-SkipKDS`.
+   - **`actualizar-bar.ps1`** — corre en la PC del bar. Consulta la API pública
+     de GitHub Releases, compara la versión instalada (en `C:\BarAvenida\version-instalada.txt`),
+     si hay una mayor descarga los 3 .exe y los corre silent (Inno con
+     `/VERYSILENT`, electron-builder NSIS con `/S`). Detiene/reinicia servicio.
+     Flags: `-SoloChequear`, `-Force`.
+   - **`instalar-todo.ps1`** — primera instalación en PC nueva. Verifica SQL
+     Server, descarga la última versión de Releases, instala los 3 en orden,
+     configura firewall, descubre IP local, imprime URLs.
+   - **`install-tarea-auto-update.ps1`** — registra tarea programada
+     `BarAvenida_AutoUpdate` que corre `actualizar-bar.ps1` cada 6 horas como
+     SYSTEM. La PC del bar se mantiene al día sola.
+
+3. **Doc nueva:** `COMO_INSTALAR_EN_PC_NUEVA.md` en la raíz del repo. Guía
+   paso a paso para llegar al bar e instalar en una compu limpia en ~15 min.
+
+4. **Spec nueva para fase 2 del auto-update:** `specs/auto_update_completo.md`.
+   Documenta cómo integrar `electron-updater` real en Admin/KDS (notificación
+   nativa "actualización disponible", reinicia para instalar) + endpoint
+   `POST /api/admin/sistema/update-now` con PIN para forzar update remoto
+   desde el Admin sin TeamViewer. Hand-off detallado para Claude Code.
+
+**Comando único de release que Coronado usa desde casa:**
+```powershell
+F:\BarAvenida\Scripts\release-total.ps1 -Version "1.2.0"
+```
+
+**Comando único de instalación en PC nueva del bar:**
+```powershell
+irm https://raw.githubusercontent.com/nauexpos11-alt/bar-avenida-pos/main/Scripts/instalar-todo.ps1 | iex
+```
+
+**Decisiones de diseño:**
+- GitHub Releases en vez de SMB share / propio update server: cero infra,
+  gratis, funciona desde cualquier red.
+- Tarea programada cada 6h en vez de daemon que escucha: más simple, no
+  consume memoria del servicio backend, y si falla un ciclo el siguiente
+  recupera.
+- `actualizar-bar.ps1` requiere internet (api.github.com): para bars con
+  internet inestable, la tarea programada simplemente skipea y reintenta
+  en 6h. No es bloqueante.
+- Self-update del backend usa BAT desadosado (sale del proceso del servicio
+  antes de reemplazar el binario): documentado en `specs/auto_update_completo.md`.
+
+**Requisitos en PC personal (Coronado):**
+- Node.js + npm
+- .NET 8 SDK
+- Inno Setup 6+ (compilar-instalador.ps1 lo auto-instala vía winget)
+- GitHub CLI: `winget install --id GitHub.cli` + `gh auth login`
+
+**Estado actual (cierre Mayo 10, 2026):**
+- ✅ Pipeline de release total implementado (scripts listos para usar)
+- ✅ Pipeline de auto-update vía tarea programada implementado
+- ✅ Documentación de instalación lista
+- 🟡 electron-updater integrado y endpoint admin: spec lista, falta ejecutar
+  (pasar `specs/auto_update_completo.md` a Claude Code)
+- 🟡 Validación E2E del pipeline completo: requiere primer `release-total.ps1`
+  ejecutado por Coronado para subir el primer release a GitHub.

@@ -1,6 +1,12 @@
 ; Bar Avenida — Server Installer (Inno Setup script)
-; Para compilar: iscc BarAvenidaServer.iss
+; Para compilar: iscc BarAvenidaServer.iss  (desde la carpeta Installer/)
 ; Prerequisito: Inno Setup 6+ instalado desde https://jrsoftware.org/isinfo.php
+;
+; Los paths SOURCE son RELATIVOS al .iss (asi funciona en NAU y en F:\BarAvenida).
+; Los paths DESTINATION quedan F:\BarAvenida porque eso es lo que asume el bar.
+; Si en el futuro hay PCs sin F:\, hay que migrar a {commonappdata}\Bar Avenida.
+
+#define SOURCE_ROOT "..\"
 
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
@@ -11,10 +17,10 @@ AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
-OutputDir=F:\BarAvenida\Installer\dist
+OutputDir=dist
 OutputBaseFilename=Bar Avenida Server Setup 1.0.0
-; SetupIconFile: descomentar cuando exista F:\BarAvenida\BarAvenida.Desktop\assets\icon.ico
-; SetupIconFile=F:\BarAvenida\BarAvenida.Desktop\assets\icon.ico
+; SetupIconFile: descomentar cuando exista
+; SetupIconFile={#SOURCE_ROOT}BarAvenida.Desktop\assets\icon.ico
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64
@@ -35,16 +41,18 @@ Name: "tareabackup";     Description: "Instalar tarea de backup automatico cada 
 
 [Files]
 ; Backend publicado self-contained (.NET runtime incluido, no requiere SDK en la PC)
-Source: "F:\BarAvenida\BarAvenida.API\publish-installer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SOURCE_ROOT}BarAvenida.API\publish-installer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Scripts auxiliares de backup/restore
-Source: "F:\BarAvenida\Backups\backup-baravenida.ps1";       DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "F:\BarAvenida\Backups\install-tarea-backup.ps1";    DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "F:\BarAvenida\Backups\restore-baravenida.ps1";      DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "F:\BarAvenida\Backups\limpieza-pre-produccion.sql"; DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\backup-baravenida.ps1";       DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\install-tarea-backup.ps1";    DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\restore-baravenida.ps1";      DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\limpieza-pre-produccion.sql"; DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
 
 [Dirs]
 ; Carpetas de runtime con permisos de escritura para el servicio
+; NOTA: el bar usa F:\BarAvenida. Si una PC no tiene F:\, hay que migrar
+;       estos paths a {commonappdata} o configurarlos al instalar.
 Name: "F:\BarAvenida\TicketsImpresos"; Permissions: users-modify
 Name: "F:\BarAvenida\Backups";         Permissions: users-modify
 Name: "F:\BarAvenida\Logs";            Permissions: users-modify
@@ -110,7 +118,7 @@ begin
     if MsgBox(
       'No se detecto SQL Server en localhost\MSSQLSERVER01.' + #13#10 + #13#10 +
       'Bar Avenida necesita SQL Server (Express o superior) instalado antes de continuar.' + #13#10 + #13#10 +
-      '¿Quieres abrir la pagina de descarga ahora?',
+      'Quieres abrir la pagina de descarga ahora?',
       mbConfirmation, MB_YESNO) = IDYES then
     begin
       ShellExec('open', 'https://www.microsoft.com/es-mx/sql-server/sql-server-downloads', '', '', SW_SHOW, ewNoWait, ResultCode);

@@ -6,25 +6,22 @@
 # Uso manual (PowerShell admin):
 #   .\actualizar-bar.ps1
 #   .\actualizar-bar.ps1 -SoloChequear     (solo dice si hay nueva version, no instala)
-#   .\actualizar-bar.ps1 -Force            (instala aunque la version sea la misma)
+#   .\actualizar-bar.ps1 -Force            (ignora horario y version, instala YA)
 #
-# Idealmente como tarea programada cada 6 horas (ver install-tarea-auto-update.ps1).
+# VENTANA DE INSTALACION:
+#   Por defecto solo aplica updates entre 3am y 11am (horario muerto del bar).
+#   Si la PC se prende fuera de esa ventana, la tarea NO instala nada.
+#   Para forzar fuera de ventana, usa -Force.
 #
-# Como funciona:
-#   1. Llama a la API publica de GitHub para ver el ultimo release
-#   2. Lee la version actual instalada del registry
-#   3. Si la version nueva es mayor:
-#      a. Descarga los 3 .exe del release
-#      b. Detiene servicio BarAvenidaAPI
-#      c. Corre los 3 instaladores en silent (/VERYSILENT para Inno, /S para NSIS)
-#      d. Reinicia servicio
-#      e. Loguea resultado
+# Idealmente como tarea programada cada 1 hora (ver install-tarea-auto-update.ps1).
 # ============================================================================
 
 param(
     [switch]$SoloChequear = $false,
     [switch]$Force         = $false,
-    [string]$Repo          = "nauexpos11-alt/bar-avenida-pos"
+    [string]$Repo          = "nauexpos11-alt/bar-avenida-pos",
+    [int]$HoraInicio       = 3,   # 3 AM - aplica updates a partir de esta hora
+    [int]$HoraFin          = 11   # 11 AM - hasta esta hora (exclusiva)
 )
 
 $ErrorActionPreference = "Continue"
@@ -106,6 +103,23 @@ if (-not $debeActualizar) {
 if ($SoloChequear) {
     Log "[INFO] Hay nueva version $versionNueva (actual: $versionActual). NO se instala porque -SoloChequear."
     exit 0
+}
+
+# ──────────────────────────────────────────────────────────
+# 2.5 Verificar VENTANA DE INSTALACION (evita reiniciar en hora de servicio)
+# ──────────────────────────────────────────────────────────
+$horaActual = (Get-Date).Hour
+$enVentana  = ($horaActual -ge $HoraInicio -and $horaActual -lt $HoraFin)
+
+if (-not $enVentana -and -not $Force) {
+    Log "[INFO] Hay update disponible v$versionNueva, pero hora actual ($horaActual h) fuera de ventana ($HoraInicio h - $HoraFin h)."
+    Log "       NO se aplica para no interrumpir operacion del bar."
+    Log "       Se aplicara solo cuando el reloj entre a la ventana, o si corres con -Force."
+    exit 0
+}
+
+if ($Force -and -not $enVentana) {
+    Log "[FORCE] Aplicando update fuera de ventana porque se uso -Force."
 }
 
 Log "=== ACTUALIZANDO a v$versionNueva ==="

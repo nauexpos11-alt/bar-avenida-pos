@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.3.0
+AppVersion=1.4.0
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.3.0
+OutputBaseFilename=Bar Avenida Server Setup 1.4.0
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible
@@ -39,7 +39,7 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 [Tasks]
 Name: "iniciarservicio";  Description: "Iniciar el servicio Bar Avenida API al terminar (recomendado)"; GroupDescription: "Servicio Windows:"; Flags: checkedonce
 Name: "tareabackup";       Description: "Instalar tarea de backup automatico cada hora";                GroupDescription: "Backups:";        Flags: checkedonce
-Name: "tareaautoupdate";   Description: "Instalar tarea de auto-update desde GitHub (cada 6h)";          GroupDescription: "Auto-Update:";   Flags: checkedonce
+Name: "tareaautoupdate";   Description: "Instalar notificador de updates al iniciar sesion (recomendado)"; GroupDescription: "Auto-Update:";   Flags: checkedonce
 Name: "shortcutdesktop";   Description: "Crear acceso directo a la Tablet de meseras en el escritorio";  GroupDescription: "Atajos:";         Flags: checkedonce
 
 [Files]
@@ -56,8 +56,9 @@ Source: "{#SOURCE_ROOT}Backups\limpieza-pre-produccion.sql";  DestDir: "{commona
 Source: "{#SOURCE_ROOT}Backups\setup-sql-baravenida.sql";     DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Backups\fix-permisos-sql-system.sql";  DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
 
-; Scripts del flujo auto-update (se copian a C:\BarAvenida para que la tarea los encuentre)
+; Scripts del flujo auto-update (se copian a C:\BarAvenida para que las tareas los encuentren)
 Source: "{#SOURCE_ROOT}Scripts\actualizar-bar.ps1";            DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Scripts\notificador-update.ps1";        DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\install-tarea-auto-update.ps1"; DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 
 [Dirs]
@@ -83,9 +84,9 @@ Name: "{commondesktop}\Bar Avenida - Tablet"; Filename: "http://localhost:7000/t
 
 [Run]
 ; ========== PASO 1: Detener y borrar servicio anterior si existia ==========
-Filename: "{cmd}"; Parameters: "/c sc stop BarAvenidaAPI"; Flags: runhidden waituntilterminated; Check: ServiceExists; RunOnceId: "stopOldService"
-Filename: "{cmd}"; Parameters: "/c timeout /t 3 /nobreak"; Flags: runhidden waituntilterminated; Check: ServiceExists; RunOnceId: "waitOldServiceStop"
-Filename: "{cmd}"; Parameters: "/c sc delete BarAvenidaAPI"; Flags: runhidden waituntilterminated; Check: ServiceExists; RunOnceId: "deleteOldService"
+Filename: "{cmd}"; Parameters: "/c sc stop BarAvenidaAPI"; Flags: runhidden waituntilterminated; Check: ServiceExists
+Filename: "{cmd}"; Parameters: "/c timeout /t 3 /nobreak"; Flags: runhidden waituntilterminated; Check: ServiceExists
+Filename: "{cmd}"; Parameters: "/c sc delete BarAvenidaAPI"; Flags: runhidden waituntilterminated; Check: ServiceExists
 
 ; ========== PASO 2: SETUP SQL PREVENTIVO ==========
 ; Crea login NT AUTHORITY\SYSTEM con dbcreator + securityadmin.
@@ -118,8 +119,8 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Com
 ; ========== PASO 9: Tarea de backup ==========
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{commonappdata}\Bar Avenida\Backups\install-tarea-backup.ps1"""; Tasks: tareabackup; StatusMsg: "Registrando tarea de backup..."; Flags: runhidden waituntilterminated
 
-; ========== PASO 10: Tarea de auto-update desde GitHub ==========
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{sd}\BarAvenida\install-tarea-auto-update.ps1"""; Tasks: tareaautoupdate; StatusMsg: "Registrando tarea de auto-update..."; Flags: runhidden waituntilterminated
+; ========== PASO 10: Tareas de auto-update (notificador al login + fallback 3:30am) ==========
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{sd}\BarAvenida\install-tarea-auto-update.ps1"""; Tasks: tareaautoupdate; StatusMsg: "Registrando notificador de updates..."; Flags: runhidden waituntilterminated
 
 ; ========== PASO 11: Abrir la Tablet en el navegador al terminar (postinstall) ==========
 Filename: "http://localhost:7000/tablet/"; Description: "Abrir la Tablet de meseras en el navegador"; Tasks: iniciarservicio; Flags: postinstall shellexec skipifsilent
@@ -129,6 +130,7 @@ Filename: "{cmd}"; Parameters: "/c sc stop BarAvenidaAPI";                      
 Filename: "{cmd}"; Parameters: "/c sc delete BarAvenidaAPI";                              Flags: runhidden; RunOnceId: "uninstDeleteService"
 Filename: "{cmd}"; Parameters: "/c schtasks /delete /tn BarAvenida_BackupHorario /f";     Flags: runhidden; RunOnceId: "uninstBackupTask"
 Filename: "{cmd}"; Parameters: "/c schtasks /delete /tn BarAvenida_AutoUpdate /f";        Flags: runhidden; RunOnceId: "uninstUpdateTask"
+Filename: "{cmd}"; Parameters: "/c schtasks /delete /tn BarAvenida_Notificador /f";      Flags: runhidden; RunOnceId: "uninstNotifTask"
 
 [Code]
 // Verifica si el servicio BarAvenidaAPI ya existe

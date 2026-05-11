@@ -1,7 +1,11 @@
 # ============================================================================
-# Bar Avenida - Instalar tarea programada de auto-update
-# Cada 6 horas, la PC del bar checa GitHub Releases y se actualiza si hay
-# version nueva. Corre como SYSTEM, silent, sin molestar al bar.
+# Bar Avenida - Instalar tareas de auto-update
+#
+# Registra DOS tareas:
+#   1. BarAvenida_Notificador  - corre al inicio de sesion del usuario.
+#      Muestra ventana "Hay update, ¿instalar?" si hay version nueva.
+#   2. BarAvenida_AutoUpdate   - tarea silenciosa diaria como fallback.
+#      Corre en la madrugada (3am) si la PC esta prendida.
 # ============================================================================
 
 $ErrorActionPreference = "Continue"
@@ -15,60 +19,110 @@ if (-not $esAdmin) {
 $WorkDir = "C:\BarAvenida"
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 
-# Copiar actualizar-bar.ps1 a C:\BarAvenida si esta en otra ubicacion
-$srcScript = "$PSScriptRoot\actualizar-bar.ps1"
-$dstScript = "$WorkDir\actualizar-bar.ps1"
-
-if (Test-Path $srcScript) {
-    Copy-Item $srcScript $dstScript -Force
-} elseif (-not (Test-Path $dstScript)) {
-    # Descargar de GitHub si no esta local
-    Write-Host "Descargando actualizar-bar.ps1 de GitHub..." -ForegroundColor Yellow
-    try {
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nauexpos11-alt/bar-avenida-pos/main/Scripts/actualizar-bar.ps1" `
-            -OutFile $dstScript -UseBasicParsing
-    } catch {
-        Write-Host "[FAIL] No se pudo descargar de GitHub: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "       Pon a mano el archivo en $dstScript" -ForegroundColor Yellow
-        exit 1
+# Copiar scripts a C:\BarAvenida
+function CopiarScript {
+    param([string]$Nombre)
+    $src = "$PSScriptRoot\$Nombre"
+    $dst = "$WorkDir\$Nombre"
+    if (Test-Path $src) {
+        Copy-Item $src $dst -Force
+        return $dst
+    } elseif (Test-Path $dst) {
+        return $dst
+    } else {
+        Write-Host "Descargando $Nombre de GitHub..." -ForegroundColor Yellow
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nauexpos11-alt/bar-avenida-pos/main/Scripts/$Nombre" `
+                -OutFile $dst -UseBasicParsing
+            return $dst
+        } catch {
+            Write-Host "[FAIL] No se pudo descargar $Nombre" -ForegroundColor Red
+            return $null
+        }
     }
 }
 
-# Borrar tarea anterior si existe
-$nombreTarea = "BarAvenida_AutoUpdate"
-Get-ScheduledTask -TaskName $nombreTarea -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+$scriptActualizar  = CopiarScript "actualizar-bar.ps1"
+$scriptNotificador = CopiarScript "notificador-update.ps1"
 
-# Crear nueva tarea: cada 6 horas, corre como SYSTEM
-$accion = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$dstScript`""
+if (-not $scriptActualizar -or -not $scriptNotificador) {
+    Write-Host "[FAIL] Faltan scripts. Abortando." -ForegroundColor Red
+    exit 1
+}
 
-$trigger1 = New-ScheduledTaskTrigger -Daily -At "03:00AM"
-$trigger1.Repetition = (New-ScheduledTaskTrigger -Once -At "03:00AM" -RepetitionInterval (New-TimeSpan -Hours 6)).Repetition
+# ──────────────────────────────────────────────────────────
+# TAREA 1: NOTIFICADOR al inicio de sesion del usuario
+# ──────────────────────────────────────────────────────────
+$nombreNotificador = "BarAvenida_Notificador"
+Get-ScheduledTask -TaskName $nombreNotificador -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$accionNot = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptNotificador`""
 
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+# AtLogon trigger
+$triggerNot = New-ScheduledTaskTrigger -AtLogOn
+
+# Como usuario actual (NO SYSTEM, para que la ventana se vea)
+$usuarioActual = "$env:USERDOMAIN\$env:USERNAME"
+$principalNot = New-ScheduledTaskPrincipal -UserId $usuarioActual -LogonType Interactive -RunLevel Highest
+
+$settingsNot = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 60)
+
+Register-ScheduledTask -TaskName $nombreNotificador `
+    -Action $accionNot `
+    -Trigger $triggerNot `
+    -Principal $principalNot `
+    -Settings $settingsNot `
+    -Description "Bar Avenida: al iniciar sesion, pregunta si hay update disponible." | Out-Null
+
+Write-Host "[OK] Tarea $nombreNotificador registrada (corre al iniciar sesion)" -ForegroundColor Green
+
+# ──────────────────────────────────────────────────────────
+# TAREA 2: AUTO-UPDATE silencioso de madrugada (fallback)
+# ──────────────────────────────────────────────────────────
+$nombreAuto = "BarAvenida_AutoUpdate"
+Get-ScheduledTask -TaskName $nombreAuto -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+
+$accionAuto = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptActualizar`" -Force"
+
+# Diario a las 3:30 AM (bar cerrado)
+$triggerAuto = New-ScheduledTaskTrigger -Daily -At "03:30AM"
+
+# Como SYSTEM (no necesita UI)
+$principalAuto = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+
+$settingsAuto = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
 
-Register-ScheduledTask -TaskName $nombreTarea `
-    -Action $accion `
-    -Trigger $trigger1 `
-    -Principal $principal `
-    -Settings $settings `
-    -Description "Bar Avenida: chequea GitHub Releases cada 6h y se actualiza solo." | Out-Null
+Register-ScheduledTask -TaskName $nombreAuto `
+    -Action $accionAuto `
+    -Trigger $triggerAuto `
+    -Principal $principalAuto `
+    -Settings $settingsAuto `
+    -Description "Bar Avenida: actualizacion automatica diaria a las 3:30am si hay version nueva." | Out-Null
+
+Write-Host "[OK] Tarea $nombreAuto registrada (cada noche a las 3:30am)" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "================================================" -ForegroundColor Green
-Write-Host "  TAREA AUTO-UPDATE INSTALADA" -ForegroundColor Green
+Write-Host "  TAREAS DE UPDATE INSTALADAS" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Nombre: $nombreTarea" -ForegroundColor Cyan
-Write-Host "Corre cada 6 horas como SYSTEM (sin molestar al usuario)." -ForegroundColor Gray
-Write-Host "Log de cada corrida: C:\BarAvenida\actualizar-bar.log" -ForegroundColor Gray
+Write-Host "1. AL ARRANCAR LA PC:" -ForegroundColor Cyan
+Write-Host "   Si hay update, aparece ventana preguntando que hacer." -ForegroundColor Gray
+Write-Host "   El usuario decide: Instalar / Mas tarde / Saltar." -ForegroundColor Gray
 Write-Host ""
-Write-Host "Para probar AHORA:" -ForegroundColor Yellow
-Write-Host "  Start-ScheduledTask -TaskName '$nombreTarea'" -ForegroundColor Cyan
+Write-Host "2. CADA NOCHE A LAS 3:30 AM:" -ForegroundColor Cyan
+Write-Host "   Si la PC sigue prendida y hay update, lo instala silencioso." -ForegroundColor Gray
+Write-Host "   (Bar cerrado, no afecta operacion)." -ForegroundColor Gray
 Write-Host ""
-Write-Host "Para chequear sin instalar:" -ForegroundColor Yellow
-Write-Host "  powershell -ExecutionPolicy Bypass -File C:\BarAvenida\actualizar-bar.ps1 -SoloChequear" -ForegroundColor Cyan
+Write-Host "Logs:" -ForegroundColor Yellow
+Write-Host "  C:\BarAvenida\notificador-update.log" -ForegroundColor Gray
+Write-Host "  C:\BarAvenida\actualizar-bar.log" -ForegroundColor Gray
+Write-Host ""
+Write-Host "Para probar el notificador AHORA:" -ForegroundColor Yellow
+Write-Host "  Start-ScheduledTask -TaskName '$nombreNotificador'" -ForegroundColor Cyan
 Write-Host ""

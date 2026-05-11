@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using BarAvenida.API.Data;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Reflection;
 
 namespace BarAvenida.API.Controllers;
 
@@ -9,6 +12,13 @@ namespace BarAvenida.API.Controllers;
 [Route("api/sistema")]
 public class SistemaController : ControllerBase
 {
+    private readonly BarAvenidaDbContext _context;
+
+    public SistemaController(BarAvenidaDbContext context)
+    {
+        _context = context;
+    }
+
     [HttpGet("hora")]
     [AllowAnonymous]
     public IActionResult GetHora()
@@ -21,6 +31,40 @@ public class SistemaController : ControllerBase
             zonaHoraria = TimeZoneInfo.Local.Id,
             offsetUtc   = TimeZoneInfo.Local.GetUtcOffset(ahora).TotalMinutes
         });
+    }
+
+    /// <summary>
+    /// Health check completo. Sirve para que Coronado verifique a distancia desde NAU
+    /// el estado de la PC del bar sin necesidad de TeamViewer.
+    /// </summary>
+    [HttpGet("health")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetHealth()
+    {
+        var resultado = new Dictionary<string, object>
+        {
+            ["timestamp"] = DateTime.Now,
+            ["version"]   = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "desconocida"
+        };
+
+        // Probar BD
+        try
+        {
+            var puede = await _context.Database.CanConnectAsync();
+            resultado["bdConectada"] = puede;
+            if (puede)
+            {
+                resultado["usuariosCount"] = await _context.Usuarios.CountAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            resultado["bdConectada"] = false;
+            resultado["bdError"]     = ex.Message;
+        }
+
+        var todoOk = (resultado["bdConectada"] as bool?) == true;
+        return todoOk ? Ok(resultado) : StatusCode(503, resultado);
     }
 
     /// <summary>

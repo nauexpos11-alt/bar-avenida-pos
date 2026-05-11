@@ -252,9 +252,11 @@
   background: #131313;
   border-bottom: 1px solid #1f1f1f;
   height: 44px;
-  overflow-x: auto;
+  overflow: visible; /* IMPORTANTE: que NO corte los dropdowns que salen hacia abajo */
   scrollbar-width: none;
   flex-shrink: 0;
+  position: relative;
+  z-index: 50;
 }
 
 .sub-tabs::-webkit-scrollbar { display: none; }

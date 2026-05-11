@@ -212,13 +212,26 @@ if ($proc.ExitCode -eq 0) {
 }
 
 # ──────────────────────────────────────────────────────────
-# 8. Reiniciar servicio (Inno Setup lo arranca, pero por si acaso)
+# 8a. AUTO-FIX SQL PREVENTIVO (resuelve HTTP 500 al login)
 # ──────────────────────────────────────────────────────────
-Log "Asegurando que servicio BarAvenidaAPI este corriendo..."
+Log "Aplicando fix SQL preventivo..."
+$sqlFix = "C:\ProgramData\Bar Avenida\Backups\setup-sql-baravenida.sql"
+if (Test-Path $sqlFix) {
+    & sqlcmd -S "localhost\MSSQLSERVER01" -E -i $sqlFix 2>&1 | Out-Null
+    Log "  [OK] Fix SQL aplicado (permisos SYSTEM sobre BarAvenida)"
+} else {
+    Log "  [WARN] $sqlFix no existe, saltando"
+}
+
+# ──────────────────────────────────────────────────────────
+# 8b. Reiniciar servicio
+# ──────────────────────────────────────────────────────────
+Log "Reiniciando servicio..."
+Stop-Service -Name "BarAvenidaAPI" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 3
 try {
     Start-Service -Name "BarAvenidaAPI" -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 8
     $svc = Get-Service -Name "BarAvenidaAPI"
     Log "  Status: $($svc.Status)"
 } catch {
@@ -226,7 +239,46 @@ try {
 }
 
 # ──────────────────────────────────────────────────────────
-# 9. Verificar que el backend responde
+# 8c. Verificar que LOGIN responde (no solo /hora — login prueba la BD)
+# ──────────────────────────────────────────────────────────
+Log "Verificando endpoint de login..."
+$loginOk = $false
+$intentoLogin = 0
+while (-not $loginOk -and $intentoLogin -lt 5) {
+    $intentoLogin++
+    try {
+        $r = Invoke-WebRequest "http://localhost:7000/api/auth/login" `
+            -Method POST -ContentType "application/json" `
+            -Body '{"codigo":"_ping_","pin":"0"}' `
+            -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop
+        # Si llega aqui es 2xx — improbable con usuario fake, pero significa que responde
+        $loginOk = $true
+    } catch {
+        $statusCode = 0
+        try { $statusCode = $_.Exception.Response.StatusCode.value__ } catch {}
+        if ($statusCode -eq 401 -or $statusCode -eq 400) {
+            # 401/400 significa que el endpoint responde (usuario no existe). Backend OK.
+            $loginOk = $true
+            Log "  [OK] Login endpoint responde (codigo $statusCode = backend funcional)"
+        } else {
+            Log "  [Intento $intentoLogin/5] No responde aun: $($_.Exception.Message)"
+            Start-Sleep -Seconds 5
+        }
+    }
+}
+
+if (-not $loginOk) {
+    Log "[ALERTA] Login NO responde despues de 5 intentos. Reaplica fix SQL y reintenta..."
+    & sqlcmd -S "localhost\MSSQLSERVER01" -E -i $sqlFix 2>&1 | Out-Null
+    Stop-Service -Name "BarAvenidaAPI" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 3
+    Start-Service -Name "BarAvenidaAPI" -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 10
+    Log "[INFO] Si sigue sin responder, revisa F:\BarAvenida\Logs"
+}
+
+# ──────────────────────────────────────────────────────────
+# 9. Verificar que el backend responde (endpoint /hora)
 # ──────────────────────────────────────────────────────────
 Log "Verificando que el backend responde..."
 $ok = $false

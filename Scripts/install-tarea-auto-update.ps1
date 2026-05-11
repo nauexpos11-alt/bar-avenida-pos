@@ -19,13 +19,19 @@ if (-not $esAdmin) {
 $WorkDir = "C:\BarAvenida"
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 
-# Copiar scripts a C:\BarAvenida
+# Copiar scripts a C:\BarAvenida (evita copy-to-self que tira error en PS5.x)
 function CopiarScript {
     param([string]$Nombre)
     $src = "$PSScriptRoot\$Nombre"
     $dst = "$WorkDir\$Nombre"
+
+    # Si source y destination son el MISMO archivo, no copiar (ya esta en su lugar)
+    if ((Resolve-Path $src -ErrorAction SilentlyContinue).Path -eq (Resolve-Path $dst -ErrorAction SilentlyContinue).Path) {
+        return $dst
+    }
+
     if (Test-Path $src) {
-        Copy-Item $src $dst -Force
+        Copy-Item $src $dst -Force -ErrorAction SilentlyContinue
         return $dst
     } elseif (Test-Path $dst) {
         return $dst

@@ -24,6 +24,7 @@ import ConsultaCuentasScreen       from './screens/ConsultaCuentasScreen'
 import BarraRapidaAdminScreen      from './screens/BarraRapidaAdminScreen'
 import CentroOperacionScreen       from './screens/CentroOperacionScreen'
 import PuntoVentaHomeScreen        from './screens/PuntoVentaHomeScreen'
+import QRTabletScreen              from './screens/QRTabletScreen'
 import CambioUsuarioModal         from './components/CambioUsuarioModal'
 import TopMenuBar                 from './components/TopMenuBar'
 import EnConstruccionScreen       from './screens/EnConstruccionScreen'
@@ -155,6 +156,8 @@ export default function App() {
         return <InformeDiaScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'consulta-cuentas':
         return <ConsultaCuentasScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'conectar-tablets':
+        return <QRTabletScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       default:
         return (
           <EnConstruccionScreen

@@ -6,10 +6,18 @@ export default function QRTabletScreen({ auth, onVolver }) {
   const [info, setInfo]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [qrSrc, setQrSrc]     = useState(null)
+  const [qrFalloService, setQrFalloService] = useState(false)
 
   useEffect(() => {
     cargarIp()
   }, [])
+
+  useEffect(() => {
+    if (info?.urlTablet) {
+      cargarQR(info.urlTablet)
+    }
+  }, [info?.urlTablet])
 
   const cargarIp = async () => {
     setLoading(true)
@@ -26,8 +34,31 @@ export default function QRTabletScreen({ auth, onVolver }) {
     }
   }
 
-  const generarQrUrl = (url) => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=15&data=${encodeURIComponent(url)}`
+  // Lista de servicios QR con fallback. Primero intenta el preferido,
+  // si falla la red se va al siguiente. Todos devuelven una imagen PNG.
+  const QR_SERVICES = [
+    (u) => `https://quickchart.io/qr?text=${encodeURIComponent(u)}&size=400&margin=2&ecLevel=M`,
+    (u) => `https://chart.googleapis.com/chart?cht=qr&chs=400x400&chld=M%7C2&chl=${encodeURIComponent(u)}`,
+    (u) => `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=15&data=${encodeURIComponent(u)}`,
+  ]
+
+  const cargarQR = (url) => {
+    setQrFalloService(false)
+    // Intentamos cada servicio en orden, fallback automático
+    let idx = 0
+    const probarSiguiente = () => {
+      if (idx >= QR_SERVICES.length) {
+        setQrFalloService(true)
+        setQrSrc(null)
+        return
+      }
+      const src = QR_SERVICES[idx](url)
+      const test = new Image()
+      test.onload = () => setQrSrc(src)
+      test.onerror = () => { idx++; probarSiguiente() }
+      test.src = src
+    }
+    probarSiguiente()
   }
 
   const imprimir = () => {
@@ -55,8 +86,6 @@ export default function QRTabletScreen({ auth, onVolver }) {
     )
   }
 
-  const qrUrl = generarQrUrl(info.urlTablet)
-
   return (
     <div className="qr-tablet-screen">
       <div className="qr-tablet-no-print qr-tablet-header">
@@ -76,7 +105,23 @@ export default function QRTabletScreen({ auth, onVolver }) {
         <h1 className="qr-hoja-titulo">Conectar tu celular</h1>
 
         <div className="qr-hoja-codigo">
-          <img src={qrUrl} alt="QR Code" />
+          {qrSrc && !qrFalloService && (
+            <img src={qrSrc} alt="QR Code" />
+          )}
+          {qrFalloService && (
+            <div style={{padding:'40px', textAlign:'center', border:'2px dashed #f0c842'}}>
+              <p style={{margin:0, fontSize:'14px', color:'#666'}}>
+                No se pudo generar el QR (sin internet).<br/>
+                Anota la URL manualmente:
+              </p>
+              <p style={{margin:'12px 0 0', fontSize:'18px', fontWeight:'bold', wordBreak:'break-all'}}>
+                {info.urlTablet}
+              </p>
+            </div>
+          )}
+          {!qrSrc && !qrFalloService && (
+            <div style={{padding:'40px', textAlign:'center'}}>Generando QR...</div>
+          )}
         </div>
 
         <div className="qr-hoja-info">

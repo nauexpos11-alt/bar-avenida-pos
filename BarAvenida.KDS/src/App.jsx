@@ -51,6 +51,18 @@ export default function App() {
       .catch(err => setError(`No se pudo cargar órdenes: ${err.message}`))
   }, [])
 
+  // Recargar órdenes pendientes desde el backend (uso para recuperación tras reconexión o errores)
+  const recargarPendientes = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/api/Cuentas/ordenes/pendientes`)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json()
+      setOrdenes(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('No se pudo recargar pendientes:', err)
+    }
+  }, [])
+
   // Conexión SignalR
   useEffect(() => {
     const conn = new signalR.HubConnectionBuilder()
@@ -72,30 +84,55 @@ export default function App() {
       setOrdenes(prev => prev.filter(o => o.id !== ordenId))
     })
 
+    // Unirse al grupo "Barra" — sin esto, NuevaOrden nunca llega
+    const unirseAlGrupoBarra = async () => {
+      try {
+        await conn.invoke('UnirseAGrupo', 'Barra')
+        setConnected(true)
+        setError(null)
+        // Re-sincronizar pendientes tras conectar (por si llegó algo mientras estábamos desconectados)
+        await recargarPendientes()
+      } catch (err) {
+        console.error('Error uniéndose al grupo Barra:', err)
+        setError(`No se pudo unir al grupo Barra: ${err.message}`)
+      }
+    }
+
     conn.onreconnecting(() => setConnected(false))
-    conn.onreconnected(() => { setConnected(true); setError(null) })
+    conn.onreconnected(() => { unirseAlGrupoBarra() })
     conn.onclose(() => setConnected(false))
 
     conn.start()
-      .then(() => { setConnected(true); setError(null) })
+      .then(() => unirseAlGrupoBarra())
       .catch(err => setError(`SignalR sin conexión: ${err.message}`))
 
     connRef.current = conn
     return () => conn.stop()
-  }, [])
+  }, [recargarPendientes])
 
   const handleListo = useCallback(async (ordenId) => {
+    // Optimistic update: quitar inmediato de pantalla para que la UI se sienta viva
+    const ordenesPrev = ordenes
+    setOrdenes(prev => prev.filter(o => o.id !== ordenId))
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000) // timeout 8s
       const resp = await fetch(`${API_URL}/api/Cuentas/ordenes/${ordenId}/listo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      setOrdenes(prev => prev.filter(o => o.id !== ordenId))
     } catch (err) {
       console.error('Error al marcar listo:', err)
+      // Si falla, recargamos el estado real del backend para evitar quedar desincronizados
+      setOrdenes(ordenesPrev)
+      recargarPendientes()
+      setError(`Error al marcar listo: ${err.message}. Reintenta.`)
+      setTimeout(() => setError(null), 5000)
     }
-  }, [])
+  }, [ordenes, recargarPendientes])
 
   // PROMPT F — Agrupar ordenes por mesa y ordenar por tiempo de espera
   const grupos = useMemo(() => {

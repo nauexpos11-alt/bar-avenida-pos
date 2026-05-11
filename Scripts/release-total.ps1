@@ -53,14 +53,15 @@ if (-not (Test-Path "$RepoRoot\BarAvenida.API")) {
     }
 }
 
-$ApiDir       = "$RepoRoot\BarAvenida.API"
-$AdminDir     = "$RepoRoot\BarAvenida.Admin"
-$KdsDir       = "$RepoRoot\BarAvenida.KDS"
-$TabletDir    = "$RepoRoot\BarAvenida.Tablet"
-$DesktopDir   = "$RepoRoot\BarAvenida.Desktop"
-$KdsDeskDir   = "$RepoRoot\BarAvenida.KDS.Desktop"
-$InstallerDir = "$RepoRoot\Installer"
-$ReleasesDir  = "$RepoRoot\Releases"
+$ApiDir        = "$RepoRoot\BarAvenida.API"
+$AdminDir      = "$RepoRoot\BarAvenida.Admin"
+$KdsDir        = "$RepoRoot\BarAvenida.KDS"
+$TabletDir     = "$RepoRoot\BarAvenida.Tablet"
+$DesktopDir    = "$RepoRoot\BarAvenida.Desktop"
+$KdsDeskDir    = "$RepoRoot\BarAvenida.KDS.Desktop"
+$TabletDeskDir = "$RepoRoot\BarAvenida.Tablet.Desktop"
+$InstallerDir  = "$RepoRoot\Installer"
+$ReleasesDir   = "$RepoRoot\Releases"
 
 Write-Host "[INFO] Repo detectado: $RepoRoot" -ForegroundColor Yellow
 
@@ -154,23 +155,26 @@ if (-not $SkipGitHubRelease) {
 # ──────────────────────────────────────────────────────────
 LogStep "1. BUMP VERSIONS a $Version"
 
-BumpJson "$DesktopDir\package.json" $Version
-BumpJson "$KdsDeskDir\package.json" $Version
-BumpJson "$AdminDir\package.json"   $Version
-BumpJson "$KdsDir\package.json"     $Version
-BumpJson "$TabletDir\package.json"  $Version
+BumpJson "$DesktopDir\package.json"   $Version
+BumpJson "$KdsDeskDir\package.json"   $Version
+BumpJson "$AdminDir\package.json"     $Version
+BumpJson "$KdsDir\package.json"       $Version
+BumpJson "$TabletDir\package.json"    $Version
+BumpJson "$TabletDeskDir\package.json" $Version
 
 BumpInnoSetup "$InstallerDir\BarAvenidaServer.iss" $Version
 
 # ──────────────────────────────────────────────────────────
 # 2. Build Tablet, Admin, KDS web (sirven el wwwroot del backend)
+# Admin y KDS tienen vite outDir -> ../BarAvenida.API/wwwroot/{slug}/ directo.
+# Tablet usa dist/ default, hay que copiarlo manualmente a wwwroot/tablet/.
 # ──────────────────────────────────────────────────────────
-LogStep "2. BUILD FRONTENDS WEB"
+LogStep "2. BUILD FRONTENDS WEB + SYNC A WWWROOT"
 
 foreach ($fe in @(
-    @{ Dir = $TabletDir; Name = "Tablet" },
-    @{ Dir = $AdminDir;  Name = "Admin"  },
-    @{ Dir = $KdsDir;    Name = "KDS"    }
+    @{ Dir = $TabletDir; Name = "Tablet"; WwwRootSlug = "tablet"; SyncManual = $true  },
+    @{ Dir = $AdminDir;  Name = "Admin";  WwwRootSlug = "admin";  SyncManual = $false },
+    @{ Dir = $KdsDir;    Name = "KDS";    WwwRootSlug = "kds";    SyncManual = $false }
 )) {
     if (-not (Test-Path $fe.Dir)) {
         Log "[SKIP] $($fe.Name) no existe" "Gray"
@@ -184,16 +188,36 @@ foreach ($fe in @(
             Log "  Instalando dependencias..." "Gray"
             npm install --silent 2>&1 | Out-Null
         }
-        npm run build 2>&1 | Out-Null
+        # Capturar output del build para diagnosticar fallas
+        $buildLog = npm run build 2>&1
         if ($LASTEXITCODE -eq 0) {
             Log "  [OK] $($fe.Name) build" "Green"
         } else {
             Log "  [FAIL] $($fe.Name) build fallo (exit $LASTEXITCODE)" "Red"
+            $buildLog | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
             Pop-Location
             exit 1
         }
     } finally {
         Pop-Location
+    }
+
+    # ─── Sync manual de dist/ -> wwwroot/{slug}/ (solo Tablet) ────────────────
+    if ($fe.SyncManual) {
+        $distSrc = Join-Path $fe.Dir "dist"
+        $wwwDst  = Join-Path $ApiDir "wwwroot\$($fe.WwwRootSlug)"
+        if (-not (Test-Path $distSrc)) {
+            Log "  [FAIL] $($fe.Name) dist/ no existe despues del build" "Red"
+            exit 1
+        }
+        Log "  Sync $($fe.Name) -> wwwroot\$($fe.WwwRootSlug)" "Yellow"
+        if (Test-Path $wwwDst) {
+            Remove-Item -Recurse -Force "$wwwDst\*" -ErrorAction SilentlyContinue
+        } else {
+            New-Item -ItemType Directory -Path $wwwDst -Force | Out-Null
+        }
+        Copy-Item -Recurse -Force "$distSrc\*" $wwwDst
+        Log "  [OK] $($fe.Name) copiado a wwwroot" "Green"
     }
 }
 
@@ -323,49 +347,48 @@ $pwdFile = "$RepoRoot\cert\cert-password.txt"
 
 if (-not (Test-Path $pfxPath)) {
     Log "[WARN] No existe $pfxPath. Corre Scripts\crear-cert-baravenida.ps1 primero." "Yellow"
-    Log "       Saltando firma — los .exe iran sin firma (los bloqueara WDAC)." "Yellow"
+    Log "Saltando firma. Los .exe iran sin firma." "Yellow"
 } else {
-    $pwd = ConvertTo-SecureString -String (Get-Content $pwdFile -Raw) -Force -AsPlainText
+    $certPwdRaw = (Get-Content $pwdFile -Raw).Trim()
     try {
-        $cert = Get-PfxCertificate -FilePath $pfxPath -Password $pwd
+        # Importar el cert al store temporalmente para poder firmar
+        $certPwd = ConvertTo-SecureString -String $certPwdRaw -Force -AsPlainText
+        $cert = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation "Cert:\CurrentUser\My" -Password $certPwd -Exportable
+        if (-not $cert.HasPrivateKey) {
+            Log "[FAIL] El cert no tiene private key" "Red"
+            $cert = $null
+        } else {
+            Log "[OK] Cert cargado (thumbprint: $($cert.Thumbprint.Substring(0,10))...)" "Green"
+        }
     } catch {
         Log "[FAIL] No se pudo cargar el cert: $($_.Exception.Message)" "Red"
         $cert = $null
     }
 
     if ($cert) {
-        $tsServers = @(
-            "http://timestamp.digicert.com",
-            "http://timestamp.sectigo.com",
-            "http://timestamp.globalsign.com/tsa/r6advanced1"
-        )
+        $dirs = @($DesktopDir, $KdsDeskDir, $TabletDeskDir)
 
-        $exesToSign = @()
-        foreach ($d in @($DesktopDir, $KdsDeskDir, $TabletDeskDir)) {
-            if (Test-Path "$d\dist") {
-                Get-ChildItem "$d\dist" -Filter "*Setup*.exe" -ErrorAction SilentlyContinue |
-                    Where-Object { $_.Name -notlike "*.blockmap" } | ForEach-Object {
-                    $exesToSign += $_.FullName
-                }
-            }
-        }
+        foreach ($d in $dirs) {
+            $distPath = Join-Path $d "dist"
+            if (-not (Test-Path $distPath)) { continue }
 
-        foreach ($exePath in $exesToSign) {
-            $firmado = $false
-            foreach ($ts in $tsServers) {
+            # Solo firmar el .exe del Version actual (no los builds viejos)
+            $exes = Get-ChildItem $distPath -Filter "*Setup*$Version*.exe" -ErrorAction SilentlyContinue
+            foreach ($exe in $exes) {
+                if ($exe.Name -like "*.blockmap") { continue }
+                $exePath = $exe.FullName
+                $nombreCorto = $exe.Name
                 try {
-                    $r = Set-AuthenticodeSignature -FilePath $exePath -Certificate $cert -TimestampServer $ts -ErrorAction Stop
+                    # Sin TimestampServer (es opcional y a veces falla)
+                    $r = Set-AuthenticodeSignature -FilePath $exePath -Certificate $cert -ErrorAction Stop
                     if ($r.Status -eq "Valid") {
-                        Log "  [OK] Firmado: $(Split-Path $exePath -Leaf)" "Green"
-                        $firmado = $true
-                        break
+                        Log "  [OK] Firmado: $nombreCorto" "Green"
+                    } else {
+                        Log "  [WARN] Status: $($r.Status) - $($r.StatusMessage) en $nombreCorto" "Yellow"
                     }
                 } catch {
-                    # intenta siguiente TS
+                    Log "  [FAIL] $nombreCorto - $($_.Exception.Message)" "Red"
                 }
-            }
-            if (-not $firmado) {
-                Log "  [FAIL] No se pudo firmar: $(Split-Path $exePath -Leaf)" "Red"
             }
         }
         Log "[OK] Firma completada" "Green"
@@ -433,26 +456,28 @@ if ($ghOk -and (-not $SkipGitHubRelease)) {
         Log "Assets a subir:" "Yellow"
         foreach ($a in $assets) { Log "  - $a" "Gray" }
 
-        # Notas del release
-        $notes = @"
-# Bar Avenida v$Version
-
-## Instaladores
-Descarga los 3 .exe y sigue el orden de instalacion en el LEEME.
-
-## Instalacion en PC nueva
-1. Instala SQL Server Express con instancia ``MSSQLSERVER01`` (una sola vez)
-2. Corre ``Bar Avenida Server Setup $Version.exe`` (instala backend como servicio Windows)
-3. Corre ``Bar Avenida Admin Setup $Version.exe`` (instala panel admin)
-4. Corre ``Bar Avenida KDS Setup $Version.exe`` (instala monitor barman)
-5. Las meseras abren ``http://IP-DEL-BAR:7000/tablet/`` en su celular
-
-## Actualizar PC ya instalada
-Si ya tienes el script ``actualizar-bar.ps1`` instalado, corre:
-``powershell -ExecutionPolicy Bypass -File C:\BarAvenida\actualizar-bar.ps1``
-
-Fecha: $(Get-Date -Format "yyyy-MM-dd HH:mm")
-"@
+        # Notas del release - construidas via array + join
+        $fechaActual = Get-Date -Format "yyyy-MM-dd HH:mm"
+        $lineasNotas = @()
+        $lineasNotas += "# Bar Avenida v${Version}"
+        $lineasNotas += ""
+        $lineasNotas += "## Instaladores"
+        $lineasNotas += "Descarga los .exe y sigue el orden de instalacion."
+        $lineasNotas += ""
+        $lineasNotas += "## Instalacion en PC nueva"
+        $lineasNotas += "1. Instala SQL Server Express con instancia MSSQLSERVER01"
+        $lineasNotas += "2. Corre Server Setup ${Version}"
+        $lineasNotas += "3. Corre Admin Setup ${Version}"
+        $lineasNotas += "4. Corre KDS Setup ${Version}"
+        $lineasNotas += "5. Corre Tablet Setup ${Version} - opcional para PC"
+        $lineasNotas += "6. Meseras abren http://IP-DEL-BAR:7000/tablet en su celular"
+        $lineasNotas += ""
+        $lineasNotas += "## Actualizar PC ya instalada"
+        $lineasNotas += "Si tienes tarea BarAvenida_AutoUpdate registrada se actualiza sola."
+        $lineasNotas += "Forzar manualmente: actualizar-bar.ps1 -Force"
+        $lineasNotas += ""
+        $lineasNotas += "Fecha: ${fechaActual}"
+        $notes = $lineasNotas -join "`n"
 
         # Crear release
         $tag = "v$Version"

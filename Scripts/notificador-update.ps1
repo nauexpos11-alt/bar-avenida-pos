@@ -214,15 +214,23 @@ Log "Usuario eligio: $decision"
 # ──────────────────────────────────────────────────────────
 switch ($decision) {
     "Instalar" {
-        Log "Lanzando actualizar-bar.ps1 -Force"
-        $actualizarScript = "$WorkDir\actualizar-bar.ps1"
-        if (Test-Path $actualizarScript) {
-            # Lanzar como Admin
+        Log "Lanzando instalar-con-ui.ps1 (wrapper con UI de progreso)"
+        $wrapperUI         = "$WorkDir\instalar-con-ui.ps1"
+        $actualizarScript  = "$WorkDir\actualizar-bar.ps1"
+
+        if (Test-Path $wrapperUI) {
+            # Wrapper visual con barra de progreso + mensaje "Completado"
+            Start-Process -FilePath "powershell.exe" `
+                -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File",$wrapperUI `
+                -Verb RunAs
+        } elseif (Test-Path $actualizarScript) {
+            # Fallback: wrapper no existe (version vieja), lanzar el script crudo
+            Log "[WARN] instalar-con-ui.ps1 no existe, usando actualizar-bar.ps1 directo"
             Start-Process -FilePath "powershell.exe" `
                 -ArgumentList "-NoProfile","-ExecutionPolicy","Bypass","-File",$actualizarScript,"-Force" `
                 -Verb RunAs
         } else {
-            Log "[ERROR] $actualizarScript no existe. Reinstala Bar Avenida desde el USB."
+            Log "[ERROR] Ningun script de update en C:\BarAvenida\. Reinstala Bar Avenida desde el USB."
             [System.Windows.MessageBox]::Show(
                 "No se pudo encontrar el script de actualizacion en C:\BarAvenida\.`n`nReinstala Bar Avenida desde el USB con la version v1.4.0 o superior.",
                 "Bar Avenida - Error",

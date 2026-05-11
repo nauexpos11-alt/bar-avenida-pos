@@ -3,9 +3,10 @@
 #
 # Registra DOS tareas:
 #   1. BarAvenida_Notificador  - corre al inicio de sesion del usuario.
-#      Muestra ventana "Hay update, ¿instalar?" si hay version nueva.
+#      Muestra ventana "Hay update X.Y.Z, ¿instalar ahora?" si hay version nueva.
+#      Al confirmar muestra barra de progreso y al final "Completado" con boton OK.
 #   2. BarAvenida_AutoUpdate   - tarea silenciosa diaria como fallback.
-#      Corre en la madrugada (3am) si la PC esta prendida.
+#      Corre en la madrugada (3:30am) si la PC esta prendida.
 # ============================================================================
 
 $ErrorActionPreference = "Continue"
@@ -51,10 +52,15 @@ function CopiarScript {
 
 $scriptActualizar  = CopiarScript "actualizar-bar.ps1"
 $scriptNotificador = CopiarScript "notificador-update.ps1"
+$scriptUiWrapper   = CopiarScript "instalar-con-ui.ps1"
 
 if (-not $scriptActualizar -or -not $scriptNotificador) {
     Write-Host "[FAIL] Faltan scripts. Abortando." -ForegroundColor Red
     exit 1
+}
+
+if (-not $scriptUiWrapper) {
+    Write-Host "[WARN] instalar-con-ui.ps1 no se pudo copiar. El notificador caera al modo silencioso." -ForegroundColor Yellow
 }
 
 # ──────────────────────────────────────────────────────────
@@ -120,6 +126,7 @@ Write-Host ""
 Write-Host "1. AL ARRANCAR LA PC:" -ForegroundColor Cyan
 Write-Host "   Si hay update, aparece ventana preguntando que hacer." -ForegroundColor Gray
 Write-Host "   El usuario decide: Instalar / Mas tarde / Saltar." -ForegroundColor Gray
+Write-Host "   Al instalar muestra barra de progreso y mensaje 'Completado'." -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. CADA NOCHE A LAS 3:30 AM:" -ForegroundColor Cyan
 Write-Host "   Si la PC sigue prendida y hay update, lo instala silencioso." -ForegroundColor Gray

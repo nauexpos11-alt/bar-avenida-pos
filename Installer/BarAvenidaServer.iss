@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.4.0
+AppVersion=1.7.5
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.4.0
+OutputBaseFilename=Bar Avenida Server Setup 1.7.5
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible
@@ -59,6 +59,7 @@ Source: "{#SOURCE_ROOT}Backups\fix-permisos-sql-system.sql";  DestDir: "{commona
 ; Scripts del flujo auto-update (se copian a C:\BarAvenida para que las tareas los encuentren)
 Source: "{#SOURCE_ROOT}Scripts\actualizar-bar.ps1";            DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\notificador-update.ps1";        DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Scripts\instalar-con-ui.ps1";           DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\install-tarea-auto-update.ps1"; DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 
 [Dirs]

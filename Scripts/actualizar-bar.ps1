@@ -67,6 +67,30 @@ function Compare-Versiones([string]$nueva, [string]$actual) {
 # 1. Consultar GitHub Releases (publica, no requiere auth)
 # ──────────────────────────────────────────────────────────
 Log "=== AUTO-UPDATE BAR AVENIDA ==="
+
+# ──────────────────────────────────────────────────────────
+# 0. PRE-CHECK: Asegurar que SQL Server MSSQLSERVER01 este corriendo
+# y configurado para arrancar automatico al boot
+# ──────────────────────────────────────────────────────────
+$sqlSvc = Get-Service "MSSQL`$MSSQLSERVER01" -ErrorAction SilentlyContinue
+if ($sqlSvc) {
+    # Asegurar startup automatico (por si lo bajaron a manual)
+    try { Set-Service -Name "MSSQL`$MSSQLSERVER01" -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+
+    if ($sqlSvc.Status -ne "Running") {
+        Log "SQL Server detenido. Arrancando..."
+        try {
+            Start-Service "MSSQL`$MSSQLSERVER01"
+            Start-Sleep -Seconds 8
+            Log "  [OK] SQL arrancado"
+        } catch {
+            Log "  [WARN] No se pudo arrancar SQL: $($_.Exception.Message)"
+        }
+    } else {
+        Log "[OK] SQL Server MSSQLSERVER01 corriendo"
+    }
+}
+
 Log "Consultando ultimo release de $Repo..."
 
 try {
@@ -139,10 +163,11 @@ $certPublico = $null
 
 foreach ($a in $release.assets) {
     $name = $a.name
-    if ($name -like "Bar Avenida Server Setup*.exe") { $key = "Server" }
-    elseif ($name -like "Bar Avenida Admin Setup*.exe") { $key = "Admin" }
-    elseif ($name -like "Bar Avenida KDS Setup*.exe") { $key = "KDS" }
-    elseif ($name -like "Bar Avenida Tablet Setup*.exe") { $key = "Tablet" }
+    # GitHub renombra los archivos: espacios -> puntos. Usamos regex que acepta ambos.
+    if     ($name -match '^Bar[\.\s]Avenida[\.\s]Server[\.\s]Setup[\.\s].*\.exe$') { $key = "Server" }
+    elseif ($name -match '^Bar[\.\s]Avenida[\.\s]Admin[\.\s]Setup[\.\s].*\.exe$')  { $key = "Admin"  }
+    elseif ($name -match '^Bar[\.\s]Avenida[\.\s]KDS[\.\s]Setup[\.\s].*\.exe$')    { $key = "KDS"    }
+    elseif ($name -match '^Bar[\.\s]Avenida[\.\s]Tablet[\.\s]Setup[\.\s].*\.exe$') { $key = "Tablet" }
     elseif ($name -eq "BarAvenidaCodeSigning.cer") {
         # Bajar el cert publico tambien
         $certPublico = Join-Path $DownloadDir $name
@@ -357,3 +382,30 @@ Log "Instaladores temporales borrados"
 
 Log "=== AUTO-UPDATE COMPLETADO ==="
 Log ""
+
+# ──────────────────────────────────────────────────────────
+# 11. Notificar al usuario (MessageBox visible) si NO se invoco silencioso
+# ──────────────────────────────────────────────────────────
+# Detectamos si hay sesion interactiva: si SI, mostramos confirmacion visual
+$mostrarUI = $false
+try {
+    $sesion = (Get-Process -Id $PID).SessionId
+    if ($sesion -gt 0) { $mostrarUI = $true }  # Sesion 0 = SYSTEM (silencioso)
+} catch {}
+
+if ($mostrarUI) {
+    try {
+        Add-Type -AssemblyName PresentationFramework -ErrorAction Stop
+        $msgOk = "Bar Avenida actualizado a v$versionNueva`n`nEl servicio esta corriendo y el backend responde.`n`nLas apps Admin / KDS / Tablet se reiniciaran automaticamente."
+        $msgErr = "Bar Avenida actualizado a v$versionNueva, pero el backend NO responde despues de la actualizacion.`n`nRevisa el log:`nC:\BarAvenida\actualizar-bar.log"
+        $titulo = "Bar Avenida - Actualizacion completada"
+        if ($ok -and $loginOk) {
+            [System.Windows.MessageBox]::Show($msgOk, $titulo, "OK", "Information") | Out-Null
+        } else {
+            [System.Windows.MessageBox]::Show($msgErr, $titulo, "OK", "Warning") | Out-Null
+        }
+    } catch {
+        Log "[INFO] No se pudo mostrar MessageBox (probablemente sin sesion grafica)"
+    }
+}
+

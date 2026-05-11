@@ -1,51 +1,51 @@
 {
-  "name": "baravenida-kds-desktop",
-  "version": "1.1.1",
-  "description": "Bar Avenida — KDS Barra",
-  "author": "Bar Avenida",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --win",
-    "build:dir": "electron-builder --win --dir"
-  },
-  "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
-  },
-  "build": {
-    "appId": "com.baravenida.kds",
-    "productName": "Bar Avenida KDS",
-    "copyright": "Bar Avenida",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "splash.html",
-      "config-servidor.html",
-      "assets/**/*"
-    ],
-    "win": {
-      "publisherName": "Bar Avenida",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Bar Avenida KDS",
-      "uninstallDisplayName": "Bar Avenida KDS"
-    }
-  }
+    "name":  "baravenida-kds-desktop",
+    "version":  "1.2.0",
+    "description":  "Bar Avenida — KDS Barra",
+    "author":  "Bar Avenida",
+    "main":  "main.js",
+    "scripts":  {
+                    "start":  "electron .",
+                    "build":  "electron-builder --win",
+                    "build:dir":  "electron-builder --win --dir"
+                },
+    "devDependencies":  {
+                            "electron":  "^31.0.0",
+                            "electron-builder":  "^24.13.3"
+                        },
+    "build":  {
+                  "appId":  "com.baravenida.kds",
+                  "productName":  "Bar Avenida KDS",
+                  "copyright":  "Bar Avenida",
+                  "directories":  {
+                                      "output":  "dist"
+                                  },
+                  "files":  [
+                                "main.js",
+                                "preload.js",
+                                "splash.html",
+                                "config-servidor.html",
+                                "assets/**/*"
+                            ],
+                  "win":  {
+                              "publisherName":  "Bar Avenida",
+                              "target":  [
+                                             {
+                                                 "target":  "nsis",
+                                                 "arch":  [
+                                                              "x64"
+                                                          ]
+                                             }
+                                         ]
+                          },
+                  "nsis":  {
+                               "oneClick":  false,
+                               "perMachine":  false,
+                               "allowToChangeInstallationDirectory":  true,
+                               "createDesktopShortcut":  true,
+                               "createStartMenuShortcut":  true,
+                               "shortcutName":  "Bar Avenida KDS",
+                               "uninstallDisplayName":  "Bar Avenida KDS"
+                           }
+              }
 }

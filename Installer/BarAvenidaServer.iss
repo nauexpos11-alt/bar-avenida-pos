@@ -1,4 +1,4 @@
-; Bar Avenida — Server Installer (Inno Setup script)
+; Bar Avenida â€” Server Installer (Inno Setup script)
 ; Para compilar: iscc BarAvenidaServer.iss  (desde la carpeta Installer/)
 ; Prerequisito: Inno Setup 6+ instalado desde https://jrsoftware.org/isinfo.php
 ;
@@ -11,14 +11,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.0.0
+AppVersion=1.2.0
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.0.0
+OutputBaseFilename=Bar Avenida Server Setup 1.2.0
 ; SetupIconFile: descomentar cuando exista
 ; SetupIconFile={#SOURCE_ROOT}BarAvenida.Desktop\assets\icon.ico
 Compression=zip/9
@@ -108,7 +108,7 @@ begin
   Result := Exec('sqlcmd', '-S "localhost\MSSQLSERVER01" -E -Q "SELECT 1" -b', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
 end;
 
-// Se ejecuta al iniciar el wizard — valida prerequisitos
+// Se ejecuta al iniciar el wizard â€” valida prerequisitos
 function InitializeSetup(): Boolean;
 var
   ResultCode: Integer;

@@ -12,7 +12,8 @@ $srcLogo  = "$repoRoot\BarAvenida.Admin\src\assets\logo-bar-avenida.jpeg"
 
 $destinos = @(
     "$repoRoot\BarAvenida.Desktop\assets\icon.ico",
-    "$repoRoot\BarAvenida.KDS.Desktop\assets\icon.ico"
+    "$repoRoot\BarAvenida.KDS.Desktop\assets\icon.ico",
+    "$repoRoot\BarAvenida.Tablet.Desktop\assets\icon.ico"
 )
 
 if (-not (Test-Path $srcLogo)) {

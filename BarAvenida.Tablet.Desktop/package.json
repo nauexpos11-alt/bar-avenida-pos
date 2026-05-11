@@ -1,7 +1,7 @@
 {
-    "name":  "baravenida-desktop",
-    "version":  "1.6.0",
-    "description":  "Bar Avenida — Monitor Admin",
+    "name":  "baravenida-tablet-desktop",
+    "version":  "1.7.0",
+    "description":  "Bar Avenida — Tablet de Meseras",
     "author":  "Bar Avenida",
     "main":  "main.js",
     "scripts":  {
@@ -14,8 +14,8 @@
                             "electron-builder":  "^24.13.3"
                         },
     "build":  {
-                  "appId":  "com.baravenida.admin",
-                  "productName":  "Bar Avenida Admin",
+                  "appId":  "com.baravenida.tablet",
+                  "productName":  "Bar Avenida Tablet",
                   "copyright":  "Bar Avenida",
                   "directories":  {
                                       "output":  "dist"
@@ -45,9 +45,8 @@
                                "allowToChangeInstallationDirectory":  true,
                                "createDesktopShortcut":  true,
                                "createStartMenuShortcut":  true,
-                               "shortcutName":  "Bar Avenida Admin",
-                               "uninstallDisplayName":  "Bar Avenida Admin",
-                               "deleteAppDataOnUninstall":  false,
+                               "shortcutName":  "Bar Avenida Tablet",
+                               "uninstallDisplayName":  "Bar Avenida Tablet",
                                "installerIcon":  "assets/icon.ico",
                                "uninstallerIcon":  "assets/icon.ico"
                            }

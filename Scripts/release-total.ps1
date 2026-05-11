@@ -38,9 +38,21 @@ param(
 $ErrorActionPreference = "Continue"
 
 # ──────────────────────────────────────────────────────────
-# Paths del proyecto
+# Paths del proyecto - auto-detectar segun donde este este script
 # ──────────────────────────────────────────────────────────
-$RepoRoot     = "F:\BarAvenida"
+# Si el script vive en algun/Scripts/, el repo root es algun/
+$RepoRoot = Split-Path $PSScriptRoot -Parent
+
+# Fallback: probar ubicaciones conocidas si $PSScriptRoot no aplica
+if (-not (Test-Path "$RepoRoot\BarAvenida.API")) {
+    foreach ($candidato in @("C:\BarAvenida-dev", "F:\BarAvenida", "E:\bar-avenida-pos")) {
+        if (Test-Path "$candidato\BarAvenida.API") {
+            $RepoRoot = $candidato
+            break
+        }
+    }
+}
+
 $ApiDir       = "$RepoRoot\BarAvenida.API"
 $AdminDir     = "$RepoRoot\BarAvenida.Admin"
 $KdsDir       = "$RepoRoot\BarAvenida.KDS"
@@ -50,19 +62,7 @@ $KdsDeskDir   = "$RepoRoot\BarAvenida.KDS.Desktop"
 $InstallerDir = "$RepoRoot\Installer"
 $ReleasesDir  = "$RepoRoot\Releases"
 
-# Si no estamos en F:\BarAvenida, asumir que es E:\bar-avenida-pos (modo dev)
-if (-not (Test-Path $RepoRoot)) {
-    $RepoRoot     = "E:\bar-avenida-pos"
-    $ApiDir       = "$RepoRoot\BarAvenida.API"
-    $AdminDir     = "$RepoRoot\BarAvenida.Admin"
-    $KdsDir       = "$RepoRoot\BarAvenida.KDS"
-    $TabletDir    = "$RepoRoot\BarAvenida.Tablet"
-    $DesktopDir   = "$RepoRoot\BarAvenida.Desktop"
-    $KdsDeskDir   = "$RepoRoot\BarAvenida.KDS.Desktop"
-    $InstallerDir = "$RepoRoot\Installer"
-    $ReleasesDir  = "$RepoRoot\Releases"
-    Write-Host "[INFO] Modo desarrollo: usando $RepoRoot" -ForegroundColor Yellow
-}
+Write-Host "[INFO] Repo detectado: $RepoRoot" -ForegroundColor Yellow
 
 function Log([string]$msg, [string]$color = "White") {
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] $msg" -ForegroundColor $color
@@ -289,6 +289,90 @@ if (-not $SkipKDS) {
 }
 
 # ──────────────────────────────────────────────────────────
+# 6.5. Build TABLET Electron .exe
+# ──────────────────────────────────────────────────────────
+$TabletDeskDir = "$RepoRoot\BarAvenida.Tablet.Desktop"
+if (-not $SkipKDS -and (Test-Path $TabletDeskDir)) {
+    LogStep "6.5. BUILD TABLET ELECTRON"
+
+    Push-Location $TabletDeskDir
+    try {
+        if (-not (Test-Path "node_modules")) {
+            Log "  Instalando dependencias..." "Gray"
+            npm install --silent 2>&1 | Out-Null
+        }
+        Log "electron-builder --win..." "Yellow"
+        npm run build 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Log "[OK] Tablet .exe generado en $TabletDeskDir\dist" "Green"
+        } else {
+            Log "[WARN] electron-builder Tablet fallo" "Yellow"
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
+# ──────────────────────────────────────────────────────────
+# 6.9. FIRMAR los .exe Electron con el cert self-signed
+# ──────────────────────────────────────────────────────────
+LogStep "6.9. FIRMANDO los .exe con cert self-signed"
+
+$pfxPath = "$RepoRoot\cert\BarAvenidaCodeSigning.pfx"
+$pwdFile = "$RepoRoot\cert\cert-password.txt"
+
+if (-not (Test-Path $pfxPath)) {
+    Log "[WARN] No existe $pfxPath. Corre Scripts\crear-cert-baravenida.ps1 primero." "Yellow"
+    Log "       Saltando firma — los .exe iran sin firma (los bloqueara WDAC)." "Yellow"
+} else {
+    $pwd = ConvertTo-SecureString -String (Get-Content $pwdFile -Raw) -Force -AsPlainText
+    try {
+        $cert = Get-PfxCertificate -FilePath $pfxPath -Password $pwd
+    } catch {
+        Log "[FAIL] No se pudo cargar el cert: $($_.Exception.Message)" "Red"
+        $cert = $null
+    }
+
+    if ($cert) {
+        $tsServers = @(
+            "http://timestamp.digicert.com",
+            "http://timestamp.sectigo.com",
+            "http://timestamp.globalsign.com/tsa/r6advanced1"
+        )
+
+        $exesToSign = @()
+        foreach ($d in @($DesktopDir, $KdsDeskDir, $TabletDeskDir)) {
+            if (Test-Path "$d\dist") {
+                Get-ChildItem "$d\dist" -Filter "*Setup*.exe" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notlike "*.blockmap" } | ForEach-Object {
+                    $exesToSign += $_.FullName
+                }
+            }
+        }
+
+        foreach ($exePath in $exesToSign) {
+            $firmado = $false
+            foreach ($ts in $tsServers) {
+                try {
+                    $r = Set-AuthenticodeSignature -FilePath $exePath -Certificate $cert -TimestampServer $ts -ErrorAction Stop
+                    if ($r.Status -eq "Valid") {
+                        Log "  [OK] Firmado: $(Split-Path $exePath -Leaf)" "Green"
+                        $firmado = $true
+                        break
+                    }
+                } catch {
+                    # intenta siguiente TS
+                }
+            }
+            if (-not $firmado) {
+                Log "  [FAIL] No se pudo firmar: $(Split-Path $exePath -Leaf)" "Red"
+            }
+        }
+        Log "[OK] Firma completada" "Green"
+    }
+}
+
+# ──────────────────────────────────────────────────────────
 # 7. Juntar los 3 instaladores en Releases\
 # ──────────────────────────────────────────────────────────
 LogStep "7. JUNTAR INSTALADORES EN Releases/"
@@ -325,6 +409,21 @@ if ($ghOk -and (-not $SkipGitHubRelease)) {
                 Sort-Object LastWriteTime -Descending |
                 Select-Object -First 1
         if ($exe3) { $assets += $exe3.FullName }
+
+        # Tablet.Desktop (v1.7.0+)
+        if (Test-Path "$TabletDeskDir\dist") {
+            $exe4 = Get-ChildItem "$TabletDeskDir\dist" -Filter "Bar Avenida Tablet Setup *.exe" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notlike "*.blockmap" } |
+                    Sort-Object LastWriteTime -Descending |
+                    Select-Object -First 1
+            if ($exe4) { $assets += $exe4.FullName }
+        }
+
+        # CERTIFICADO PUBLICO (.cer) - para que las PCs cliente lo instalen
+        $cerPath = "$RepoRoot\cert\BarAvenidaCodeSigning.cer"
+        if (Test-Path $cerPath) {
+            $assets += $cerPath
+        }
 
         if ($assets.Count -eq 0) {
             Log "[FAIL] No se encontraron .exe para subir" "Red"

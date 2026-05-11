@@ -135,11 +135,21 @@ $assetsBuscados = @(
 
 $descargados = @{}
 
+$certPublico = $null
+
 foreach ($a in $release.assets) {
     $name = $a.name
     if ($name -like "Bar Avenida Server Setup*.exe") { $key = "Server" }
     elseif ($name -like "Bar Avenida Admin Setup*.exe") { $key = "Admin" }
     elseif ($name -like "Bar Avenida KDS Setup*.exe") { $key = "KDS" }
+    elseif ($name -like "Bar Avenida Tablet Setup*.exe") { $key = "Tablet" }
+    elseif ($name -eq "BarAvenidaCodeSigning.cer") {
+        # Bajar el cert publico tambien
+        $certPublico = Join-Path $DownloadDir $name
+        & curl.exe -L --retry 3 -o $certPublico $a.browser_download_url 2>&1 | Out-Null
+        Log "  [OK] Cert publico descargado: $certPublico"
+        continue
+    }
     else { continue }
 
     $localPath = Join-Path $DownloadDir $name
@@ -156,9 +166,31 @@ foreach ($a in $release.assets) {
 }
 
 if ($descargados.Count -lt 3) {
-    Log "[ERROR] Solo se descargaron $($descargados.Count) de 3 .exe. Abortando."
+    Log "[ERROR] Solo se descargaron $($descargados.Count) de 3+ .exe. Abortando."
     Log "Encontrados: $($descargados.Keys -join ', ')"
     exit 1
+}
+
+# ──────────────────────────────────────────────────────────
+# 3.5. Instalar cert publico en Trusted Publishers (si llego)
+# Esto evita el bloqueo de WDAC/SmartScreen para los .exe firmados con ese cert
+# ──────────────────────────────────────────────────────────
+if ($certPublico -and (Test-Path $certPublico)) {
+    try {
+        Log "Instalando cert publico en TrustedPublisher + Root..."
+        Import-Certificate -FilePath $certPublico -CertStoreLocation "Cert:\LocalMachine\TrustedPublisher" -ErrorAction Stop | Out-Null
+        Import-Certificate -FilePath $certPublico -CertStoreLocation "Cert:\LocalMachine\Root" -ErrorAction SilentlyContinue | Out-Null
+        Log "  [OK] Cert instalado. Los .exe firmados no seran bloqueados."
+    } catch {
+        Log "  [WARN] No se pudo instalar el cert: $($_.Exception.Message)"
+    }
+}
+
+# ──────────────────────────────────────────────────────────
+# 3.7. Desbloquear los .exe descargados (quita marca de internet)
+# ──────────────────────────────────────────────────────────
+foreach ($p in $descargados.Values) {
+    Unblock-File -Path $p -ErrorAction SilentlyContinue
 }
 
 # ──────────────────────────────────────────────────────────
@@ -209,6 +241,19 @@ if ($proc.ExitCode -eq 0) {
     Log "  [OK] KDS instalado"
 } else {
     Log "  [FAIL] KDS installer salio con exit code $($proc.ExitCode)"
+}
+
+# ──────────────────────────────────────────────────────────
+# 7.5. Instalar TABLET Electron (NSIS) - silent (si llego en la release)
+# ──────────────────────────────────────────────────────────
+if ($descargados.ContainsKey("Tablet")) {
+    Log "Instalando Tablet $versionNueva..."
+    $proc = Start-Process -FilePath $descargados["Tablet"] -ArgumentList "/S" -PassThru -Wait
+    if ($proc.ExitCode -eq 0) {
+        Log "  [OK] Tablet instalada"
+    } else {
+        Log "  [FAIL] Tablet installer salio con exit code $($proc.ExitCode)"
+    }
 }
 
 # ──────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 {
     "name":  "baravenida-kds-desktop",
-    "version":  "1.2.0",
+    "version":  "1.5.1",
     "description":  "Bar Avenida — KDS Barra",
     "author":  "Bar Avenida",
     "main":  "main.js",
@@ -29,6 +29,7 @@
                             ],
                   "win":  {
                               "publisherName":  "Bar Avenida",
+                              "icon":  "assets/icon.ico",
                               "target":  [
                                              {
                                                  "target":  "nsis",
@@ -45,7 +46,9 @@
                                "createDesktopShortcut":  true,
                                "createStartMenuShortcut":  true,
                                "shortcutName":  "Bar Avenida KDS",
-                               "uninstallDisplayName":  "Bar Avenida KDS"
+                               "uninstallDisplayName":  "Bar Avenida KDS",
+                               "installerIcon":  "assets/icon.ico",
+                               "uninstallerIcon":  "assets/icon.ico"
                            }
               }
 }

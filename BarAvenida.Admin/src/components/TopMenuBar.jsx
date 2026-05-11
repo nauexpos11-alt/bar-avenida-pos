@@ -60,11 +60,11 @@ const SECCIONES = [
       {
         id: 'adm-config', label: '⚙️ Configuración', hub: true,
         sub: [
-          { label: 'General',           screen: 'config-general' },
-          { label: 'Formas de pago',    screen: 'config-formas-pago' },
-          { label: 'Folio ticket',      screen: 'config-folios' },
-          { label: '📱 Conectar tablets', screen: 'conectar-tablets' },
-          { label: 'Cambiar PIN',       screen: 'seg-contrasena' },
+          { label: 'General',         screen: 'config-general' },
+          { label: 'Formas de pago',  screen: 'config-formas-pago' },
+          { label: 'Folio ticket',    screen: 'config-folios' },
+          { label: 'Conectar tablets', screen: 'conectar-tablets' },
+          { label: 'Cambiar PIN',     screen: 'seg-contrasena' },
         ],
       },
     ],

@@ -1,6 +1,6 @@
 {
     "name":  "baravenida-desktop",
-    "version":  "1.2.0",
+    "version":  "1.5.1",
     "description":  "Bar Avenida — Monitor Admin",
     "author":  "Bar Avenida",
     "main":  "main.js",
@@ -29,6 +29,7 @@
                             ],
                   "win":  {
                               "publisherName":  "Bar Avenida",
+                              "icon":  "assets/icon.ico",
                               "target":  [
                                              {
                                                  "target":  "nsis",
@@ -46,7 +47,9 @@
                                "createStartMenuShortcut":  true,
                                "shortcutName":  "Bar Avenida Admin",
                                "uninstallDisplayName":  "Bar Avenida Admin",
-                               "deleteAppDataOnUninstall":  false
+                               "deleteAppDataOnUninstall":  false,
+                               "installerIcon":  "assets/icon.ico",
+                               "uninstallerIcon":  "assets/icon.ico"
                            }
               }
 }

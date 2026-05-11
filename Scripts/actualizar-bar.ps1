@@ -143,14 +143,15 @@ foreach ($a in $release.assets) {
     else { continue }
 
     $localPath = Join-Path $DownloadDir $name
-    Log "Descargando $name ($([math]::Round($a.size / 1MB, 1)) MB)..."
+    Log "Descargando $name ($([math]::Round($a.size / 1MB, 1)) MB) con curl.exe..."
 
-    try {
-        Invoke-WebRequest -Uri $a.browser_download_url -OutFile $localPath -UseBasicParsing -TimeoutSec 600
+    # Usar curl.exe en vez de Invoke-WebRequest (PS5.x se traba con archivos grandes de GitHub)
+    & curl.exe -L --retry 5 --retry-delay 3 --max-time 600 -o $localPath $a.browser_download_url 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $localPath) -and (Get-Item $localPath).Length -gt 1MB) {
         Log "  [OK] Guardado en $localPath"
         $descargados[$key] = $localPath
-    } catch {
-        Log "  [FAIL] Error: $($_.Exception.Message)"
+    } else {
+        Log "  [FAIL] curl.exe exit $LASTEXITCODE o archivo demasiado chico"
     }
 }
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
+import { API_URL } from '../api'
 import './QRTabletScreen.css'
-
-const API_BASE = ''
 
 export default function QRTabletScreen({ auth, onVolver }) {
   const [info, setInfo]       = useState(null)
@@ -16,7 +15,7 @@ export default function QRTabletScreen({ auth, onVolver }) {
     setLoading(true)
     setError(null)
     try {
-      const r = await fetch(`${API_BASE}/api/sistema/ip-real`)
+      const r = await fetch(`${API_URL}/api/sistema/ip-real`)
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       const data = await r.json()
       setInfo(data)

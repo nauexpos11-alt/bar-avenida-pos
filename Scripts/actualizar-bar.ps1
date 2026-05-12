@@ -235,15 +235,36 @@ try {
 }
 
 # ──────────────────────────────────────────────────────────
+# 4.5. CERRAR apps Electron antes de instalar (evita "DLL en uso")
+# ──────────────────────────────────────────────────────────
+Log "Cerrando apps Electron en uso..."
+foreach ($appName in @("Bar Avenida Admin","Bar Avenida KDS","Bar Avenida Tablet")) {
+    Get-Process | Where-Object { $_.MainWindowTitle -like "$appName*" -or $_.ProcessName -like "$appName*" } | ForEach-Object {
+        try {
+            $_ | Stop-Process -Force -ErrorAction SilentlyContinue
+            Log "  [OK] Cerrado proceso $($_.ProcessName)"
+        } catch {}
+    }
+}
+Start-Sleep -Seconds 2  # esperar que liberen DLLs
+
+# Tracking de exitos/fallos para reportar al final
+$instalados = @{}
+$fallos     = @()
+
+# ──────────────────────────────────────────────────────────
 # 5. Instalar Server (Inno Setup) - silent
 # ──────────────────────────────────────────────────────────
 Log "Instalando Server $versionNueva..."
-$args = @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART")
-$proc = Start-Process -FilePath $descargados["Server"] -ArgumentList $args -PassThru -Wait
+$innoArgs = @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS")
+$proc = Start-Process -FilePath $descargados["Server"] -ArgumentList $innoArgs -PassThru -Wait
 if ($proc.ExitCode -eq 0) {
     Log "  [OK] Server instalado"
+    $instalados["Server"] = $true
 } else {
     Log "  [FAIL] Server installer salio con exit code $($proc.ExitCode)"
+    $fallos += "Server (exit $($proc.ExitCode))"
+    $instalados["Server"] = $false
 }
 
 # ──────────────────────────────────────────────────────────
@@ -253,8 +274,11 @@ Log "Instalando Admin $versionNueva..."
 $proc = Start-Process -FilePath $descargados["Admin"] -ArgumentList "/S" -PassThru -Wait
 if ($proc.ExitCode -eq 0) {
     Log "  [OK] Admin instalado"
+    $instalados["Admin"] = $true
 } else {
     Log "  [FAIL] Admin installer salio con exit code $($proc.ExitCode)"
+    $fallos += "Admin (exit $($proc.ExitCode))"
+    $instalados["Admin"] = $false
 }
 
 # ──────────────────────────────────────────────────────────
@@ -264,8 +288,11 @@ Log "Instalando KDS $versionNueva..."
 $proc = Start-Process -FilePath $descargados["KDS"] -ArgumentList "/S" -PassThru -Wait
 if ($proc.ExitCode -eq 0) {
     Log "  [OK] KDS instalado"
+    $instalados["KDS"] = $true
 } else {
     Log "  [FAIL] KDS installer salio con exit code $($proc.ExitCode)"
+    $fallos += "KDS (exit $($proc.ExitCode))"
+    $instalados["KDS"] = $false
 }
 
 # ──────────────────────────────────────────────────────────
@@ -276,8 +303,11 @@ if ($descargados.ContainsKey("Tablet")) {
     $proc = Start-Process -FilePath $descargados["Tablet"] -ArgumentList "/S" -PassThru -Wait
     if ($proc.ExitCode -eq 0) {
         Log "  [OK] Tablet instalada"
+        $instalados["Tablet"] = $true
     } else {
         Log "  [FAIL] Tablet installer salio con exit code $($proc.ExitCode)"
+        $fallos += "Tablet (exit $($proc.ExitCode))"
+        $instalados["Tablet"] = $false
     }
 }
 
@@ -371,16 +401,27 @@ if (-not $ok) {
 }
 
 # ──────────────────────────────────────────────────────────
-# 10. Guardar version y limpiar
+# 10. Guardar version y limpiar - SOLO si Server se instalo
 # ──────────────────────────────────────────────────────────
-Set-VersionInstalada $versionNueva
-Log "Version instalada actualizada a $versionNueva"
+$serverOk = $instalados.ContainsKey("Server") -and $instalados["Server"]
+
+if ($serverOk) {
+    Set-VersionInstalada $versionNueva
+    Log "Version instalada actualizada a $versionNueva"
+} else {
+    Log "[CRITICO] Server NO se instalo. version-instalada.txt NO se actualiza."
+}
 
 # Borrar instaladores descargados (libera ~300MB)
 Get-ChildItem $DownloadDir -Filter "*.exe" | Remove-Item -Force -ErrorAction SilentlyContinue
 Log "Instaladores temporales borrados"
 
-Log "=== AUTO-UPDATE COMPLETADO ==="
+# Resumen final
+if ($fallos.Count -eq 0) {
+    Log "=== AUTO-UPDATE COMPLETADO - todos los componentes OK ==="
+} else {
+    Log "=== AUTO-UPDATE COMPLETADO con $($fallos.Count) fallos: $($fallos -join ', ') ==="
+}
 Log ""
 
 # ──────────────────────────────────────────────────────────

@@ -21,4 +21,13 @@ public class Usuario
     public bool Activo { get; set; } = true;
 
     public DateTime FechaCreacion { get; set; } = DateTime.Now;
+
+    // ── SEGURIDAD v1.9.0 (Round 1) ────────────────────────────────────────
+    // Lockout / auditoría de login. Las columnas se crean via SQL raw en
+    // startup (MigracionSeguridadRound1) — no via migración EF formal,
+    // para evitar reescribir el ModelSnapshot.
+    public int IntentosFallidos { get; set; } = 0;
+    public DateTime? BloqueadoHasta { get; set; }
+    public DateTime? UltimoLoginExitoso { get; set; }
+    public DateTime? UltimoIntentoFallido { get; set; }
 }

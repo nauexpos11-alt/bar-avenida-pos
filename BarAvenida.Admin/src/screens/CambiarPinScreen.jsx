@@ -7,6 +7,7 @@ export default function CambiarPinScreen({ auth, onVolver }) {
   const [form,     setForm]     = useState({ pinActual: '', pinNuevo: '', confirmarPin: '' })
   const [guardando,setGuardando]= useState(false)
   const [toasts,   setToasts]   = useState([])
+  const [pinNuevoError, setPinNuevoError] = useState('')
 
   const toast = useCallback((msg, tipo = 'ok') => {
     const id = Date.now()
@@ -14,18 +15,29 @@ export default function CambiarPinScreen({ auth, onVolver }) {
     setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 4000)
   }, [])
 
-  const campo = (key, val) => setForm(f => ({ ...f, [key]: val }))
+  const campo = (key, val) => {
+    setForm(f => ({ ...f, [key]: val }))
+    if (key === 'pinNuevo' && pinNuevoError) setPinNuevoError('')
+  }
 
   const handleGuardar = async () => {
     if (!form.pinActual)       { toast('Ingresa tu PIN actual', 'error'); return }
-    if (form.pinNuevo.length < 4) { toast('El PIN nuevo debe tener al menos 4 dígitos', 'error'); return }
+    if (form.pinNuevo.length < 4) { setPinNuevoError('El PIN nuevo debe tener al menos 4 dígitos'); return }
     if (form.pinNuevo !== form.confirmarPin) { toast('Los PINs nuevos no coinciden', 'error'); return }
     setGuardando(true)
+    setPinNuevoError('')
     try {
       const r = await api.cambiarPin(auth.token, form)
       toast(r?.mensaje ?? 'PIN actualizado')
       setForm({ pinActual: '', pinNuevo: '', confirmarPin: '' })
-    } catch (e) { toast(e.message, 'error') }
+    } catch (e) {
+      // Si es 400 del PinValidator (PIN bloqueado/débil), mostramos inline bajo "PIN nuevo"
+      if (e?.status === 400) {
+        setPinNuevoError(e.message || 'PIN no permitido')
+      } else {
+        toast(e.message, 'error')
+      }
+    }
     finally     { setGuardando(false) }
   }
 
@@ -58,11 +70,20 @@ export default function CambiarPinScreen({ auth, onVolver }) {
             />
 
             <label className="cp-lbl">PIN nuevo *</label>
-            <input className="cp-input" type="password" maxLength={8}
+            <input
+              className="cp-input"
+              type="password"
+              maxLength={8}
               value={form.pinNuevo}
               onChange={e => campo('pinNuevo', e.target.value)}
               placeholder="Mínimo 4 dígitos"
+              style={pinNuevoError ? { borderColor: '#c0392b' } : undefined}
             />
+            {pinNuevoError && (
+              <div style={{ marginTop: -4, marginBottom: 8, color: '#ff6b6b', fontSize: 12 }}>
+                {pinNuevoError}
+              </div>
+            )}
 
             <label className="cp-lbl">Confirmar PIN nuevo *</label>
             <input className="cp-input" type="password" maxLength={8}

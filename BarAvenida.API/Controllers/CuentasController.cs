@@ -18,17 +18,27 @@ public class CuentasController : ControllerBase
     private readonly IHubContext<BarHub> _hub;
     private readonly EscPosService _escPos;
     private readonly TicketService _ticket;
+    private readonly IAuditoriaService _audit;
 
     public CuentasController(
         BarAvenidaDbContext context,
         IHubContext<BarHub> hub,
         EscPosService escPos,
-        TicketService ticket)
+        TicketService ticket,
+        IAuditoriaService audit)
     {
         _context = context;
         _hub     = hub;
         _escPos  = escPos;
         _ticket  = ticket;
+        _audit   = audit;
+    }
+
+    private (int? id, string nombre) UsuarioActual()
+    {
+        var idStr  = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var nombre = User.Identity?.Name ?? "";
+        return int.TryParse(idStr, out var id) ? (id, nombre) : ((int?)null, nombre);
     }
 
     // ========================================================================
@@ -404,6 +414,14 @@ public class CuentasController : ControllerBase
 
         await NotificarCobro(cuenta);
 
+        var usrCobro = UsuarioActual();
+        await _audit.LogAsync(
+            "Cuenta",
+            "CobroCuenta",
+            $"Cobro folio #{cuenta.Folio} — Total ${cuenta.Total:N2} ({cuenta.MetodoPago})",
+            usrCobro.id, usrCobro.nombre,
+            $"{{\"cuentaId\":{cuenta.Id},\"folio\":{cuenta.Folio},\"total\":{cuenta.Total},\"metodoPago\":\"{cuenta.MetodoPago}\"}}");
+
         return Ok(new CuentaCobradaDto
         {
             Id              = cuenta.Id,
@@ -503,6 +521,14 @@ public class CuentasController : ControllerBase
         await _hub.Clients.Group("Admin").SendAsync("CuentaCancelada", cuenta.Id);
         if (cuenta.MesaId.HasValue)
             await _hub.Clients.Group("Meseras").SendAsync("MesaActualizada", cuenta.MesaId);
+
+        var usrCancel = UsuarioActual();
+        await _audit.LogAsync(
+            "Cuenta",
+            "CancelarCuenta",
+            $"Cancelacion folio #{cuenta.Folio}. Motivo: {cuenta.MotivoCancelacion ?? "(sin motivo)"}",
+            usrCancel.id, usrCancel.nombre,
+            $"{{\"cuentaId\":{cuenta.Id},\"folio\":{cuenta.Folio}}}");
 
         return Ok(new { mensaje = "Cuenta cancelada" });
     }
@@ -947,6 +973,14 @@ public class CuentasController : ControllerBase
             metodoPago = cuenta.MetodoPago,
         });
 
+        var usrBarra = UsuarioActual();
+        await _audit.LogAsync(
+            "Cuenta",
+            "CobroRapidoBarra",
+            $"Cobro rapido barra folio #{cuenta.Folio} — Total ${cuenta.Total:N2} ({cuenta.MetodoPago})",
+            usrBarra.id, usrBarra.nombre,
+            $"{{\"cuentaId\":{cuenta.Id},\"folio\":{cuenta.Folio},\"total\":{cuenta.Total},\"metodoPago\":\"{cuenta.MetodoPago}\"}}");
+
         return Ok(new
         {
             cuentaId      = cuenta.Id,
@@ -1102,11 +1136,22 @@ public class CuentasController : ControllerBase
     // CANCELAR CUENTA YA COBRADA — admin anula post-cobro (error de cobro, devolución, etc.)
     // ========================================================================
     [HttpPost("{id}/cancelar-cobrada")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelarCobrada(int id, [FromBody] CancelarCobradaDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Motivo) || dto.Motivo.Trim().Length < 10)
             return BadRequest(new { mensaje = "Motivo de mín 10 caracteres" });
+
+        // v1.9.0 Round 2 — PIN admin obligatorio
+        if (string.IsNullOrWhiteSpace(dto.Pin))
+            return BadRequest(new { mensaje = "PIN admin requerido" });
+
+        var codigoActual = User.FindFirst("Codigo")?.Value ?? User.Identity?.Name ?? "";
+        var admin = await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Codigo == codigoActual && u.Rol == "Admin" && u.Activo);
+        if (admin == null) return Unauthorized(new { mensaje = "Solo admin puede cancelar cobros" });
+        if (!BCrypt.Net.BCrypt.Verify(dto.Pin, admin.PinHash))
+            return BadRequest(new { mensaje = "PIN admin incorrecto" });
 
         var cuenta = await _context.Cuentas.FindAsync(id);
         if (cuenta == null) return NotFound(new { mensaje = "Cuenta no encontrada" });
@@ -1116,9 +1161,18 @@ public class CuentasController : ControllerBase
         cuenta.Estado            = "Cancelada";
         cuenta.MotivoCancelacion = dto.Motivo.Trim();
         cuenta.FechaCancelacion  = DateTime.Now;
+        cuenta.UsuarioCancelacionId = admin.Id;
         await _context.SaveChangesAsync();
 
         await _hub.Clients.Group("Admin").SendAsync("CuentaCancelada", id);
+
+        await _audit.LogAsync(
+            "Cuenta",
+            "CancelarCobrada",
+            $"Cancelacion post-cobro folio #{cuenta.Folio}. Motivo: {cuenta.MotivoCancelacion}",
+            admin.Id, admin.Nombre,
+            $"{{\"cuentaId\":{cuenta.Id},\"folio\":{cuenta.Folio},\"totalDevuelto\":{cuenta.Total}}}");
+
         return Ok(new { mensaje = "Cuenta cancelada" });
     }
 

@@ -1,0 +1,182 @@
+/* PinAdminModal — estilo dorado #f0c842 + negro, glassmorphism */
+.pam-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.pam-box {
+  background: linear-gradient(180deg, rgba(26,26,26,0.95), rgba(15,15,15,0.96));
+  border: 1px solid #333;
+  border-top: 2px solid #c0392b;
+  border-radius: 10px;
+  min-width: 360px;
+  max-width: 440px;
+  width: 92%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+
+.pam-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #2a2a2a;
+  background: rgba(192, 57, 43, 0.07);
+}
+
+.pam-titulo {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #f0c842;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pam-lock { font-size: 1rem; }
+
+.pam-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.pam-close:hover:not(:disabled) { color: #fff; background: #2a2a2a; }
+.pam-close:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pam-body {
+  padding: 20px;
+}
+
+.pam-mensaje {
+  margin: 0 0 16px 0;
+  color: #ccc;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pam-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.pam-input {
+  width: 100%;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  color: #f0c842;
+  font-size: 22px;
+  letter-spacing: 12px;
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-feature-settings: 'tnum';
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pam-input:focus {
+  outline: none;
+  border-color: #f0c842;
+  box-shadow: 0 0 0 3px rgba(240, 200, 66, 0.15);
+}
+.pam-input-error {
+  border-color: #c0392b !important;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.2) !important;
+  animation: pam-shake 0.32s;
+}
+@keyframes pam-shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-4px); }
+  75%     { transform: translateX(4px); }
+}
+
+.pam-error {
+  margin-top: 10px;
+  background: rgba(192, 57, 43, 0.12);
+  border: 1px solid rgba(192, 57, 43, 0.4);
+  color: #ff6b6b;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 12.5px;
+}
+
+.pam-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pam-np-key {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #f0c842;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 14px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  transition: background 0.1s;
+}
+.pam-np-key:hover:not(:disabled) { background: #2a2a2a; border-color: #f0c842; }
+.pam-np-key:active:not(:disabled) { background: #333; }
+.pam-np-key:disabled { opacity: 0.4; cursor: not-allowed; }
+.pam-np-empty { background: transparent; border: none; cursor: default; }
+.pam-np-back  { color: #aaa; }
+
+.pam-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid #2a2a2a;
+  background: rgba(0,0,0,0.3);
+}
+
+.pam-btn-cancel {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 9px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pam-btn-cancel:hover:not(:disabled) { background: #333; }
+.pam-btn-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pam-btn-ok {
+  background: #f0c842;
+  border: none;
+  color: #0a0a0a;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pam-btn-ok:hover:not(:disabled) { filter: brightness(1.1); }
+.pam-btn-ok:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pam-btn-peligro {
+  background: #c0392b;
+  color: #fff;
+}
+.pam-btn-peligro:hover:not(:disabled) { background: #e74c3c; }

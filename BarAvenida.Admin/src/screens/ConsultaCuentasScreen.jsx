@@ -302,15 +302,16 @@ export default function ConsultaCuentasScreen({ auth, onVolver }) {
     }
   }
 
-  const handleCancelarOk = async (motivo) => {
+  const handleCancelarOk = async (motivo, pinAdmin) => {
     try {
-      await api.cancelarCobrada(auth.token, detalle.id, motivo)
+      await api.cancelarCobrada(auth.token, detalle.id, motivo, pinAdmin)
       toast(`Folio #${String(detalle.folio).padStart(4,'0')} cancelado`, 'ok')
       setModalCancelar(false)
       setDetalle(d => d ? { ...d, estado: 'Cancelada', motivoCancelacion: motivo, fechaCancelacion: new Date().toISOString() } : d)
       buscar()
     } catch (e) {
-      toast('Error: ' + e.message, 'error')
+      // Re-lanzamos para que CancelarCobradaModal muestre el error inline si es de PIN
+      throw e
     }
   }
 

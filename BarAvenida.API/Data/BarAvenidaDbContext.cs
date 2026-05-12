@@ -31,6 +31,7 @@ public class BarAvenidaDbContext : DbContext
     public DbSet<SolicitudCancelacion> SolicitudesCancelacion { get; set; }
     public DbSet<IncidenteCaja> IncidentesCaja { get; set; }
     public DbSet<ReglaCrossSell> ReglasCrossSell { get; set; }
+    public DbSet<EventoAuditoria> EventosAuditoria { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

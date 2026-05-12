@@ -104,6 +104,21 @@
   text-align: center;
 }
 
+.tmb-https {
+  font-size: 0.95rem;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  transition: background 0.15s, transform 0.15s;
+}
+.tmb-https:hover { background: #1a1a1a; transform: scale(1.06); }
+.tmb-https-on  { color: #2ecc71; filter: drop-shadow(0 0 3px rgba(46,204,113,0.4)); }
+.tmb-https-off { color: #888; }
+
 .tmb-user {
   font-size: 0.73rem;
   font-weight: 600;

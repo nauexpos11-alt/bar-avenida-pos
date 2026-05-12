@@ -170,4 +170,6 @@ public class TicketSimuladoCuentaDto
 public class CancelarCobradaDto
 {
     public string Motivo { get; set; } = "";
+    // v1.9.0 Round 2 — PIN admin obligatorio para acción destructiva
+    public string Pin { get; set; } = "";
 }

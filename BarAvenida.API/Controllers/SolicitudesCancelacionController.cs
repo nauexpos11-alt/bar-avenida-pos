@@ -2,6 +2,7 @@ using BarAvenida.API.Data;
 using BarAvenida.API.DTOs;
 using BarAvenida.API.Hubs;
 using BarAvenida.API.Models;
+using BarAvenida.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -16,11 +17,23 @@ public class SolicitudesCancelacionController : ControllerBase
 {
     private readonly BarAvenidaDbContext _context;
     private readonly IHubContext<BarHub> _hub;
+    private readonly IAuditoriaService _audit;
 
-    public SolicitudesCancelacionController(BarAvenidaDbContext context, IHubContext<BarHub> hub)
+    public SolicitudesCancelacionController(
+        BarAvenidaDbContext context,
+        IHubContext<BarHub> hub,
+        IAuditoriaService audit)
     {
         _context = context;
         _hub = hub;
+        _audit = audit;
+    }
+
+    private (int? id, string nombre) UsuarioActual()
+    {
+        var idStr  = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var nombre = User.Identity?.Name ?? "";
+        return int.TryParse(idStr, out var id) ? (id, nombre) : ((int?)null, nombre);
     }
 
     // GET /api/SolicitudesCancelacion/pendientes
@@ -161,6 +174,13 @@ public class SolicitudesCancelacionController : ControllerBase
         await _hub.Clients.Group("Meseras").SendAsync("SolicitudResuelta", payload);
         await _hub.Clients.Group("Admin").SendAsync("SolicitudResuelta", payload);
 
+        var usr = UsuarioActual();
+        await _audit.LogAsync(
+            "Solicitud",
+            "SolicitudAprobada",
+            $"Aprobada solicitud #{solicitud.Id} ({solicitud.Tipo}) cuenta #{solicitud.CuentaId}",
+            usr.id, usr.nombre);
+
         return Ok(new { mensaje = "Solicitud aprobada" });
     }
 
@@ -194,6 +214,13 @@ public class SolicitudesCancelacionController : ControllerBase
 
         await _hub.Clients.Group("Meseras").SendAsync("SolicitudResuelta", payload);
         await _hub.Clients.Group("Admin").SendAsync("SolicitudResuelta", payload);
+
+        var usr = UsuarioActual();
+        await _audit.LogAsync(
+            "Solicitud",
+            "SolicitudRechazada",
+            $"Rechazada solicitud #{solicitud.Id} ({solicitud.Tipo}) cuenta #{solicitud.CuentaId}",
+            usr.id, usr.nombre);
 
         return Ok(new { mensaje = "Solicitud rechazada" });
     }

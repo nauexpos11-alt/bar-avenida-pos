@@ -5,6 +5,11 @@ import './MeserosScreen.css'
 
 const VACIO = { nombre: '', codigo: '', pin: '', rol: 'Mesera', activo: true }
 
+// PIN admin requerido para resetear PIN de mesera
+function isPinAdminInvalido(pin) {
+  return !pin || pin.length < 4 || !/^\d+$/.test(pin)
+}
+
 export default function MeserosScreen({ auth, onVolver }) {
   const [meseros,      setMeseros]      = useState([])
   const [cargando,     setCargando]     = useState(true)
@@ -14,7 +19,9 @@ export default function MeserosScreen({ auth, onVolver }) {
   const [form,         setForm]         = useState(VACIO)
   const [modalPin,     setModalPin]     = useState(null)   // { mesero }
   const [pinNuevo,     setPinNuevo]     = useState('')
+  const [pinAdminInput,setPinAdminInput]= useState('')
   const [guardandoPin, setGuardandoPin] = useState(false)
+  const [pinAdminError,setPinAdminError]= useState('')
 
   const toast = useCallback((msg, tipo = 'ok') => {
     const id = Date.now()
@@ -66,16 +73,36 @@ export default function MeserosScreen({ auth, onVolver }) {
     } catch (e) { toast(e.message, 'error') }
   }
 
-  const abrirResetPin = (m) => { setPinNuevo(''); setModalPin({ mesero: m }) }
+  const abrirResetPin = (m) => {
+    setPinNuevo('')
+    setPinAdminInput('')
+    setPinAdminError('')
+    setModalPin({ mesero: m })
+  }
 
   const handleResetPin = async () => {
-    if (pinNuevo.length < 4) { toast('El PIN debe tener al menos 4 dígitos', 'error'); return }
+    if (pinNuevo.length < 4) { toast('El PIN nuevo debe tener al menos 4 dígitos', 'error'); return }
+    if (isPinAdminInvalido(pinAdminInput)) { setPinAdminError('Ingresa tu PIN admin (mín. 4 dígitos)'); return }
+    setPinAdminError('')
     setGuardandoPin(true)
     try {
-      await api.cambiarPinAdmin(auth.token, { codigoUsuario: modalPin.mesero.codigo, pinNuevo })
+      await api.cambiarPinAdmin(auth.token, {
+        codigoUsuario: modalPin.mesero.codigo,
+        pinNuevo,
+        pin: pinAdminInput,
+      })
       toast('PIN actualizado')
       setModalPin(null)
-    } catch (e) { toast(e.message, 'error') }
+    } catch (e) {
+      // Si el backend dice "PIN admin incorrecto" lo mostramos inline; si no, toast
+      const msg = e?.message || ''
+      if (/pin admin/i.test(msg)) {
+        setPinAdminError(msg)
+        setPinAdminInput('')
+      } else {
+        toast(msg || 'Error al actualizar PIN', 'error')
+      }
+    }
     finally { setGuardandoPin(false) }
   }
 
@@ -210,8 +237,25 @@ export default function MeserosScreen({ auth, onVolver }) {
                 autoFocus
                 onChange={e => setPinNuevo(e.target.value)}
                 placeholder="Mínimo 4 dígitos"
-                onKeyDown={e => e.key === 'Enter' && !guardandoPin && handleResetPin()}
               />
+
+              <label className="msr-lbl" style={{ marginTop: 12 }}>
+                Tu PIN admin <span style={{ color: '#c0392b' }}>*</span>
+              </label>
+              <input
+                className="msr-input"
+                type="password"
+                inputMode="numeric"
+                value={pinAdminInput}
+                maxLength={6}
+                onChange={e => { setPinAdminInput(e.target.value.replace(/\D/g,'').slice(0,6)); if (pinAdminError) setPinAdminError('') }}
+                placeholder="Confirmación admin"
+                onKeyDown={e => e.key === 'Enter' && !guardandoPin && handleResetPin()}
+                style={pinAdminError ? { borderColor: '#c0392b' } : undefined}
+              />
+              {pinAdminError && (
+                <div style={{ marginTop: 6, color: '#ff6b6b', fontSize: 12 }}>{pinAdminError}</div>
+              )}
             </div>
             <div className="msr-modal-footer">
               <button className="msr-btn-guardar" onClick={handleResetPin} disabled={guardandoPin}>

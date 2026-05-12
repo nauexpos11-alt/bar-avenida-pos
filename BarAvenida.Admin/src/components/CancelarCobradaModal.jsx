@@ -1,15 +1,31 @@
 import { useState } from 'react'
 
 export default function CancelarCobradaModal({ folio, onConfirmar, onCerrar }) {
-  const [motivo, setMotivo] = useState('')
+  const [motivo, setMotivo]     = useState('')
+  const [pinAdmin, setPinAdmin] = useState('')
+  const [pinError, setPinError] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const valido = motivo.trim().length >= 10
+  const motivoValido = motivo.trim().length >= 10
+  const pinValido    = pinAdmin.length >= 4 && /^\d+$/.test(pinAdmin)
+  const valido       = motivoValido && pinValido
 
   const handleConfirmar = async () => {
     if (!valido || guardando) return
     setGuardando(true)
+    setPinError('')
     try {
-      await onConfirmar(motivo.trim())
+      // onConfirmar recibe (motivo, pinAdmin)
+      await onConfirmar(motivo.trim(), pinAdmin)
+    } catch (e) {
+      const msg = e?.message || ''
+      // Si el backend devuelve "PIN admin incorrecto" lo mostramos inline
+      if (/pin admin/i.test(msg)) {
+        setPinError(msg)
+        setPinAdmin('')
+      } else {
+        // Otros errores se mostrarán en el toast del padre — pero re-lanzamos para visibilidad
+        setPinError(msg || 'Error al cancelar')
+      }
     } finally {
       setGuardando(false)
     }
@@ -41,8 +57,36 @@ export default function CancelarCobradaModal({ folio, onConfirmar, onCerrar }) {
           />
           <div className="ccm-contador">
             {motivo.length}/200
-            {motivo.length > 0 && !valido && <span className="ccm-short"> · mín. 10 caracteres</span>}
+            {motivo.length > 0 && !motivoValido && <span className="ccm-short"> · mín. 10 caracteres</span>}
           </div>
+
+          <label className="ccm-lbl" style={{ marginTop: 12 }}>
+            PIN admin <span className="ccm-req">*</span>{' '}
+            <small>(confirmación destructiva)</small>
+          </label>
+          <input
+            type="password"
+            inputMode="numeric"
+            className="ccm-textarea"
+            style={{
+              fontSize: 18,
+              letterSpacing: 8,
+              textAlign: 'center',
+              padding: '8px 12px',
+              fontFamily: 'Courier New, monospace',
+              ...(pinError ? { borderColor: '#c0392b' } : null),
+            }}
+            value={pinAdmin}
+            maxLength={6}
+            placeholder="••••"
+            onChange={e => {
+              setPinAdmin(e.target.value.replace(/\D/g,'').slice(0,6))
+              if (pinError) setPinError('')
+            }}
+          />
+          {pinError && (
+            <div style={{ marginTop: 6, color: '#ff6b6b', fontSize: 12 }}>{pinError}</div>
+          )}
         </div>
         <div className="ccm-footer">
           <button className="ccm-btn-cancel" onClick={onCerrar} disabled={guardando}>

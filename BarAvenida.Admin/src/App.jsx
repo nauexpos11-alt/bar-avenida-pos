@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiSetupRefresh, apiClearRefresh } from './api'
 import LoginScreen                from './screens/LoginScreen'
 import DashboardScreen            from './screens/DashboardScreen'
 import UsuariosScreen             from './screens/UsuariosScreen'
@@ -21,6 +22,7 @@ import DashboardLiveScreen         from './screens/DashboardLiveScreen'
 import MonitorVentasScreen         from './screens/MonitorVentasScreen'
 import InformeDiaScreen            from './screens/InformeDiaScreen'
 import ConsultaCuentasScreen       from './screens/ConsultaCuentasScreen'
+import AuditoriaScreen             from './screens/AuditoriaScreen'
 import BarraRapidaAdminScreen      from './screens/BarraRapidaAdminScreen'
 import CentroOperacionScreen       from './screens/CentroOperacionScreen'
 import PuntoVentaHomeScreen        from './screens/PuntoVentaHomeScreen'
@@ -45,11 +47,33 @@ export default function App() {
   // Estado adicional para pantallas que necesitan un id contextual (ej. MesaOperable)
   const [mesaOperable, setMesaOperable]     = useState(null) // { mesaId, mesaNumero }
 
+  // ── Helper: cuando el módulo api recibe nuevo token (refresh OK) o null (refresh falló)
+  const handleTokenRefreshed = (nuevoToken) => {
+    if (nuevoToken) {
+      setAuth(prev => {
+        if (!prev) return prev
+        const next = { ...prev, token: nuevoToken }
+        try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(next)) } catch {}
+        return next
+      })
+    } else {
+      // refresh falló — sesión muerta, logout
+      handleLogout()
+    }
+  }
+
   useEffect(() => {
     try {
       const s = sessionStorage.getItem(SESSION_KEY)
-      if (s) { const p = JSON.parse(s); if (p.token) setAuth(p) }
+      if (s) {
+        const p = JSON.parse(s)
+        if (p.token) {
+          setAuth(p)
+          apiSetupRefresh(p.token, handleTokenRefreshed)
+        }
+      }
     } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -69,12 +93,14 @@ export default function App() {
     }
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(authObj))
     setAuth(authObj)
+    apiSetupRefresh(authObj.token, handleTokenRefreshed)
   }
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY)
     localStorage.removeItem(LS_PANTALLA)
     localStorage.removeItem(LS_SECCION)
+    apiClearRefresh()
     setAuth(null)
     setPantallaActual('pos-home')
     setPantallaNombre('Inicio')
@@ -171,6 +197,9 @@ export default function App() {
         return <InformeDiaScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'consulta-cuentas':
         return <ConsultaCuentasScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'auditoriaScreen':
+      case 'auditoria':
+        return <AuditoriaScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'conectar-tablets':
         return <QRTabletScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'mesa-operable':
@@ -205,6 +234,7 @@ export default function App() {
     }
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(authObj))
     setAuth(authObj)
+    apiSetupRefresh(authObj.token, handleTokenRefreshed)
     setModalCambioUser(false)
     setPantallaActual('pos-home')
     setPantallaNombre('Inicio')

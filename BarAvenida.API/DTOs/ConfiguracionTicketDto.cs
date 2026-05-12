@@ -15,4 +15,7 @@ public class ConfiguracionTicketDto
     public bool AbrirCajonAlCobrar { get; set; } = true;
     public bool ImpresionHabilitada { get; set; } = true;
     public int AnchoTicket { get; set; } = 32;
+
+    // v1.9.0 Round 2 — PIN admin requerido para guardar cambios
+    public string? Pin { get; set; }
 }

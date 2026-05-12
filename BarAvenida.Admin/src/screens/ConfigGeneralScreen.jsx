@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api, API_URL } from '../api'
 import ToastContainer from '../components/Toast'
 import Modal from '../components/Modal'
+import PinAdminModal from '../components/PinAdminModal'
 import ToggleSwitch from '../components/ToggleSwitch'
 import './ConfigGeneralScreen.css'
 
@@ -29,6 +30,7 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
   const [pinCajon,   setPinCajon]       = useState('')
   const [abriendo, setAbriendo]         = useState(false)
   const [imprimiendo, setImprimiendo]   = useState(false)
+  const [pinModalGuardar, setPinModalGuardar] = useState(false)
 
   const toast = useCallback((mensaje, tipo = 'ok') => {
     const id = Date.now()
@@ -91,7 +93,8 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
 
   const cambiar = (campo, valor) => setCfg(c => ({ ...c, [campo]: valor }))
 
-  const guardar = async () => {
+  // Validación local antes de pedir PIN. Si pasa, abre el modal de PIN admin.
+  const guardar = () => {
     if (cfg.impresionHabilitada && cfg.tipoConexion === 'USB' && !cfg.nombreImpresoraUsb) {
       toast('Selecciona una impresora antes de habilitar la impresión', 'error')
       return
@@ -100,6 +103,11 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
       toast('Ingresa la IP de la impresora antes de habilitar la impresión', 'error')
       return
     }
+    setPinModalGuardar(true)
+  }
+
+  // Acción real después de validar el PIN admin
+  const guardarConPin = async (pin) => {
     setGuardando(true)
     try {
       await api.adminUpdateConfiguracion(auth.token, {
@@ -116,10 +124,12 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
         abrirCajonAlCobrar: cfg.abrirCajonAlCobrar,
         impresionHabilitada:cfg.impresionHabilitada,
         anchoTicket:        Number(cfg.anchoTicket),
-      })
+      }, pin)
       toast('Configuración guardada')
+      setPinModalGuardar(false)
     } catch (e) {
-      toast('Error al guardar: ' + e.message, 'error')
+      // Si es error de PIN, lo mostramos inline en el modal
+      throw e
     } finally {
       setGuardando(false)
     }
@@ -234,6 +244,17 @@ export default function ConfigGeneralScreen({ auth, onVolver }) {
           />
         )}
       </div>
+
+      {pinModalGuardar && (
+        <PinAdminModal
+          titulo="Guardar configuración"
+          mensaje="Estás por modificar la configuración global del POS. Confirma con tu PIN admin."
+          confirmLabel={guardando ? 'Guardando…' : 'Guardar'}
+          peligro
+          onConfirm={guardarConPin}
+          onCancel={() => { if (!guardando) setPinModalGuardar(false) }}
+        />
+      )}
 
       {modalCajon && (
         <Modal

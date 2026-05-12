@@ -4,6 +4,7 @@ using BarAvenida.API.Hubs;
 using BarAvenida.API.Services;
 using BarAvenida.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -12,7 +13,9 @@ using Microsoft.OpenApi.Models;
 using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Events;
+using System.Net;
 using System.Text;
+using System.Threading.RateLimiting;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -54,6 +57,38 @@ builder.Host.UseWindowsService(opts =>
 builder.Environment.ContentRootPath = AppContext.BaseDirectory;
 
 // ============================================================================
+// SEGURIDAD v1.9.0 — Kestrel HTTPS opcional (Round 2)
+//   - HTTP siempre en :7000 (LAN local + loopback)
+//   - HTTPS en :7443 solo si Https:PfxPath está configurado y el archivo existe
+// ============================================================================
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Listen(IPAddress.Parse("127.0.0.1"), 7000);
+    try { options.Listen(IPAddress.Parse("192.168.100.10"), 7000); } catch { /* IP no asignada en dev */ }
+
+    var pfxPath = builder.Configuration["Https:PfxPath"];
+    var pfxPwd  = builder.Configuration["Https:PfxPassword"];
+    if (!string.IsNullOrWhiteSpace(pfxPath) && File.Exists(pfxPath))
+    {
+        try
+        {
+            options.Listen(IPAddress.Parse("127.0.0.1"), 7443, lo => lo.UseHttps(pfxPath, pfxPwd));
+        }
+        catch (Exception ex) { Log.Warning(ex, "No se pudo iniciar HTTPS en 127.0.0.1:7443"); }
+
+        try
+        {
+            options.Listen(IPAddress.Parse("192.168.100.10"), 7443, lo => lo.UseHttps(pfxPath, pfxPwd));
+        }
+        catch (Exception ex) { Log.Warning(ex, "No se pudo iniciar HTTPS en 192.168.100.10:7443"); }
+    }
+    else
+    {
+        Log.Information("HTTPS deshabilitado — Https:PfxPath no configurado o archivo no existe ({Path})", pfxPath ?? "(null)");
+    }
+});
+
+// ============================================================================
 // SERVICIOS
 // ============================================================================
 
@@ -63,6 +98,9 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
+// HttpContextAccessor — necesario para AuditoriaService
+builder.Services.AddHttpContextAccessor();
 
 // Entity Framework con SQL Server
 builder.Services.AddDbContext<BarAvenidaDbContext>(options =>
@@ -89,18 +127,61 @@ builder.Services.AddSingleton<ITicketSimuladoService, TicketSimuladoService>();
 builder.Services.AddSingleton<EscPosService>();
 builder.Services.AddScoped<TicketService>();
 
+// SEGURIDAD v1.9.0 — Servicio de auditoría
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+
 // SignalR para tiempo real
 builder.Services.AddSignalR();
 
-// CORS - permitir conexiones desde tablets, monitor, móvil
+// ============================================================================
+// CORS — Round 2 estricto: lista blanca de orígenes LAN + dev (v1.9.0)
+// ============================================================================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("PermitirTodo", policy =>
+    options.AddPolicy("BarAvenidaLAN", policy => policy
+        .WithOrigins(
+            "http://localhost:7000",  "http://localhost:7443",
+            "https://localhost:7000", "https://localhost:7443",
+            "http://192.168.100.10:7000",  "https://192.168.100.10:7443",
+            "http://localhost:3001", "http://localhost:3002", "http://localhost:3003",
+            "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials());
+});
+
+// ============================================================================
+// RATE LIMITING — Round 1 (v1.9.0)
+//   - Global:  100 req/min por IP
+//   - "Login": 10 req/min por IP (aplicado en AuthController.Login)
+// ============================================================================
+builder.Services.AddRateLimiter(opts =>
+{
+    opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    opts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
     {
-        policy.SetIsOriginAllowed(_ => true)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 100,
+            Window      = TimeSpan.FromMinutes(1),
+            QueueLimit  = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        });
+    });
+
+    opts.AddPolicy("Login", http =>
+    {
+        var ip = http.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window      = TimeSpan.FromMinutes(1),
+            QueueLimit  = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        });
     });
 });
 
@@ -194,6 +275,12 @@ using (var scope = app.Services.CreateScope())
     try
     {
         context.Database.Migrate();
+
+        // SEGURIDAD v1.9.0 — aplicar esquema Round 1 (Usuario lockout + EventosAuditoria)
+        await MigracionSeguridadRound1.AplicarAsync(
+            context,
+            scope.ServiceProvider.GetService<ILogger<Program>>());
+
         Log.Information("Base de datos lista");
     }
     catch (Exception ex)
@@ -201,6 +288,18 @@ using (var scope = app.Services.CreateScope())
         Log.Error(ex, "Error al migrar BD");
     }
 }
+
+// ============================================================================
+// SECURITY HEADERS (v1.9.0 Round 1)
+// ============================================================================
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    ctx.Response.Headers["X-Frame-Options"]        = "DENY";
+    ctx.Response.Headers["Referrer-Policy"]        = "no-referrer";
+    ctx.Response.Headers["Permissions-Policy"]     = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
@@ -210,7 +309,13 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-app.UseCors("PermitirTodo");
+
+// CORS estricto v1.9.0
+app.UseCors("BarAvenidaLAN");
+
+// Rate limiter (debe ir antes de Authorization para limitar requests sin auth)
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

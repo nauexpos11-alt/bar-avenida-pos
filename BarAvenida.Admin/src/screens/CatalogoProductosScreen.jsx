@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import CategoriaModal from '../components/CategoriaModal'
+import PinAdminModal from '../components/PinAdminModal'
 import ToastContainer from '../components/Toast'
 import './CatalogoProductosScreen.css'
 
@@ -324,6 +325,7 @@ export default function CatalogoProductosScreen({ auth }) {
   const [modalCat, setModalCat]     = useState(null)
   const [toasts, setToasts]         = useState([])
   const [confirmarElimCat, setConfirmarElimCat] = useState(null)
+  const [pinModal, setPinModal]     = useState(null)  // { tipo, item, mensaje, accion }
 
   const addToast = useCallback((mensaje, tipo = 'info') => {
     const id = Date.now() + Math.random()
@@ -372,14 +374,18 @@ export default function CatalogoProductosScreen({ auth }) {
   )
 
   // ── Handlers productos ─────────────────────────────────────
-  const handleDesactivar = async (p) => {
-    try {
-      await api.adminDesactivarProducto(auth.token, p.id)
-      setProductos(prev => prev.map(x => x.id === p.id ? { ...x, activo: false } : x))
-      addToast(`"${p.nombre}" desactivado`, 'success')
-    } catch (e) {
-      addToast('Error: ' + e.message, 'error')
-    }
+  const handleDesactivar = (p) => {
+    // Acción destructiva: pide PIN admin
+    setPinModal({
+      tipo: 'producto',
+      item: p,
+      mensaje: `Vas a desactivar el producto "${p.nombre}". Esta acción requiere confirmación admin.`,
+      accion: async (pin) => {
+        await api.adminDesactivarProducto(auth.token, p.id, pin)
+        setProductos(prev => prev.map(x => x.id === p.id ? { ...x, activo: false } : x))
+        addToast(`"${p.nombre}" desactivado`, 'success')
+      },
+    })
   }
 
   const handleActivar = async (p) => {
@@ -411,15 +417,31 @@ export default function CatalogoProductosScreen({ auth }) {
     setConfirmarElimCat(c)
   }
 
-  const confirmarYEliminarCat = async () => {
+  const confirmarYEliminarCat = () => {
     const c = confirmarElimCat
     setConfirmarElimCat(null)
+    // Acción destructiva: pide PIN admin antes de borrar
+    setPinModal({
+      tipo: 'categoria',
+      item: c,
+      mensaje: `Vas a eliminar la categoría "${c.nombre}". Esta acción no se puede deshacer.`,
+      accion: async (pin) => {
+        await api.adminEliminarCategoria(auth.token, c.id, pin)
+        setCategorias(prev => prev.filter(x => x.id !== c.id))
+        addToast(`Categoría "${c.nombre}" eliminada`, 'success')
+      },
+    })
+  }
+
+  // Ejecuta la acción del pinModal y maneja errores (los errores se muestran inline en el modal)
+  const handlePinConfirm = async (pin) => {
+    if (!pinModal) return
     try {
-      await api.adminEliminarCategoria(auth.token, c.id)
-      setCategorias(prev => prev.filter(x => x.id !== c.id))
-      addToast(`Categoría "${c.nombre}" eliminada`, 'success')
+      await pinModal.accion(pin)
+      setPinModal(null)
     } catch (e) {
-      addToast('Error: ' + e.message, 'error')
+      // Re-lanzamos el error para que PinAdminModal lo muestre inline ("PIN admin incorrecto")
+      throw e
     }
   }
 
@@ -598,6 +620,18 @@ export default function CatalogoProductosScreen({ auth }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modal PIN admin (acciones destructivas) ── */}
+      {pinModal && (
+        <PinAdminModal
+          titulo={pinModal.tipo === 'producto' ? 'Desactivar producto' : 'Eliminar categoría'}
+          mensaje={pinModal.mensaje}
+          confirmLabel={pinModal.tipo === 'producto' ? 'Desactivar' : 'Eliminar'}
+          peligro
+          onConfirm={handlePinConfirm}
+          onCancel={() => setPinModal(null)}
+        />
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

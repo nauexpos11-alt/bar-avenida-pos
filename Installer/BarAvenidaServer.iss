@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.8.0
+AppVersion=1.9.0
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.8.0
+OutputBaseFilename=Bar Avenida Server Setup 1.9.0
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible
@@ -47,10 +47,11 @@ Name: "shortcutdesktop";   Description: "Crear acceso directo a la Tablet de mes
 Source: "{#SOURCE_ROOT}BarAvenida.API\publish-installer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Scripts auxiliares de backup/restore
-Source: "{#SOURCE_ROOT}Backups\backup-baravenida.ps1";        DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "{#SOURCE_ROOT}Backups\install-tarea-backup.ps1";     DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "{#SOURCE_ROOT}Backups\restore-baravenida.ps1";       DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
-Source: "{#SOURCE_ROOT}Backups\limpieza-pre-produccion.sql";  DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\backup-baravenida.ps1";              DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\install-tarea-backup.ps1";           DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\restore-baravenida.ps1";             DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\restore-baravenida-encriptado.ps1";  DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Backups\limpieza-pre-produccion.sql";        DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
 
 ; SQL scripts (preventivo y fix manual)
 Source: "{#SOURCE_ROOT}Backups\setup-sql-baravenida.sql";     DestDir: "{commonappdata}\Bar Avenida\Backups"; Flags: ignoreversion
@@ -61,6 +62,10 @@ Source: "{#SOURCE_ROOT}Scripts\actualizar-bar.ps1";            DestDir: "{sd}\Ba
 Source: "{#SOURCE_ROOT}Scripts\notificador-update.ps1";        DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\instalar-con-ui.ps1";           DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\install-tarea-auto-update.ps1"; DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
+
+; Scripts de seguridad HTTPS (v1.9.0)
+Source: "{#SOURCE_ROOT}Scripts\generar-cert-https.ps1";        DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
+Source: "{#SOURCE_ROOT}Scripts\confiar-cert-cliente.ps1";      DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 
 [Dirs]
 ; Carpetas de runtime con permisos de escritura para el servicio
@@ -117,6 +122,10 @@ Filename: "{cmd}"; Parameters: "/c sc start BarAvenidaAPI"; Tasks: iniciarservic
 ; ========== PASO 8: Configurar firewall (puerto 7000) ==========
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; New-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7000 -Profile Any -Enabled True | Out-Null"""; StatusMsg: "Configurando firewall..."; Flags: runhidden waituntilterminated
 
+; ========== PASO 8b: Generar cert HTTPS si no existe (v1.9.0) ==========
+; Solo corre si no existe C:\ProgramData\Bar Avenida\cert\BarAvenida.pfx
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{sd}\BarAvenida\generar-cert-https.ps1"""; StatusMsg: "Generando certificado HTTPS self-signed..."; Flags: runhidden waituntilterminated; Check: CertHttpsNoExiste
+
 ; ========== PASO 9: Tarea de backup ==========
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{commonappdata}\Bar Avenida\Backups\install-tarea-backup.ps1"""; Tasks: tareabackup; StatusMsg: "Registrando tarea de backup..."; Flags: runhidden waituntilterminated
 
@@ -140,6 +149,12 @@ var
   ResultCode: Integer;
 begin
   Result := Exec('sc.exe', 'query BarAvenidaAPI', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+end;
+
+// Verifica si NO existe el cert HTTPS (para regenerarlo)
+function CertHttpsNoExiste(): Boolean;
+begin
+  Result := not FileExists(ExpandConstant('{commonappdata}\Bar Avenida\cert\BarAvenida.pfx'));
 end;
 
 // Verifica que SQL Server este disponible con sqlcmd

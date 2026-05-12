@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
+import PinAdminModal from '../components/PinAdminModal'
 import ToastContainer from '../components/Toast'
 import './AreasScreen.css'
 
@@ -12,6 +13,7 @@ export default function AreasScreen({ auth, onVolver }) {
   const [toasts,    setToasts]    = useState([])
   const [modal,     setModal]     = useState(null)  // null | { modo:'nuevo'|'editar', area }
   const [form,      setForm]      = useState(VACIO)
+  const [pinModal,  setPinModal]  = useState(null)  // { area } — confirmación admin para eliminar
 
   const toast = useCallback((msg, tipo = 'ok') => {
     const id = Date.now()
@@ -51,14 +53,22 @@ export default function AreasScreen({ auth, onVolver }) {
     }
   }
 
-  const handleEliminar = async (area) => {
-    if (!confirm(`¿Eliminar el área "${area.nombre}"?`)) return
+  const handleEliminar = (area) => {
+    // Acción destructiva: pide PIN admin antes de eliminar
+    setPinModal({ area })
+  }
+
+  const confirmarEliminar = async (pin) => {
+    const area = pinModal?.area
+    if (!area) return
     try {
-      await api.adminDeleteArea(auth.token, area.id)
+      await api.adminDeleteArea(auth.token, area.id, pin)
       toast('Área eliminada')
+      setPinModal(null)
       cargar()
     } catch (e) {
-      toast(e.message, 'error')
+      // Re-lanzamos para que PinAdminModal muestre el error inline
+      throw e
     }
   }
 
@@ -114,6 +124,17 @@ export default function AreasScreen({ auth, onVolver }) {
           </table>
         )}
       </div>
+
+      {pinModal && (
+        <PinAdminModal
+          titulo="Eliminar área"
+          mensaje={`Vas a eliminar el área "${pinModal.area.nombre}". Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          peligro
+          onConfirm={confirmarEliminar}
+          onCancel={() => setPinModal(null)}
+        />
+      )}
 
       {modal && (
         <div className="as-overlay" onClick={() => setModal(null)}>

@@ -1,0 +1,312 @@
+/* AuditoriaScreen — patrón visual ReportesScreen, dorado #f0c842 + negro */
+.aud-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+/* === Header === */
+.aud-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.aud-back {
+  background: none;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.aud-back:hover { border-color: #f0c842; color: #f0c842; }
+
+.aud-title {
+  margin: 0;
+  font-size: 18px;
+  color: #f0c842;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* === Filtros === */
+.aud-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #1a1a1a;
+  background: linear-gradient(180deg, #111, #0d0d0d);
+  flex-shrink: 0;
+}
+
+.aud-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aud-filter-group label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin-right: 2px;
+}
+
+.aud-input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #e0e0e0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.aud-input:focus { outline: none; border-color: #f0c842; }
+
+.aud-select {
+  min-width: 130px;
+  cursor: pointer;
+}
+
+.aud-btn-buscar {
+  background: #f0c842;
+  color: #000;
+  border: none;
+  padding: 7px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.aud-btn-buscar:hover:not(:disabled) { background: #ffd966; }
+.aud-btn-buscar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.aud-quick-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.aud-qbtn {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.aud-qbtn:hover { border-color: #f0c842; color: #f0c842; }
+
+/* === Body / tabla === */
+.aud-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 20px;
+}
+
+.aud-error {
+  background: #2a0a0a;
+  border: 1px solid #7a2020;
+  color: #ff6b6b;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.aud-table-wrap {
+  background: linear-gradient(180deg, rgba(20,20,20,0.8), rgba(12,12,12,0.8));
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(2px);
+}
+
+.aud-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-feature-settings: 'tnum';
+}
+
+.aud-table th {
+  text-align: left;
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  background: #111;
+  border-bottom: 1px solid #222;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.aud-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #181818;
+  color: #ccc;
+  vertical-align: top;
+}
+
+.aud-tr.aud-tr-clickable { cursor: pointer; }
+.aud-tr:hover td       { background: #161616; }
+.aud-tr.aud-tr-open td { background: #1c1c1c; }
+
+.aud-td-arrow { width: 26px; color: #666; text-align: center; user-select: none; }
+.aud-td-fecha { white-space: nowrap; font-family: 'Courier New', monospace; color: #ddd; }
+.aud-td-ip    { font-family: 'Courier New', monospace; color: #888; white-space: nowrap; }
+.aud-td-desc  { color: #d4d4d4; max-width: 420px; }
+
+.aud-vacio {
+  text-align: center;
+  padding: 28px;
+  color: #666;
+  font-size: 13px;
+}
+
+/* Chips */
+.aud-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.aud-chip-cat {
+  background: rgba(240, 200, 66, 0.12);
+  color: #f0c842;
+  border: 1px solid rgba(240, 200, 66, 0.3);
+}
+.aud-chip-tipo {
+  background: rgba(52, 152, 219, 0.12);
+  color: #5dade2;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+/* Detalle expandido */
+.aud-tr-detail td { background: #0c0c0c; padding: 0 12px 12px; border-bottom: 1px solid #181818; }
+
+.aud-detail-box {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-left: 3px solid #f0c842;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin: 4px 0 6px;
+}
+
+.aud-detail-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.aud-detail-pre {
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* === Footer === */
+.aud-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid #222;
+  background: #0d0d0d;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.aud-footer-info {
+  font-size: 13px;
+  color: #aaa;
+  font-feature-settings: 'tnum';
+}
+
+.aud-total-num {
+  color: #f0c842;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+}
+
+.aud-pag-info {
+  color: #888;
+  margin-left: 4px;
+}
+
+.aud-pagin {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aud-pagin-btn {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #ccc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 30px;
+  font-feature-settings: 'tnum';
+}
+.aud-pagin-btn:hover:not(:disabled) { border-color: #f0c842; color: #f0c842; }
+.aud-pagin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.aud-pagin-act {
+  background: #f0c842 !important;
+  color: #000 !important;
+  border-color: #f0c842 !important;
+  font-weight: 700;
+}
+
+.aud-pagin-sep {
+  color: #555;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.aud-csv-btn {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #f0c842;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.aud-csv-btn:hover:not(:disabled) {
+  background: #333;
+  border-color: #f0c842;
+}
+.aud-csv-btn:disabled { opacity: 0.4; cursor: not-allowed; }

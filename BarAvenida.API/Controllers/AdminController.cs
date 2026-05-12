@@ -17,17 +17,48 @@ public class AdminController : ControllerBase
     private readonly ILogger<AdminController> _log;
     private readonly EscPosService _escPos;
     private readonly TicketService _ticket;
+    private readonly IAuditoriaService _audit;
 
     public AdminController(
         BarAvenidaDbContext db,
         ILogger<AdminController> log,
         EscPosService escPos,
-        TicketService ticket)
+        TicketService ticket,
+        IAuditoriaService audit)
     {
         _db     = db;
         _log    = log;
         _escPos = escPos;
         _ticket = ticket;
+        _audit  = audit;
+    }
+
+    // v1.9.0 Round 2 — Verifica el PIN del admin actual antes de operaciones destructivas.
+    // Retorna (true, null) si OK; (false, IActionResult) con respuesta de error si falla.
+    private async Task<(bool ok, IActionResult? error, Models.Usuario? admin)> VerificarPinAdmin(string? pin)
+    {
+        if (string.IsNullOrWhiteSpace(pin))
+            return (false, BadRequest(new { message = "PIN admin requerido" }), null);
+
+        var codigo = User.FindFirst("Codigo")?.Value ?? User.Identity?.Name ?? "";
+        if (string.IsNullOrEmpty(codigo))
+            return (false, Unauthorized(new { message = "Sesión inválida" }), null);
+
+        var admin = await _db.Usuarios.FirstOrDefaultAsync(u => u.Codigo == codigo && u.Rol == "Admin" && u.Activo);
+        if (admin == null)
+            return (false, Unauthorized(new { message = "Solo admin puede ejecutar esta acción" }), null);
+
+        if (!BCrypt.Net.BCrypt.Verify(pin, admin.PinHash))
+            return (false, BadRequest(new { message = "PIN admin incorrecto" }), null);
+
+        return (true, null, admin);
+    }
+
+    private (int? id, string nombre) UsuarioActual()
+    {
+        var idStr  = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var nombre = User.Identity?.Name ?? "";
+        return int.TryParse(idStr, out var id) ? (id, nombre) : ((int?)null, nombre);
     }
 
     // ── Reference catalog (Soft Restaurant real prices) ─────────────────
@@ -418,6 +449,13 @@ public class AdminController : ControllerBase
         _db.Productos.Add(prod);
         await _db.SaveChangesAsync(ct);
 
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Producto", "ProductoCreado",
+            $"Producto creado: {prod.Nombre} (${prod.Precio:N2}) en {cat.Nombre}",
+            u.id, u.nombre,
+            $"{{\"productoId\":{prod.Id}}}");
+
         return CreatedAtAction(nameof(GetProductos), new ProductoAdminDto
         {
             Id                = prod.Id,
@@ -477,6 +515,13 @@ public class AdminController : ControllerBase
         prod.Activo            = dto.Activo;
         await _db.SaveChangesAsync(ct);
 
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Producto", "ProductoModificado",
+            $"Producto modificado: {prod.Nombre} (${prod.Precio:N2}) en {cat.Nombre}",
+            u.id, u.nombre,
+            $"{{\"productoId\":{prod.Id}}}");
+
         return Ok(new ProductoAdminDto
         {
             Id                = prod.Id,
@@ -493,15 +538,30 @@ public class AdminController : ControllerBase
     }
 
     // DELETE /api/admin/productos/{id}  — soft delete
+    // v1.9.0 Round 2 — Requiere PIN admin en body
     [HttpDelete("productos/{id:int}")]
-    public async Task<IActionResult> DesactivarProducto(int id, CancellationToken ct)
+    public async Task<IActionResult> DesactivarProducto(
+        int id,
+        [FromBody] PinConfirmacionDto dto,
+        CancellationToken ct)
     {
+        var (ok, error, _) = await VerificarPinAdmin(dto?.Pin);
+        if (!ok) return error!;
+
         var prod = await _db.Productos.FindAsync(new object[] { id }, ct);
         if (prod is null)
             return NotFound(new { message = $"Producto {id} no encontrado." });
 
         prod.Activo = false;
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Producto", "ProductoDesactivado",
+            $"Producto desactivado: {prod.Nombre}",
+            u.id, u.nombre,
+            $"{{\"productoId\":{prod.Id}}}");
+
         return Ok(new { message = "Producto desactivado." });
     }
 
@@ -646,9 +706,16 @@ public class AdminController : ControllerBase
     }
 
     // DELETE /api/admin/categorias/{id}  — hard delete solo si vacía
+    // v1.9.0 Round 2 — Requiere PIN admin en body
     [HttpDelete("categorias/{id:int}")]
-    public async Task<IActionResult> DeleteCategoria(int id, CancellationToken ct)
+    public async Task<IActionResult> DeleteCategoria(
+        int id,
+        [FromBody] PinConfirmacionDto dto,
+        CancellationToken ct)
     {
+        var (ok, error, _) = await VerificarPinAdmin(dto?.Pin);
+        if (!ok) return error!;
+
         var cat = await _db.Categorias
             .Include(c => c.Productos)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
@@ -663,6 +730,13 @@ public class AdminController : ControllerBase
 
         _db.Categorias.Remove(cat);
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Producto", "CategoriaEliminada",
+            $"Categoría eliminada: {cat.Nombre}",
+            u.id, u.nombre);
+
         return Ok(new { message = "Categoría eliminada correctamente." });
     }
 
@@ -694,14 +768,18 @@ public class AdminController : ControllerBase
     }
 
     // PUT /api/admin/configuracion-ticket
+    // v1.9.0 Round 2 — Requiere PIN admin (campo Pin del DTO)
     [HttpPut("configuracion-ticket")]
     public async Task<IActionResult> UpdateConfiguracionTicket(
         [FromBody] ConfiguracionTicketDto dto, CancellationToken ct)
     {
+        var (ok, error, _) = await VerificarPinAdmin(dto?.Pin);
+        if (!ok) return error!;
+
         var cfg = await _db.ConfiguracionesTicket.FindAsync(new object[] { 1 }, ct);
         if (cfg is null) return NotFound();
 
-        cfg.NombreNegocio       = dto.NombreNegocio.Trim();
+        cfg.NombreNegocio       = dto!.NombreNegocio.Trim();
         cfg.Direccion           = dto.Direccion?.Trim();
         cfg.Telefono            = dto.Telefono?.Trim();
         cfg.Rfc                 = dto.Rfc?.Trim();
@@ -716,6 +794,13 @@ public class AdminController : ControllerBase
         cfg.AnchoTicket         = dto.AnchoTicket;
 
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Sistema", "ConfigModificada",
+            $"Configuración de ticket modificada por {u.nombre}",
+            u.id, u.nombre);
+
         return Ok(new { message = "Configuración actualizada." });
     }
 
@@ -828,9 +913,16 @@ public class AdminController : ControllerBase
         return Ok(new AreaDto { Id = area.Id, Nombre = area.Nombre, Activa = area.Activa, MesasCount = area.Mesas.Count(m => m.Activa) });
     }
 
+    // v1.9.0 Round 2 — Requiere PIN admin en body
     [HttpDelete("areas/{id:int}")]
-    public async Task<IActionResult> DeleteArea(int id, CancellationToken ct)
+    public async Task<IActionResult> DeleteArea(
+        int id,
+        [FromBody] PinConfirmacionDto dto,
+        CancellationToken ct)
     {
+        var (ok, error, _) = await VerificarPinAdmin(dto?.Pin);
+        if (!ok) return error!;
+
         var area = await _db.Areas.Include(a => a.Mesas).FirstOrDefaultAsync(a => a.Id == id, ct);
         if (area is null) return NotFound(new { message = $"Área {id} no encontrada." });
 
@@ -839,6 +931,13 @@ public class AdminController : ControllerBase
 
         _db.Areas.Remove(area);
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Sistema", "AreaEliminada",
+            $"Área eliminada: {area.Nombre}",
+            u.id, u.nombre);
+
         return Ok(new { message = "Área eliminada." });
     }
 
@@ -950,10 +1049,12 @@ public class AdminController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest(new { message = "El nombre es requerido." });
         if (string.IsNullOrWhiteSpace(dto.Codigo)) return BadRequest(new { message = "El código es requerido." });
-        if (string.IsNullOrWhiteSpace(dto.Pin) || dto.Pin.Length < 4)
-            return BadRequest(new { message = "El PIN debe tener al menos 4 dígitos." });
         if (!new[] { "Mesera", "Barman" }.Contains(dto.Rol))
             return BadRequest(new { message = "El rol debe ser Mesera o Barman." });
+
+        // v1.9.0 Round 2 — Validar fortaleza del PIN (4 dígitos para mesera/barman)
+        var (pinOk, pinErr) = PinValidator.Validar(dto.Pin ?? "", esAdmin: false);
+        if (!pinOk) return BadRequest(new { message = pinErr });
 
         var duplic = await _db.Usuarios.AnyAsync(u => u.Codigo.ToLower() == dto.Codigo.Trim().ToLower(), ct);
         if (duplic) return BadRequest(new { message = $"El código '{dto.Codigo}' ya está en uso." });
@@ -969,6 +1070,14 @@ public class AdminController : ControllerBase
         };
         _db.Usuarios.Add(usuario);
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Sistema", "MeseraCreada",
+            $"Mesera/Barman creado: {usuario.Nombre} ({usuario.Codigo}, {usuario.Rol})",
+            u.id, u.nombre,
+            $"{{\"usuarioId\":{usuario.Id}}}");
+
         return Ok(new MeseroDto { Id = usuario.Id, Nombre = usuario.Nombre, Codigo = usuario.Codigo, Rol = usuario.Rol, Activo = usuario.Activo, FechaCreacion = usuario.FechaCreacion });
     }
 
@@ -995,9 +1104,25 @@ public class AdminController : ControllerBase
         usuario.Rol    = dto.Rol;
         usuario.Activo = dto.Activo;
         if (!string.IsNullOrEmpty(dto.Pin))
+        {
+            // v1.9.0 Round 2 — Validar fortaleza del PIN si se está cambiando
+            var (pinOk, pinErr) = PinValidator.Validar(dto.Pin, esAdmin: false);
+            if (!pinOk) return BadRequest(new { message = pinErr });
             usuario.PinHash = BCrypt.Net.BCrypt.HashPassword(dto.Pin);
+            // Reset lockout state al cambiar PIN
+            usuario.IntentosFallidos = 0;
+            usuario.BloqueadoHasta   = null;
+        }
 
         await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Sistema", "MeseraModificada",
+            $"Mesera/Barman modificado: {usuario.Nombre} ({usuario.Codigo}, {usuario.Rol}, activo={usuario.Activo})",
+            u.id, u.nombre,
+            $"{{\"usuarioId\":{usuario.Id}}}");
+
         return Ok(new MeseroDto { Id = usuario.Id, Nombre = usuario.Nombre, Codigo = usuario.Codigo, Rol = usuario.Rol, Activo = usuario.Activo, FechaCreacion = usuario.FechaCreacion });
     }
 

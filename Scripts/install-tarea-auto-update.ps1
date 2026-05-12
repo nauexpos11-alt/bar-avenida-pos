@@ -1,12 +1,18 @@
 # ============================================================================
-# Bar Avenida - Instalar tareas de auto-update
+# Bar Avenida - Auto-update 100% silencioso (sin notificador, sin clicks)
 #
-# Registra DOS tareas:
-#   1. BarAvenida_Notificador  - corre al inicio de sesion del usuario.
-#      Muestra ventana "Hay update X.Y.Z, ¿instalar ahora?" si hay version nueva.
-#      Al confirmar muestra barra de progreso y al final "Completado" con boton OK.
-#   2. BarAvenida_AutoUpdate   - tarea silenciosa diaria como fallback.
-#      Corre en la madrugada (3:30am) si la PC esta prendida.
+# Una sola tarea: BarAvenida_AutoUpdate
+# Triggers:
+#   - Al boot de la PC (5 min despues)
+#   - Cada 30 minutos (polling rapido)
+#   - Diaria 3:30 AM (red de seguridad)
+#
+# Como corre como SYSTEM, NO requiere UAC ni clicks.
+# El script actualizar-bar.ps1 SIN -Force respeta la ventana de instalacion
+# (3 AM - 7 AM por default), asi que durante operacion del bar NO interrumpe.
+# Solo aplica la actualizacion cuando entra esa ventana.
+#
+# El Notificador interactivo se DESACTIVA. El bar JAMAS ve cuadritos de update.
 # ============================================================================
 
 $ErrorActionPreference = "Continue"
@@ -20,13 +26,12 @@ if (-not $esAdmin) {
 $WorkDir = "C:\BarAvenida"
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 
-# Copiar scripts a C:\BarAvenida (evita copy-to-self que tira error en PS5.x)
+# Copiar scripts a C:\BarAvenida
 function CopiarScript {
     param([string]$Nombre)
     $src = "$PSScriptRoot\$Nombre"
     $dst = "$WorkDir\$Nombre"
 
-    # Si source y destination son el MISMO archivo, no copiar (ya esta en su lugar)
     if ((Resolve-Path $src -ErrorAction SilentlyContinue).Path -eq (Resolve-Path $dst -ErrorAction SilentlyContinue).Path) {
         return $dst
     }
@@ -51,91 +56,79 @@ function CopiarScript {
 }
 
 $scriptActualizar  = CopiarScript "actualizar-bar.ps1"
-$scriptNotificador = CopiarScript "notificador-update.ps1"
 $scriptUiWrapper   = CopiarScript "instalar-con-ui.ps1"
+# notificador-update.ps1 ya no se usa pero lo copiamos por si alguien quiere correrlo manual
+CopiarScript "notificador-update.ps1" | Out-Null
 
-if (-not $scriptActualizar -or -not $scriptNotificador) {
-    Write-Host "[FAIL] Faltan scripts. Abortando." -ForegroundColor Red
+if (-not $scriptActualizar) {
+    Write-Host "[FAIL] Falta actualizar-bar.ps1. Abortando." -ForegroundColor Red
     exit 1
 }
 
-if (-not $scriptUiWrapper) {
-    Write-Host "[WARN] instalar-con-ui.ps1 no se pudo copiar. El notificador caera al modo silencioso." -ForegroundColor Yellow
+# ──────────────────────────────────────────────────────────
+# DESACTIVAR Notificador interactivo (cero clicks del personal del bar)
+# ──────────────────────────────────────────────────────────
+$nombreNotificador = "BarAvenida_Notificador"
+$tareaVieja = Get-ScheduledTask -TaskName $nombreNotificador -ErrorAction SilentlyContinue
+if ($tareaVieja) {
+    $tareaVieja | Unregister-ScheduledTask -Confirm:$false
+    Write-Host "[OK] Notificador interactivo $nombreNotificador desactivado (cero clicks del personal)" -ForegroundColor Yellow
 }
 
 # ──────────────────────────────────────────────────────────
-# TAREA 1: NOTIFICADOR al inicio de sesion del usuario
-# ──────────────────────────────────────────────────────────
-$nombreNotificador = "BarAvenida_Notificador"
-Get-ScheduledTask -TaskName $nombreNotificador -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
-
-$accionNot = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptNotificador`""
-
-# AtLogon trigger
-$triggerNot = New-ScheduledTaskTrigger -AtLogOn
-
-# Como usuario actual (NO SYSTEM, para que la ventana se vea)
-$usuarioActual = "$env:USERDOMAIN\$env:USERNAME"
-$principalNot = New-ScheduledTaskPrincipal -UserId $usuarioActual -LogonType Interactive -RunLevel Highest
-
-$settingsNot = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 60)
-
-Register-ScheduledTask -TaskName $nombreNotificador `
-    -Action $accionNot `
-    -Trigger $triggerNot `
-    -Principal $principalNot `
-    -Settings $settingsNot `
-    -Description "Bar Avenida: al iniciar sesion, pregunta si hay update disponible." | Out-Null
-
-Write-Host "[OK] Tarea $nombreNotificador registrada (corre al iniciar sesion)" -ForegroundColor Green
-
-# ──────────────────────────────────────────────────────────
-# TAREA 2: AUTO-UPDATE silencioso de madrugada (fallback)
+# TAREA UNICA: AUTO-UPDATE SYSTEM con polling
 # ──────────────────────────────────────────────────────────
 $nombreAuto = "BarAvenida_AutoUpdate"
 Get-ScheduledTask -TaskName $nombreAuto -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
 
+# IMPORTANTE: SIN -Force => respeta la ventana 3-7 AM del actualizar-bar.ps1
+# Durante operacion del bar el polling SOLO consulta, NO instala. Cuando entra
+# la ventana 3 AM aplica la version mas reciente disponible en GitHub.
 $accionAuto = New-ScheduledTaskAction -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptActualizar`" -Force"
+    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptActualizar`""
 
-# Diario a las 3:30 AM (bar cerrado)
-$triggerAuto = New-ScheduledTaskTrigger -Daily -At "03:30AM"
+# TRIGGERS:
+# 1) Al boot (5 min despues)
+$triggerBoot = New-ScheduledTaskTrigger -AtStartup
+$triggerBoot.Delay = "PT5M"
 
-# Como SYSTEM (no necesita UI)
+# 2) Cada 30 min (polling)
+$triggerPolling = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(5) `
+    -RepetitionInterval (New-TimeSpan -Minutes 30) `
+    -RepetitionDuration ([TimeSpan]::FromDays(3650))
+
+# 3) Diaria 3:30 AM (cuando bar cerrado, garantia de aplicar lo descargado)
+$triggerDiario = New-ScheduledTaskTrigger -Daily -At "03:30AM"
+
+# SYSTEM (no requiere UI, no requiere UAC)
 $principalAuto = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
+# Una sola instancia a la vez
 $settingsAuto = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
+    -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `
+    -MultipleInstances IgnoreNew
 
 Register-ScheduledTask -TaskName $nombreAuto `
     -Action $accionAuto `
-    -Trigger $triggerAuto `
+    -Trigger @($triggerBoot, $triggerPolling, $triggerDiario) `
     -Principal $principalAuto `
     -Settings $settingsAuto `
-    -Description "Bar Avenida: actualizacion automatica diaria a las 3:30am si hay version nueva." | Out-Null
+    -Description "Bar Avenida: auto-update polling cada 30 min + boot + 3:30 AM. Silencioso, sin clicks. Solo instala en ventana 3-7 AM (no interrumpe operacion)." | Out-Null
 
-Write-Host "[OK] Tarea $nombreAuto registrada (cada noche a las 3:30am)" -ForegroundColor Green
-
+Write-Host "[OK] Tarea $nombreAuto registrada (polling cada 30 min, instala en ventana 3-7 AM)" -ForegroundColor Green
 Write-Host ""
 Write-Host "================================================" -ForegroundColor Green
-Write-Host "  TAREAS DE UPDATE INSTALADAS" -ForegroundColor Green
+Write-Host "  AUTO-UPDATE 100% SILENCIOSO ACTIVADO" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "1. AL ARRANCAR LA PC:" -ForegroundColor Cyan
-Write-Host "   Si hay update, aparece ventana preguntando que hacer." -ForegroundColor Gray
-Write-Host "   El usuario decide: Instalar / Mas tarde / Saltar." -ForegroundColor Gray
-Write-Host "   Al instalar muestra barra de progreso y mensaje 'Completado'." -ForegroundColor Gray
+Write-Host "Como funciona:" -ForegroundColor Cyan
+Write-Host "  1. Cada 30 min la PC consulta GitHub" -ForegroundColor Gray
+Write-Host "  2. Si hay version nueva, la descarga" -ForegroundColor Gray
+Write-Host "  3. Solo INSTALA entre 3 AM y 7 AM (bar cerrado)" -ForegroundColor Gray
+Write-Host "  4. Cero clicks, cero ventanas, cero intervencion del personal" -ForegroundColor Gray
 Write-Host ""
-Write-Host "2. CADA NOCHE A LAS 3:30 AM:" -ForegroundColor Cyan
-Write-Host "   Si la PC sigue prendida y hay update, lo instala silencioso." -ForegroundColor Gray
-Write-Host "   (Bar cerrado, no afecta operacion)." -ForegroundColor Gray
+Write-Host "Coronado lanza release desde NAU -> max 24h despues esta en el bar." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Logs:" -ForegroundColor Yellow
-Write-Host "  C:\BarAvenida\notificador-update.log" -ForegroundColor Gray
+Write-Host "Logs (si necesitas diagnosticar):" -ForegroundColor Yellow
 Write-Host "  C:\BarAvenida\actualizar-bar.log" -ForegroundColor Gray
-Write-Host ""
-Write-Host "Para probar el notificador AHORA:" -ForegroundColor Yellow
-Write-Host "  Start-ScheduledTask -TaskName '$nombreNotificador'" -ForegroundColor Cyan
 Write-Host ""

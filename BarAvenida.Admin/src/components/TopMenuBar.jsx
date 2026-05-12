@@ -56,7 +56,8 @@ const SECCIONES = [
           { label: 'Métodos de pago',   screen: 'rep-metodos-pago' },
         ],
       },
-      { id: 'adm-usuarios', label: '🛡️ Usuarios', screen: 'usuarios' },
+      { id: 'adm-usuarios',  label: '🛡️ Usuarios',  screen: 'usuarios'        },
+      { id: 'adm-auditoria', label: '🔍 Auditoría', screen: 'auditoriaScreen' },
       {
         id: 'adm-config', label: '⚙️ Configuración', hub: true,
         sub: [
@@ -76,6 +77,11 @@ const LS_PANTALLA = 'ba_admin_ultima_pantalla'
 
 function fmtClock(d) {
   return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function esHttps() {
+  if (typeof window === 'undefined') return false
+  return window.location?.protocol === 'https:'
 }
 
 function findSeccionForScreen(screen) {
@@ -261,6 +267,13 @@ export default function TopMenuBar({ auth, pantallaActual, onIrPantalla, onLogou
             </button>
           )}
           <span className="tmb-online"><span className="tmb-dot">●</span> EN LÍNEA</span>
+          <span
+            className={`tmb-https ${esHttps() ? 'tmb-https-on' : 'tmb-https-off'}`}
+            title={esHttps() ? 'Conexión segura HTTPS' : 'Conexión HTTP (no segura)'}
+            aria-label={esHttps() ? 'Conexión segura HTTPS' : 'Conexión HTTP (no segura)'}
+          >
+            {esHttps() ? '🔒' : '🔓'}
+          </span>
           <span className="tmb-clock">{fmtClock(clock)}</span>
           <span className="tmb-user">{auth?.nombre}</span>
           <button className="tmb-logout" onClick={onLogout}>SALIR</button>

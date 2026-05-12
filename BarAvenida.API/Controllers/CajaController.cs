@@ -20,19 +20,22 @@ public class CajaController : ControllerBase
     private readonly ITicketSimuladoService _simulado;
     private readonly TicketService _ticket;
     private readonly EscPosService _escPos;
+    private readonly IAuditoriaService _audit;
 
     public CajaController(
         BarAvenidaDbContext db,
         ILogger<CajaController> log,
         ITicketSimuladoService simulado,
         TicketService ticket,
-        EscPosService escPos)
+        EscPosService escPos,
+        IAuditoriaService audit)
     {
         _db       = db;
         _log      = log;
         _simulado = simulado;
         _ticket   = ticket;
         _escPos   = escPos;
+        _audit    = audit;
     }
 
     // ── GET /api/Caja/turno-actual ───────────────────────────────────────────
@@ -143,6 +146,14 @@ public class CajaController : ControllerBase
 
         await _db.Entry(turno).Reference(t => t.UsuarioApertura).LoadAsync();
         _log.LogInformation("🔓 Turno #{Id} abierto por {Usuario}", turno.Id, usuario.Nombre);
+
+        await _audit.LogAsync(
+            "Caja",
+            "TurnoAbierto",
+            $"Turno #{turno.Id} abierto por {usuario.Nombre}. Fondo inicial ${turno.MontoInicial:N2}",
+            usuario.Id, usuario.Nombre,
+            $"{{\"turnoId\":{turno.Id},\"montoInicial\":{turno.MontoInicial}}}");
+
         return Ok(MapTurno(turno));
     }
 
@@ -254,6 +265,13 @@ public class CajaController : ControllerBase
         await _db.Entry(turno).Reference(t => t.UsuarioCierre).LoadAsync();
         _log.LogInformation("🔒 Turno #{Id} cerrado + Corte Z #{CorteId} por {Usuario}",
             turno.Id, corteBd.Id, usuario.Nombre);
+
+        await _audit.LogAsync(
+            "Caja",
+            "TurnoCerrado",
+            $"Turno #{turno.Id} cerrado por {usuario.Nombre}. Diferencia: {corteDto.Diferencia:+0.00;-0.00;0}",
+            usuario.Id, usuario.Nombre,
+            $"{{\"turnoId\":{turno.Id},\"corteId\":{corteBd.Id},\"diferencia\":{corteDto.Diferencia ?? 0},\"severidad\":\"{severidad}\"}}");
 
         return Ok(new { turno = MapTurno(turno), corte = corteDto });
     }
@@ -424,6 +442,13 @@ public class CajaController : ControllerBase
         _log.LogInformation(
             "💸 Retiro ${Monto} por {Usuario} en turno #{Turno}",
             dto.Monto, usuario.Nombre, dto.TurnoId);
+
+        await _audit.LogAsync(
+            "Caja",
+            "SalidaCaja",
+            $"Retiro ${dto.Monto:N2} por {usuario.Nombre}. Concepto: {dto.Concepto ?? "(s/c)"}",
+            usuario.Id, usuario.Nombre,
+            $"{{\"turnoId\":{dto.TurnoId},\"monto\":{dto.Monto}}}");
 
         return Ok(new RetiroCajaItemDto
         {

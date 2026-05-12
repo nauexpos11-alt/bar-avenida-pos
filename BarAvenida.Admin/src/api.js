@@ -10,18 +10,109 @@ function resolverApiUrl() {
 }
 export const API_URL = resolverApiUrl()
 
-async function req(path, opts = {}, token = null) {
+// ──────────────────────────────────────────────────────────────────
+// JWT auto-refresh
+//
+// El App llama apiSetupRefresh(token, onNuevoToken) tras login y
+// tras restoreFromLocalStorage.  Cuando un request retorna 401 con
+// señal de "token expirado", el módulo intenta POST /api/Auth/refresh
+// con el token actual.  Si funciona, actualiza tokenActual y notifica
+// al App; luego re-ejecuta el request original con el nuevo token.
+// Las refresh-en-paralelo se deduplican con _refreshPromise.
+// ──────────────────────────────────────────────────────────────────
+let _tokenActual       = null
+let _onNuevoToken      = null
+let _refreshPromise    = null
+
+export function apiSetupRefresh(token, onNuevoToken) {
+  _tokenActual  = token
+  _onNuevoToken = typeof onNuevoToken === 'function' ? onNuevoToken : null
+}
+
+export function apiClearRefresh() {
+  _tokenActual    = null
+  _onNuevoToken   = null
+  _refreshPromise = null
+}
+
+function _esTokenExpirado(resp, body) {
+  if (resp.status !== 401) return false
+  const wwwAuth = resp.headers?.get?.('WWW-Authenticate') || ''
+  if (/expired|invalid_token/i.test(wwwAuth)) return true
+  if (body && typeof body === 'string' && /expir/i.test(body))    return true
+  return false
+}
+
+async function _hacerRefresh(tokenViejo) {
+  if (_refreshPromise) return _refreshPromise
+  _refreshPromise = (async () => {
+    try {
+      const resp = await fetch(`${API_URL}/api/Auth/refresh`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${tokenViejo}`, 'Content-Type': 'application/json' },
+      })
+      if (!resp.ok) throw new Error(`refresh HTTP ${resp.status}`)
+      const text = await resp.text()
+      const data = text ? JSON.parse(text) : null
+      const nuevo = data?.token
+      if (!nuevo) throw new Error('refresh sin token')
+      _tokenActual = nuevo
+      try { _onNuevoToken?.(nuevo) } catch {}
+      return nuevo
+    } catch (e) {
+      try { _onNuevoToken?.(null) } catch {}
+      throw e
+    } finally {
+      // Liberamos la promesa después de un tick para que requests
+      // que entren mientras refresh estaba en curso reusen el resultado
+      setTimeout(() => { _refreshPromise = null }, 0)
+    }
+  })()
+  return _refreshPromise
+}
+
+async function req(path, opts = {}, token = null, _esRetry = false) {
+  // Si el caller pasó un token explícito, usamos ése; si no, _tokenActual
+  const effectiveToken = token != null ? token : _tokenActual
   const headers = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
+  if (effectiveToken) headers['Authorization'] = `Bearer ${effectiveToken}`
+
   const resp = await fetch(`${API_URL}${path}`, {
     ...opts,
     headers: { ...headers, ...opts.headers },
   })
+
   if (!resp.ok) {
+    // Try parse body once
+    let bodyText = ''
+    let parsed   = null
+    try { bodyText = await resp.text() } catch {}
+    if (bodyText) { try { parsed = JSON.parse(bodyText) } catch {} }
+
+    // Auto-refresh si 401 + token actual + no es retry
+    if (
+      !_esRetry &&
+      effectiveToken &&
+      _onNuevoToken &&
+      _esTokenExpirado(resp, bodyText)
+    ) {
+      try {
+        const nuevo = await _hacerRefresh(effectiveToken)
+        // Reintentar con el nuevo token
+        return await req(path, opts, nuevo, true)
+      } catch {
+        // refresh falló, cae al throw normal
+      }
+    }
+
     let msg = `HTTP ${resp.status}`
-    try { const j = await resp.json(); msg = j.mensaje || j.message || j.title || msg } catch {}
-    throw new Error(msg)
+    if (parsed) msg = parsed.mensaje || parsed.message || parsed.title || msg
+    else if (bodyText) msg = bodyText.slice(0, 200) || msg
+    const err = new Error(msg)
+    err.status = resp.status
+    throw err
   }
+
   const text = await resp.text()
   return text ? JSON.parse(text) : null
 }
@@ -30,6 +121,10 @@ export const api = {
   // Auth
   login: (codigo, pin) =>
     req('/api/Auth/login', { method: 'POST', body: JSON.stringify({ codigo, pin }) }),
+
+  // Auth — refresh manual (apiSetupRefresh lo usa internamente, pero se
+  // expone por si el App quiere disparar uno)
+  authRefresh: (t) => req('/api/Auth/refresh', { method: 'POST' }, t),
 
   // Mesas
   getMesas: (t) => req('/api/Mesas', {}, t),
@@ -63,18 +158,23 @@ export const api = {
   },
   adminCrearProducto:      (t, dto)     => req('/api/admin/productos', { method: 'POST', body: JSON.stringify(dto) }, t),
   adminActualizarProducto: (t, id, dto) => req(`/api/admin/productos/${id}`, { method: 'PUT',   body: JSON.stringify(dto) }, t),
-  adminDesactivarProducto: (t, id)      => req(`/api/admin/productos/${id}`, { method: 'DELETE' }, t),
+  // Acciones destructivas: el body lleva { pin } para que el backend (PinConfirmacionDto) valide
+  adminDesactivarProducto: (t, id, pin) =>
+    req(`/api/admin/productos/${id}`, { method: 'DELETE', body: JSON.stringify({ pin }) }, t),
   adminActivarProducto:    (t, id)      => req(`/api/admin/productos/${id}/activar`, { method: 'PATCH' }, t),
 
   // Admin — Categorías
   adminGetCategorias:      (t)          => req('/api/admin/categorias', {}, t),
   adminCrearCategoria:     (t, dto)     => req('/api/admin/categorias', { method: 'POST', body: JSON.stringify(dto) }, t),
   adminActualizarCategoria:(t, id, dto) => req(`/api/admin/categorias/${id}`, { method: 'PUT',    body: JSON.stringify(dto) }, t),
-  adminEliminarCategoria:  (t, id)      => req(`/api/admin/categorias/${id}`, { method: 'DELETE' }, t),
+  adminEliminarCategoria:  (t, id, pin) =>
+    req(`/api/admin/categorias/${id}`, { method: 'DELETE', body: JSON.stringify({ pin }) }, t),
 
   // Admin — Configuración general
   adminGetConfiguracion:        (t)          => req('/api/admin/configuracion-ticket', {}, t),
-  adminUpdateConfiguracion:     (t, dto)     => req('/api/admin/configuracion-ticket', { method: 'PUT', body: JSON.stringify(dto) }, t),
+  // Update destructivo: requiere PIN admin (modifica config global)
+  adminUpdateConfiguracion:     (t, dto, pin) =>
+    req('/api/admin/configuracion-ticket', { method: 'PUT', body: JSON.stringify({ ...dto, pin }) }, t),
   adminImprimirPrueba:          (t)          => req('/api/admin/imprimir-prueba', { method: 'POST' }, t),
   adminGetImpresorasDisponibles:(t)          => req('/api/admin/impresoras-disponibles', {}, t),
   adminGetTicketsSimulados:     (t, limit = 10) => req(`/api/admin/tickets-simulados/recientes?limit=${limit}`, {}, t),
@@ -115,7 +215,8 @@ export const api = {
   adminGetAreas:    (t)          => req('/api/admin/areas', {}, t),
   adminCreateArea:  (t, dto)     => req('/api/admin/areas', { method: 'POST', body: JSON.stringify(dto) }, t),
   adminUpdateArea:  (t, id, dto) => req(`/api/admin/areas/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
-  adminDeleteArea:  (t, id)      => req(`/api/admin/areas/${id}`, { method: 'DELETE' }, t),
+  adminDeleteArea:  (t, id, pin) =>
+    req(`/api/admin/areas/${id}`, { method: 'DELETE', body: JSON.stringify({ pin }) }, t),
 
   // Admin — Mesas
   adminGetMesas:    (t, areaId)  => {
@@ -252,8 +353,9 @@ export const api = {
     const qs = p.toString()
     return req(`/api/Cuentas${qs ? '?' + qs : ''}`, {}, t)
   },
-  cancelarCobrada: (t, id, motivo) =>
-    req(`/api/Cuentas/${id}/cancelar-cobrada`, { method: 'POST', body: JSON.stringify({ motivo }) }, t),
+  // Cancelar cuenta cobrada — ahora requiere PIN admin + motivo (mín 10 chars)
+  cancelarCobrada: (t, id, motivo, pin) =>
+    req(`/api/Cuentas/${id}/cancelar-cobrada`, { method: 'POST', body: JSON.stringify({ motivo, pin }) }, t),
   reabrirCuenta: (t, id) =>
     req(`/api/Cuentas/${id}/reabrir`, { method: 'POST' }, t),
   adminGetCuentaDetalle:          (t, id)      => req(`/api/Cuentas/${id}`, {}, t),
@@ -317,4 +419,20 @@ export const api = {
 
   // Abrir cuenta para una mesa (para MesaOperableScreen — admin abre la cuenta como "mesera")
   abrirCuenta: (t, dto) => req('/api/Cuentas/abrir', { method: 'POST', body: JSON.stringify(dto) }, t),
+
+  // ────────────────────────────────────────────────────────────────
+  // Admin — Auditoría (v1.9.0)
+  // ────────────────────────────────────────────────────────────────
+  adminGetAuditoria: (t, { desde, hasta, categoria, tipo, usuarioId, page = 1, pageSize = 50 } = {}) => {
+    const p = new URLSearchParams()
+    if (desde)               p.set('desde', desde)
+    if (hasta)               p.set('hasta', hasta)
+    if (categoria)           p.set('categoria', categoria)
+    if (tipo)                p.set('tipo', tipo)
+    if (usuarioId != null && usuarioId !== '') p.set('usuarioId', usuarioId)
+    p.set('page', page)
+    p.set('pageSize', pageSize)
+    return req(`/api/Auditoria?${p}`, {}, t)
+  },
+  adminGetAuditoriaTipos: (t) => req('/api/Auditoria/tipos', {}, t),
 }

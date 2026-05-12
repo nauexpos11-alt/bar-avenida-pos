@@ -48,9 +48,9 @@ public class CuentasController : ControllerBase
         if (cuentaExistente != null)
             return BadRequest(new { mensaje = "Esta mesa ya tiene una cuenta abierta" });
 
-        // Validar mesera
+        // Validar mesera (Admin también puede abrir cuentas)
         var mesera = await _context.Usuarios.FindAsync(dto.MeseraId);
-        if (mesera == null || mesera.Rol != "Mesera")
+        if (mesera == null || (mesera.Rol != "Mesera" && mesera.Rol != "Admin"))
             return BadRequest(new { mensaje = "Mesera no válida" });
 
         // Generar folio (último folio + 1)
@@ -263,6 +263,52 @@ public class CuentasController : ControllerBase
             .ToListAsync();
 
         var resultado = ordenes.Select(o => MapearOrdenDto(o)).ToList();
+
+        return Ok(resultado);
+    }
+
+    // ========================================================================
+    // ÓRDENES COMPLETADAS HOY - el KDS usa esto para la tab "HISTORIAL HOY"
+    // ========================================================================
+    [HttpGet("ordenes/completadas-hoy")]
+    [AllowAnonymous]
+    public async Task<IActionResult> OrdenesCompletadasHoy()
+    {
+        var hoy    = DateTime.Today;
+        var manana = hoy.AddDays(1);
+
+        var ordenes = await _context.Ordenes
+            .Include(o => o.Cuenta)
+                .ThenInclude(c => c!.Mesa)
+            .Include(o => o.Cuenta)
+                .ThenInclude(c => c!.Mesera)
+            .Include(o => o.Detalles)
+                .ThenInclude(d => d.Producto)
+            .Where(o => o.FechaListo.HasValue
+                     && o.FechaListo.Value >= hoy
+                     && o.FechaListo.Value <  manana)
+            .OrderByDescending(o => o.FechaListo)
+            .Take(200)
+            .ToListAsync();
+
+        var resultado = ordenes.Select(o => new
+        {
+            id            = o.Id,
+            mesaId        = o.Cuenta?.MesaId,
+            mesaNumero    = o.Cuenta?.Mesa?.Numero ?? o.Cuenta?.NombreCliente ?? "BARRA",
+            nombreMesera  = o.Cuenta?.Mesera?.Nombre ?? "",
+            numeroOrden   = o.NumeroOrden,
+            fechaEnvio    = o.FechaEnvio,
+            fechaListo    = o.FechaListo,
+            tiempoMinutos = o.FechaListo.HasValue
+                ? (int)Math.Round((o.FechaListo.Value - o.FechaEnvio).TotalMinutes)
+                : 0,
+            detalles = o.Detalles.Select(d => new
+            {
+                productoNombre = d.Producto != null ? d.Producto.Nombre : "",
+                cantidad       = d.Cantidad,
+            }).ToList()
+        }).ToList();
 
         return Ok(resultado);
     }
@@ -728,6 +774,190 @@ public class CuentasController : ControllerBase
             Tipo           = solicitud.Tipo,
             Estado         = solicitud.Estado,
             FechaSolicitud = solicitud.FechaSolicitud,
+        });
+    }
+
+    // ========================================================================
+    // COBRO RÁPIDO BARRA — admin cobra directo a cliente de barra,
+    // sin abrir cuenta previamente. Crea cuenta + orden + cobra en una sola
+    // transacción. Usado en BarraRapidaAdminScreen.
+    // ========================================================================
+    [HttpPost("cobro-rapido-barra")]
+    [Authorize]
+    public async Task<IActionResult> CobroRapidoBarra([FromBody] CobroRapidoBarraDto dto)
+    {
+        if (dto?.Productos == null || dto.Productos.Count == 0)
+            return BadRequest(new { mensaje = "Debes incluir al menos un producto" });
+
+        if (dto.Productos.Any(p => p.Cantidad <= 0))
+            return BadRequest(new { mensaje = "La cantidad de cada producto debe ser mayor a 0" });
+
+        var mesera = await _context.Usuarios.FindAsync(dto.MeseraId);
+        if (mesera == null)
+            return BadRequest(new { mensaje = "Usuario no válido" });
+
+        var metodo = dto.MetodoPago?.Trim() ?? "Efectivo";
+        if (metodo != "Efectivo" && metodo != "Tarjeta" && metodo != "Mixto")
+            metodo = "Efectivo";
+
+        // Cargar productos referenciados (validación + precios reales)
+        var productoIds = dto.Productos.Select(p => p.ProductoId).Distinct().ToList();
+        var productos   = await _context.Productos
+            .Where(p => productoIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
+        foreach (var item in dto.Productos)
+        {
+            if (!productos.TryGetValue(item.ProductoId, out var prod) || !prod.Activo)
+                return BadRequest(new { mensaje = $"Producto {item.ProductoId} no válido" });
+        }
+
+        // Folio correlativo global (mismo criterio que el resto del sistema)
+        int ultimoFolio = await _context.Cuentas.MaxAsync(c => (int?)c.Folio) ?? 0;
+
+        // Correlativo del día para "BARRA #N" — incluye TODAS las cuentas barra
+        // (abiertas, cobradas, canceladas) creadas hoy, para que cada cobro
+        // directo tenga un nombre único.
+        var hoy = DateTime.Today;
+        int barrasHoy = await _context.Cuentas.CountAsync(c =>
+            c.MesaId == null
+            && c.FechaApertura >= hoy
+            && c.FechaApertura <  hoy.AddDays(1));
+
+        var ahora = DateTime.Now;
+
+        var cuenta = new Cuenta
+        {
+            MesaId        = null,
+            MeseraId      = dto.MeseraId,
+            FechaApertura = ahora,
+            FechaCierre   = ahora,
+            Estado        = "Cobrada",
+            Folio         = ultimoFolio + 1,
+            NombreCliente = $"BARRA #{barrasHoy + 1}",
+            Descuento     = dto.Descuento < 0 ? 0 : dto.Descuento,
+            MetodoPago    = metodo,
+        };
+
+        // Crear orden única con todos los detalles
+        var orden = new Orden
+        {
+            NumeroOrden = 1,
+            FechaEnvio  = ahora,
+            FechaListo  = ahora,
+            Estado      = "Listo",          // cobro directo: la orden ya está servida
+            EsAgregado  = false,
+        };
+
+        decimal subtotal = 0;
+        foreach (var item in dto.Productos)
+        {
+            var prod = productos[item.ProductoId];
+            decimal sub = prod.Precio * item.Cantidad;
+            subtotal += sub;
+            orden.Detalles.Add(new OrdenDetalle
+            {
+                ProductoId     = prod.Id,
+                Cantidad       = item.Cantidad,
+                PrecioUnitario = prod.Precio,
+                Subtotal       = sub,
+            });
+        }
+
+        cuenta.Subtotal = subtotal;
+
+        decimal baseTotal = subtotal - cuenta.Descuento;
+        if (baseTotal < 0) baseTotal = 0;
+
+        // Calcular comisión 5% sobre la parte de tarjeta
+        switch (metodo)
+        {
+            case "Tarjeta":
+                cuenta.ComisionTarjeta = Math.Round(baseTotal * 0.05m, 2);
+                cuenta.Total           = baseTotal + cuenta.ComisionTarjeta;
+                cuenta.MontoTarjeta    = cuenta.Total;
+                cuenta.MontoEfectivo   = 0;
+                cuenta.Cambio          = 0;
+                break;
+
+            case "Mixto":
+                var efMixto  = dto.MontoEfectivo < 0 ? 0 : dto.MontoEfectivo;
+                var tarMixto = dto.MontoTarjeta  < 0 ? 0 : dto.MontoTarjeta;
+                cuenta.ComisionTarjeta = Math.Round(tarMixto * 0.05m, 2);
+                cuenta.Total           = baseTotal + cuenta.ComisionTarjeta;
+                cuenta.MontoEfectivo   = efMixto;
+                cuenta.MontoTarjeta    = tarMixto;
+                decimal cubierto       = efMixto + tarMixto + cuenta.ComisionTarjeta;
+                cuenta.Cambio          = Math.Max(0, cubierto - cuenta.Total);
+                break;
+
+            default: // Efectivo
+                cuenta.ComisionTarjeta = 0;
+                cuenta.Total           = baseTotal;
+                var recibido           = dto.MontoEfectivo > 0 ? dto.MontoEfectivo : cuenta.Total;
+                cuenta.MontoEfectivo   = recibido;
+                cuenta.MontoTarjeta    = 0;
+                cuenta.Cambio          = Math.Max(0, recibido - cuenta.Total);
+                break;
+        }
+
+        cuenta.RfcCliente         = string.IsNullOrWhiteSpace(dto.RFC)         ? null : dto.RFC.Trim();
+        cuenta.RazonSocialCliente = string.IsNullOrWhiteSpace(dto.RazonSocial) ? null : dto.RazonSocial.Trim();
+
+        cuenta.Ordenes.Add(orden);
+        _context.Cuentas.Add(cuenta);
+        await _context.SaveChangesAsync();
+
+        bool modoSimulado = false;
+
+        // Imprimir ticket si lo pidieron
+        if (dto.ImprimirTicket)
+        {
+            var cfg = await _context.ConfiguracionesTicket.FindAsync(1);
+            if (cfg != null)
+            {
+                modoSimulado = !cfg.ImpresionHabilitada;
+
+                // Recargar cuenta con navegaciones para que el ticket muestre nombres
+                var cuentaConDetalles = await _context.Cuentas
+                    .Include(c => c.Mesa)
+                    .Include(c => c.Mesera)
+                    .Include(c => c.Ordenes)
+                        .ThenInclude(o => o.Detalles)
+                            .ThenInclude(d => d.Producto)
+                    .FirstAsync(c => c.Id == cuenta.Id);
+
+                var ticket = _ticket.GenerarTicket(cuentaConDetalles, cfg);
+                bool ok = await _escPos.ImprimirTicketAsync(ticket);
+                if (ok)
+                {
+                    cuenta.TicketImpreso  = true;
+                    cuenta.FechaImpresion = DateTime.Now;
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        // Notificar a admin (refresca dashboards / monitor / barra rápida)
+        await _hub.Clients.Group("Admin").SendAsync("CuentaCobrada", cuenta.Id);
+        await _hub.Clients.Group("Movil").SendAsync("VentaCobrada", new
+        {
+            mesa       = cuenta.NombreCliente,
+            total      = cuenta.Total,
+            metodoPago = cuenta.MetodoPago,
+        });
+
+        return Ok(new
+        {
+            cuentaId      = cuenta.Id,
+            folio         = cuenta.Folio,
+            total         = cuenta.Total,
+            cambio        = cuenta.Cambio,
+            subtotal      = cuenta.Subtotal,
+            comision      = cuenta.ComisionTarjeta,
+            metodoPago    = cuenta.MetodoPago,
+            ticketImpreso = cuenta.TicketImpreso,
+            modoSimulado,
         });
     }
 

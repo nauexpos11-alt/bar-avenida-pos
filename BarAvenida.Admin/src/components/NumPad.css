@@ -1,0 +1,110 @@
+/* NumPad reutilizable — estilo dorado #f0c842 + negro #0a0a0a */
+.numpad-root {
+  background: #0a0a0a;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 280px;
+  user-select: none;
+}
+
+.numpad-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.numpad-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  color: #888;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.numpad-display {
+  background: #1a1a1a;
+  border: 2px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #f0c842;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  min-height: 1em;
+}
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.numpad-key {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #e8e8e8;
+  border-radius: 8px;
+  padding: 16px 0;
+  font-size: 1.3rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.05s;
+  font-family: inherit;
+}
+
+.numpad-key:hover:not(:disabled) {
+  background: #232323;
+  border-color: #f0c842;
+}
+
+.numpad-key:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.numpad-key:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.numpad-key-disabled {
+  opacity: 0.3;
+}
+
+.numpad-key-back {
+  background: #2a1010;
+  border-color: #4a2222;
+  color: #ff9090;
+}
+.numpad-key-back:hover:not(:disabled) {
+  background: #3a1818;
+  border-color: #ff6b6b;
+}
+
+.numpad-key-clear {
+  background: #2a2a10;
+  border-color: #4a4a22;
+  color: #f0c842;
+}
+.numpad-key-clear:hover:not(:disabled) {
+  background: #3a3a18;
+  border-color: #f0c842;
+}
+
+.numpad-key-ok {
+  background: #f0c842;
+  border-color: #f0c842;
+  color: #0a0a0a;
+}
+.numpad-key-ok:hover:not(:disabled) {
+  background: #ffd54a;
+}
+.numpad-key-ok:disabled {
+  background: #3a3214;
+  color: #6a5e2a;
+  border-color: #3a3214;
+}

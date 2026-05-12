@@ -14,7 +14,7 @@ const METODOS = [
 
 const RAPIDOS = [50, 100, 200, 500, 1000]
 
-export default function CobrarCuentaModal({ cuenta, auth, onClose, onCobrado }) {
+export default function CobrarCuentaModal({ cuenta, auth, onClose, onCobrado, onSubmit, btnLabel }) {
   const mesaNum  = cuenta?.mesaNumero ?? '?'
   const folio    = cuenta?.folio ?? cuenta?.id ?? '?'
   const subtotal = cuenta?.total ?? 0
@@ -130,7 +130,9 @@ export default function CobrarCuentaModal({ cuenta, auth, onClose, onCobrado }) 
     }
 
     try {
-      const res = await api.adminCobrarCuenta(auth.token, cuenta.id, dto)
+      const res = onSubmit
+        ? await onSubmit(dto)
+        : await api.adminCobrarCuenta(auth.token, cuenta.id, dto)
       setResultado(res)
       setFase('ok')
       setTimeout(() => onCobrado(res), 2200)
@@ -366,7 +368,7 @@ export default function CobrarCuentaModal({ cuenta, auth, onClose, onCobrado }) 
             onClick={handleCobrar}
             disabled={!puedeCobrarse || fase !== 'form'}
           >
-            🖨️ COBRAR E IMPRIMIR
+            {btnLabel ?? '🖨️ COBRAR E IMPRIMIR'}
           </button>
         </div>
 

@@ -175,6 +175,24 @@
 .mc-btn-listo:active  { background: #15803d; transform: scale(0.97); }
 .mc-btn-listo:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* -- Botón TODA LA MESA LISTA ----------------------------- */
+.mc-btn-toda-mesa {
+  background: #f0c842;
+  color: #0a0a0a;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
+  box-shadow: 0 0 0 1px rgba(240, 200, 66, 0.25);
+}
+.mc-btn-toda-mesa:hover   { background: #fbd34a; box-shadow: 0 0 0 2px rgba(240, 200, 66, 0.4); }
+.mc-btn-toda-mesa:active  { background: #d9b13b; transform: scale(0.98); }
+.mc-btn-toda-mesa:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* -- Footer ----------------------------------------------- */
 .mc-footer {
   display: flex;

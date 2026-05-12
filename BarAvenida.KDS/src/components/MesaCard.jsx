@@ -27,16 +27,30 @@ function formatHora(fecha) {
   })
 }
 
-export default function MesaCard({ grupo, now, onListo }) {
+export default function MesaCard({ grupo, now, onListo, onTodaLaMesaListo }) {
   const [removingId, setRemovingId] = useState(null)
+  const [removingTodos, setRemovingTodos] = useState(false)
   const color   = colorClass(grupo.primeraFecha, now)
   const elapsed = formatElapsed(grupo.primeraFecha, now)
   const urgente = getMinutes(grupo.primeraFecha, now) >= 5
 
   const handleListo = (ordenId) => {
-    if (removingId) return
+    if (removingId || removingTodos) return
     setRemovingId(ordenId)
     setTimeout(() => onListo(ordenId), 360)
+  }
+
+  const handleTodaLaMesa = () => {
+    if (removingId || removingTodos) return
+    if (typeof onTodaLaMesaListo !== 'function') return
+    setRemovingTodos(true)
+    // Damos un tick para que el confirm no bloquee la animación visual
+    setTimeout(() => {
+      onTodaLaMesaListo(grupo)
+      // Si el usuario cancela, restauramos el estado para no dejar el botón muerto.
+      // El padre quitará las órdenes optimistamente si confirma.
+      setTimeout(() => setRemovingTodos(false), 400)
+    }, 0)
   }
 
   return (
@@ -90,6 +104,16 @@ export default function MesaCard({ grupo, now, onListo }) {
       </div>
 
       <hr className="mc-sep" />
+
+      {grupo.ordenes.length > 1 && typeof onTodaLaMesaListo === 'function' && (
+        <button
+          className="mc-btn-toda-mesa"
+          onClick={handleTodaLaMesa}
+          disabled={removingTodos || !!removingId}
+        >
+          ✓ TODA LA MESA LISTA
+        </button>
+      )}
 
       <footer className="mc-footer">
         <span className="mc-tiempo">{elapsed} esperando</span>

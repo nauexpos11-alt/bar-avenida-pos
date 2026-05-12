@@ -25,6 +25,7 @@ import BarraRapidaAdminScreen      from './screens/BarraRapidaAdminScreen'
 import CentroOperacionScreen       from './screens/CentroOperacionScreen'
 import PuntoVentaHomeScreen        from './screens/PuntoVentaHomeScreen'
 import QRTabletScreen              from './screens/QRTabletScreen'
+import MesaOperableScreen         from './screens/MesaOperableScreen'
 import CambioUsuarioModal         from './components/CambioUsuarioModal'
 import TopMenuBar                 from './components/TopMenuBar'
 import EnConstruccionScreen       from './screens/EnConstruccionScreen'
@@ -41,6 +42,8 @@ export default function App() {
   )
   const [pantallaNombre, setPantallaNombre] = useState('Mesas')
   const [modalCambioUser, setModalCambioUser] = useState(false)
+  // Estado adicional para pantallas que necesitan un id contextual (ej. MesaOperable)
+  const [mesaOperable, setMesaOperable]     = useState(null) // { mesaId, mesaNumero }
 
   useEffect(() => {
     try {
@@ -77,11 +80,23 @@ export default function App() {
     setPantallaNombre('Inicio')
   }
 
-  const irPantalla = (screen, nombre) => {
+  const irPantalla = (screen, nombre, payload) => {
     if (screen === 'seg-cambio-usuario') { setModalCambioUser(true); return }
+    if (screen === 'mesa-operable' && payload) {
+      setMesaOperable({
+        mesaId:     payload.mesaId,
+        mesaNumero: payload.mesaNumero,
+      })
+    }
     setPantallaActual(screen)
     setPantallaNombre(nombre || screen)
-    localStorage.setItem(LS_PANTALLA, screen)
+    // No persistir 'mesa-operable' porque depende de un mesaId en memoria;
+    // si el usuario recarga, debe volver a Mesas.
+    if (screen !== 'mesa-operable') {
+      localStorage.setItem(LS_PANTALLA, screen)
+    } else {
+      localStorage.setItem(LS_PANTALLA, 'pos-mesas')
+    }
   }
 
   if (!auth) return <LoginScreen onLogin={handleLogin} />
@@ -94,7 +109,7 @@ export default function App() {
         return <CentroOperacionScreen auth={auth} onIrPantalla={irPantalla} />
       case 'pos-mesas':
       case 'dashboard':
-        return <DashboardScreen auth={auth} onLogout={handleLogout} />
+        return <DashboardScreen auth={auth} onLogout={handleLogout} onIrPantalla={irPantalla} />
       case 'usuarios':
         return <UsuariosScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'cat-productos':
@@ -158,6 +173,19 @@ export default function App() {
         return <ConsultaCuentasScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
       case 'conectar-tablets':
         return <QRTabletScreen auth={auth} onVolver={() => irPantalla('pos-mesas', 'Mesas')} />
+      case 'mesa-operable':
+        if (!mesaOperable?.mesaId) {
+          // Sin mesa seleccionada — volver al dashboard
+          return <DashboardScreen auth={auth} onLogout={handleLogout} onIrPantalla={irPantalla} />
+        }
+        return (
+          <MesaOperableScreen
+            auth={auth}
+            mesaId={mesaOperable.mesaId}
+            mesaNumero={mesaOperable.mesaNumero}
+            onVolver={() => { setMesaOperable(null); irPantalla('pos-mesas', 'Mesas') }}
+          />
+        )
       default:
         return (
           <EnConstruccionScreen

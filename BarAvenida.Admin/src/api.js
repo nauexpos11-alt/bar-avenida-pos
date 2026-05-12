@@ -207,6 +207,7 @@ export const api = {
   adminGetCuentasRapidasAbiertas: (t) => req('/api/Cuentas/rapidas-abiertas', {}, t),
   adminAbrirCuentaRapida: (t, dto) => req('/api/Cuentas/abrir-rapido', { method: 'POST', body: JSON.stringify(dto) }, t),
   adminEnviarOrden: (t, dto) => req('/api/Cuentas/enviar-orden', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminCobroRapidoBarra: (t, dto) => req('/api/Cuentas/cobro-rapido-barra', { method: 'POST', body: JSON.stringify(dto) }, t),
 
   adminCobrarCuenta: async (token, cuentaId, dto) => {
     const headers = {
@@ -299,11 +300,21 @@ export const api = {
   getSolicitudesPendientes: (t)     => req('/api/SolicitudesCancelacion/pendientes', {}, t),
   aprobarSolicitud:         (t, id) => req(`/api/SolicitudesCancelacion/${id}/aprobar`,  { method: 'POST' }, t),
   rechazarSolicitud:        (t, id) => req(`/api/SolicitudesCancelacion/${id}/rechazar`, { method: 'POST' }, t),
+  // Aliases con PIN (para MesaOperableScreen — backend identifica al admin por JWT,
+  // el campo pin del body se ignora pero se envía por compatibilidad de la UI)
+  adminAprobarSolicitud:    (t, id, pin) => req(`/api/SolicitudesCancelacion/${id}/aprobar`,  { method: 'POST', body: JSON.stringify({ pin }) }, t),
+  adminRechazarSolicitud:   (t, id, pin) => req(`/api/SolicitudesCancelacion/${id}/rechazar`, { method: 'POST', body: JSON.stringify({ pin }) }, t),
 
   // Centro de Operación (B1)
   adminGetCuentasActivas: (t) => req('/api/Cuentas/activas', {}, t),
   editarInfoCuenta: (t, id, dto) =>
     req(`/api/Cuentas/${id}/editar-info`, { method: 'POST', body: JSON.stringify(dto) }, t),
+  // Alias para MesaOperableScreen — el endpoint real es POST /editar-info
+  adminEditarInfoCuenta: (t, id, dto) =>
+    req(`/api/Cuentas/${id}/editar-info`, { method: 'POST', body: JSON.stringify(dto) }, t),
   moverAreaCuenta: (t, id, areaNueva) =>
     req(`/api/Cuentas/${id}/mover-area`, { method: 'POST', body: JSON.stringify({ areaNueva }) }, t),
+
+  // Abrir cuenta para una mesa (para MesaOperableScreen — admin abre la cuenta como "mesera")
+  abrirCuenta: (t, dto) => req('/api/Cuentas/abrir', { method: 'POST', body: JSON.stringify(dto) }, t),
 }

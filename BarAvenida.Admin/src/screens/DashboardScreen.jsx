@@ -26,7 +26,7 @@ function getResumen(cuenta) {
 }
 
 // ── Componente ───────────────────────────────────────────
-export default function DashboardScreen({ auth, onLogout }) {
+export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
   const [mesas, setMesas]                       = useState([])
   const [cuentasAbiertas, setCuentasAbiertas]   = useState([])
   const [kpis, setKpis]                         = useState(null)
@@ -136,7 +136,8 @@ export default function DashboardScreen({ auth, onLogout }) {
     return () => conn.stop()
   }, [auth.token, addToast, cargarMesas, cargarKpis])
 
-  // ── Tap mesa ───────────────────────────────────────────
+  // ── Tap mesa (cuenta lateral) ─────────────────────────
+  // Se mantiene para rows de "Cuentas Abiertas" en el panel izq.
   const handleTapMesa = useCallback(async (mesa) => {
     const ocupada = mesa.estado === 'Ocupada' || !!mesa.cuentaId || !!mesa.cuentaActualId
     if (!ocupada) { setMesaSel(null); setCuentaSel(null); return }
@@ -155,6 +156,19 @@ export default function DashboardScreen({ auth, onLogout }) {
       setLoadingCuenta(false)
     }
   }, [auth.token, addToast])
+
+  // ── Click en card de mesa: ir a MesaOperableScreen ─────
+  const handleClickMesaCard = useCallback((mesa) => {
+    if (typeof onIrPantalla === 'function') {
+      onIrPantalla('mesa-operable', `Mesa ${mesa.numero}`, {
+        mesaId:     mesa.id,
+        mesaNumero: mesa.numero,
+      })
+    } else {
+      // Fallback al panel lateral si no hay router (no debería ocurrir)
+      handleTapMesa(mesa)
+    }
+  }, [onIrPantalla, handleTapMesa])
 
   // ── Cobrar ─────────────────────────────────────────────
   const handleCobrar = useCallback(async (metodo) => {
@@ -291,7 +305,7 @@ export default function DashboardScreen({ auth, onLogout }) {
                   <button
                     key={mesa.id}
                     className={`mesa-card${ocu ? ' mesa-ocu' : ' mesa-lib'}${isSel ? ' mesa-sel' : ''}`}
-                    onClick={() => handleTapMesa(mesa)}
+                    onClick={() => handleClickMesaCard(mesa)}
                   >
                     <span className="mc-num">{mesa.numero}</span>
                     {ocu ? (

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import CobrarCuentaModal from '../components/CobrarCuentaModal'
+import NumPad from '../components/NumPad'
 import './BarraRapidaAdminScreen.css'
 
 function tiempoAbierta(fechaApertura) {
@@ -17,93 +18,59 @@ function fmt(n) {
   return `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function consolidarLineas(ordenes) {
-  const map = {}
-  for (const o of ordenes ?? []) {
-    for (const d of o.detalles ?? []) {
-      if (map[d.productoId]) {
-        map[d.productoId].cantidad += d.cantidad
-        map[d.productoId].subtotal += d.subtotal
-      } else {
-        map[d.productoId] = {
-          productoId: d.productoId,
-          nombre: d.productoNombre,
-          precio: d.precioUnitario,
-          cantidad: d.cantidad,
-          subtotal: d.subtotal,
-        }
-      }
-    }
-  }
-  return Object.values(map)
-}
-
-function calcProductosCount(cuenta) {
-  return (cuenta?.ordenes ?? [])
-    .flatMap(o => o.detalles ?? [])
-    .reduce((s, d) => s + d.cantidad, 0)
-}
-
 export default function BarraRapidaAdminScreen({ auth }) {
-  const [cuentas, setCuentas]           = useState([])
-  const [cuentaSelId, setCuentaSelId]   = useState(null)
-  const [cuentaDetalle, setCuentaDet]   = useState(null)
-  const [categorias, setCategorias]     = useState([])
-  const [catActiva, setCatActiva]       = useState(null)
-  const [productos, setProductos]       = useState([])
-  const [carrito, setCarrito]           = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [error, setError]               = useState(null)
-  const [toastMsg, setToastMsg]         = useState(null)
-  const [abriendo, setAbriendo]         = useState(false)
-  const [enviando, setEnviando]         = useState(false)
-  const [cobrarModal, setCobrarModal]   = useState(false)
-  const [cancelModal, setCancelModal]   = useState(false)
-  const [cancelPin, setCancelPin]       = useState('')
-  const [cancelMotivo, setCancelMotivo] = useState('')
-  const [cancelando, setCancelando]     = useState(false)
-  const [, setTick]                     = useState(0)
-  const connRef                         = useRef(null)
+  // Catálogo
+  const [categorias, setCategorias] = useState([])
+  const [catActiva,  setCatActiva]  = useState(null)
+  const [productos,  setProductos]  = useState([])
 
-  // Tick para actualizar tiempos cada 30s
+  // Carrito de cobro directo
+  const [carrito, setCarrito] = useState([])
+
+  // NumPad para capturar cantidad de un producto recién pulsado
+  const [pendiente, setPendiente] = useState(null) // { producto, cantidad }
+
+  // Cuentas barra viejas (panel lateral - historial)
+  const [cuentasViejas, setCuentasViejas] = useState([])
+
+  // Estado UI
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(null)
+  const [toastMsg,  setToastMsg]  = useState(null)
+  const [cobrarModal, setCobrarModal] = useState(false)
+
+  const [, setTick] = useState(0)
+  const connRef    = useRef(null)
+
+  // Tick para refrescar tiempos del panel lateral
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30000)
     return () => clearInterval(id)
   }, [])
 
-  const cargarCuentas = useCallback(async () => {
+  // Cargar cuentas barra abiertas (historial reciente) -- no es el flujo principal
+  const cargarCuentasViejas = useCallback(async () => {
     try {
       const data = await api.adminGetCuentasRapidasAbiertas(auth.token)
-      setCuentas(Array.isArray(data) ? data : [])
-      setError(null)
-    } catch (e) {
-      setError(e.message || 'Error al cargar cuentas')
-    } finally {
-      setLoading(false)
-    }
-  }, [auth.token])
-
-  const cargarDetalle = useCallback(async (id) => {
-    if (!id) { setCuentaDet(null); return }
-    try {
-      const data = await api.getCuenta(id, auth.token)
-      setCuentaDet(data)
-    } catch (e) {
-      setError(e.message || 'Error al cargar detalle')
+      setCuentasViejas(Array.isArray(data) ? data : [])
+    } catch {
+      // silencioso: el panel lateral es secundario
     }
   }, [auth.token])
 
   // Carga inicial
   useEffect(() => {
-    cargarCuentas()
-    api.adminGetCategorias(auth.token)
-      .then(data => {
-        const cats = Array.isArray(data) ? data : []
-        setCategorias(cats)
-        if (cats.length > 0) setCatActiva(cats[0].id)
-      })
-      .catch(() => {})
-  }, [auth.token, cargarCuentas])
+    setLoading(true)
+    Promise.all([
+      api.adminGetCategorias(auth.token).catch(() => []),
+      cargarCuentasViejas(),
+    ]).then(([cats]) => {
+      const arr = Array.isArray(cats) ? cats : []
+      setCategorias(arr)
+      if (arr.length > 0) setCatActiva(arr[0].id)
+      setLoading(false)
+    })
+  }, [auth.token, cargarCuentasViejas])
 
   // Cargar productos cuando cambia la categoría
   useEffect(() => {
@@ -113,17 +80,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
       .catch(() => setProductos([]))
   }, [catActiva, auth.token])
 
-  // Recargar detalle cuando cambia la cuenta seleccionada
-  useEffect(() => { cargarDetalle(cuentaSelId) }, [cuentaSelId, cargarDetalle])
-
-  // Poll al detalle cada 15s cuando hay cuenta seleccionada (para ver cambios de meseras)
-  useEffect(() => {
-    if (!cuentaSelId) return
-    const id = setInterval(() => cargarDetalle(cuentaSelId), 15000)
-    return () => clearInterval(id)
-  }, [cuentaSelId, cargarDetalle])
-
-  // SignalR
+  // SignalR — sólo para refrescar el panel de historial
   useEffect(() => {
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(`${API_URL}/barhub`, { accessTokenFactory: () => auth.token })
@@ -131,15 +88,9 @@ export default function BarraRapidaAdminScreen({ auth }) {
       .configureLogging(signalR.LogLevel.Warning)
       .build()
 
-    conn.on('CuentaAbierta', (payload) => {
-      if (payload?.mesaId == null) cargarCuentas()
-    })
-    conn.on('CuentaCobrada', () => {
-      cargarCuentas()
-    })
-    conn.on('CuentaCancelada', () => {
-      cargarCuentas()
-    })
+    conn.on('CuentaAbierta',  (p) => { if (p?.mesaId == null) cargarCuentasViejas() })
+    conn.on('CuentaCobrada',  () => cargarCuentasViejas())
+    conn.on('CuentaCancelada',() => cargarCuentasViejas())
 
     conn.start()
       .then(() => conn.invoke('UnirseAGrupo', 'Admin').catch(() => {}))
@@ -147,154 +98,156 @@ export default function BarraRapidaAdminScreen({ auth }) {
 
     connRef.current = conn
     return () => conn.stop()
-  }, [auth.token, cargarCuentas])
+  }, [auth.token, cargarCuentasViejas])
 
   const showToast = (msg) => {
     setToastMsg(msg)
     setTimeout(() => setToastMsg(null), 3500)
   }
 
-  const handleNuevaBarra = async () => {
-    setAbriendo(true)
-    setError(null)
-    try {
-      const nueva = await api.adminAbrirCuentaRapida(auth.token, { meseraId: auth.id })
-      await cargarCuentas()
-      setCuentaSelId(nueva.id)
-      setCarrito([])
-    } catch (e) {
-      setError(e.message || 'Error al abrir cuenta de barra')
-    } finally {
-      setAbriendo(false)
+  // ── Carrito ───────────────────────────────────────────────
+  const seleccionarProducto = (producto) => {
+    // Abrir NumPad con cantidad inicial vacía
+    setPendiente({ producto, cantidad: '' })
+  }
+
+  const confirmarCantidad = (cantStr) => {
+    if (!pendiente) return
+    const cant = parseInt(cantStr || '0', 10)
+    if (!cant || cant <= 0) {
+      setPendiente(null)
+      return
     }
-  }
-
-  const seleccionarCuenta = (id) => {
-    setCuentaSelId(id)
-    setCarrito([])
-    setCancelModal(false)
-  }
-
-  const agregarAlCarrito = (producto) => {
+    const { producto } = pendiente
     setCarrito(prev => {
       const idx = prev.findIndex(x => x.productoId === producto.id)
       if (idx >= 0) {
         const next = [...prev]
-        next[idx] = { ...next[idx], cantidad: next[idx].cantidad + 1 }
+        next[idx] = {
+          ...next[idx],
+          cantidad: next[idx].cantidad + cant,
+          subtotal: (next[idx].cantidad + cant) * next[idx].precio,
+        }
         return next
       }
-      return [...prev, { productoId: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad: 1 }]
+      return [...prev, {
+        productoId: producto.id,
+        nombre:     producto.nombre,
+        precio:     producto.precio,
+        cantidad:   cant,
+        subtotal:   producto.precio * cant,
+      }]
     })
+    setPendiente(null)
   }
 
-  const cambiarCantidad = (productoId, delta) => {
-    setCarrito(prev =>
-      prev.map(x => x.productoId === productoId ? { ...x, cantidad: x.cantidad + delta } : x)
-        .filter(x => x.cantidad > 0)
-    )
+  const cancelarCantidad = () => setPendiente(null)
+
+  const quitarItem = (productoId) => {
+    setCarrito(prev => prev.filter(x => x.productoId !== productoId))
   }
 
-  const handleEnviarOrden = async () => {
-    if (carrito.length === 0 || enviando || !cuentaSelId) return
-    setEnviando(true)
-    try {
-      await api.adminEnviarOrden(auth.token, {
-        cuentaId: cuentaSelId,
-        detalles: carrito.map(x => ({ productoId: x.productoId, cantidad: x.cantidad })),
-      })
-      setCarrito([])
-      await cargarDetalle(cuentaSelId)
-      cargarCuentas()
-    } catch (e) {
-      setError(e.message || 'Error al enviar orden')
-    } finally {
-      setEnviando(false)
-    }
-  }
+  const limpiarCarrito = () => setCarrito([])
 
-  const handleCobrado = () => {
-    setCobrarModal(false)
-    setCuentaSelId(null)
-    setCuentaDet(null)
-    setCarrito([])
-    showToast('Cuenta cobrada correctamente')
-    cargarCuentas()
-  }
+  // ── Cobro directo ────────────────────────────────────────
+  const subtotal = carrito.reduce((s, x) => s + x.subtotal, 0)
+  const totalItems = carrito.reduce((s, x) => s + x.cantidad, 0)
 
-  const handleCancelarCuenta = async () => {
-    if (!cancelPin || !cancelMotivo || cancelando) return
-    setCancelando(true)
-    try {
-      await api.adminCancelarCuenta(auth.token, cuentaSelId, { pin: cancelPin, motivo: cancelMotivo })
-      setCancelModal(false)
-      setCuentaSelId(null)
-      setCuentaDet(null)
-      setCarrito([])
-      showToast('Cuenta cancelada')
-      cargarCuentas()
-    } catch (e) {
-      setError(e.message || 'Error al cancelar cuenta')
-    } finally {
-      setCancelando(false)
-    }
-  }
-
-  const lineas   = consolidarLineas(cuentaDetalle?.ordenes)
-  const subtotal = cuentaDetalle?.subtotal ?? 0
-
-  const cuentaParaCobrar = cuentaDetalle ? {
-    ...cuentaDetalle,
-    mesaNumero:    cuentaDetalle.nombreCliente ?? cuentaDetalle.mesaNumero ?? 'BARRA',
-    productosCount: calcProductosCount(cuentaDetalle),
+  const cuentaParaCobrar = carrito.length > 0 ? {
+    id:             null,                  // todavía no existe
+    folio:          '—',
+    mesaNumero:     'BARRA',
+    meseraNombre:   auth?.nombre ?? 'Admin',
+    total:          subtotal,              // CobrarCuentaModal trata "subtotal" = cuenta.total
+    productosCount: totalItems,
   } : null
 
-  const totalCarrito = carrito.reduce((s, x) => s + x.precio * x.cantidad, 0)
-  const itemsCarrito = carrito.reduce((s, x) => s + x.cantidad, 0)
+  const enviarCobroDirecto = async (cobroDto) => {
+    // cobroDto viene del CobrarCuentaModal con: metodoPago, montoEfectivo,
+    // montoTarjeta, efectivoRecibido, rfcCliente, razonSocialCliente, descuento
+    const dto = {
+      productos: carrito.map(x => ({ productoId: x.productoId, cantidad: x.cantidad })),
+      metodoPago:    cobroDto.metodoPago,
+      montoEfectivo: cobroDto.metodoPago === 'Mixto'
+        ? Number(cobroDto.montoEfectivo || 0)
+        : cobroDto.metodoPago === 'Efectivo'
+          ? Number(cobroDto.efectivoRecibido || 0)
+          : 0,
+      montoTarjeta: cobroDto.metodoPago === 'Mixto'
+        ? Number(cobroDto.montoTarjeta || 0)
+        : 0,    // en "Tarjeta" puro el back calcula sobre baseTotal
+      descuento:      Number(cobroDto.descuento || 0),
+      imprimirTicket: true,
+      rfc:            cobroDto.rfcCliente ?? null,
+      razonSocial:    cobroDto.razonSocialCliente ?? null,
+      meseraId:       auth.id,
+    }
 
+    const res = await api.adminCobroRapidoBarra(auth.token, dto)
+
+    // Adaptar al shape que CobrarCuentaModal espera mostrar en su pantalla "ok"
+    return {
+      id:             res.cuentaId,
+      folio:          res.folio,
+      total:          res.total,
+      cambio:         res.cambio,
+      subtotal:       res.subtotal,
+      comisionTarjeta:res.comision,
+      metodoPago:     res.metodoPago,
+      ticketImpreso:  res.ticketImpreso,
+      modoSimulado:   res.modoSimulado,
+    }
+  }
+
+  const handleCobrado = (res) => {
+    setCobrarModal(false)
+    setCarrito([])
+    setPendiente(null)
+    if (res?.folio != null) {
+      showToast(`Cobrado #${res.folio} - ${fmt(res.total)}`)
+    } else {
+      showToast('Cobrado correctamente')
+    }
+    cargarCuentasViejas()
+  }
+
+  // ── Render ───────────────────────────────────────────────
   return (
     <div className="bra-root">
 
-      {/* ── PANEL IZQUIERDO ── */}
-      <div className="bra-left">
-        <div className="bra-left-header">
-          <span className="bra-left-titulo">🍺 BARRA</span>
-          {cuentas.length > 0 && (
-            <span className="bra-left-badge">{cuentas.length}</span>
-          )}
+      {/* ── COL 1: Categorías ── */}
+      <div className="bra-col-cats">
+        <div className="bra-col-header">
+          <span className="bra-col-titulo">CATEGORÍAS</span>
         </div>
-
-        <button
-          className="bra-btn-nueva"
-          onClick={handleNuevaBarra}
-          disabled={abriendo}
-        >
-          {abriendo ? 'Abriendo...' : '+ NUEVA BARRA'}
-        </button>
-
-        {error && (
-          <div className="bra-error">
-            <span>⚠ {error}</span>
-            <button onClick={() => setError(null)}>✕</button>
+        {loading ? (
+          <div className="bra-loading">Cargando...</div>
+        ) : categorias.length === 0 ? (
+          <div className="bra-vacio">Sin categorías</div>
+        ) : (
+          <div className="bra-cats-list">
+            {categorias.map(cat => (
+              <button
+                key={cat.id}
+                className={`bra-cat-item${catActiva === cat.id ? ' bra-cat-item-sel' : ''}`}
+                onClick={() => setCatActiva(cat.id)}
+              >
+                {cat.nombre}
+              </button>
+            ))}
           </div>
         )}
 
-        {loading ? (
-          <div className="bra-loading">Cargando...</div>
-        ) : cuentas.length === 0 ? (
-          <div className="bra-vacio">Sin cuentas de barra abiertas</div>
-        ) : (
-          <div className="bra-cards">
-            {cuentas.map(c => (
-              <div
-                key={c.id}
-                className={`bra-card${cuentaSelId === c.id ? ' bra-card-sel' : ''}`}
-                onClick={() => seleccionarCuenta(c.id)}
-              >
-                <div className="bra-card-nombre">{c.nombre}</div>
-                <div className="bra-card-mesera">{c.mesera}</div>
-                <div className="bra-card-footer">
+        {/* Historial reciente: cuentas barra viejas (abiertas) */}
+        {cuentasViejas.length > 0 && (
+          <div className="bra-historial">
+            <div className="bra-hist-titulo">CUENTAS BARRA ABIERTAS</div>
+            {cuentasViejas.map(c => (
+              <div key={c.id} className="bra-hist-card">
+                <div className="bra-hist-nombre">{c.nombre}</div>
+                <div className="bra-hist-meta">
                   <span>{fmt(c.total)}</span>
-                  <span className="bra-card-tiempo">{tiempoAbierta(c.fechaApertura)}</span>
+                  <span className="bra-hist-tiempo">{tiempoAbierta(c.fechaApertura)}</span>
                 </div>
               </div>
             ))}
@@ -302,185 +255,120 @@ export default function BarraRapidaAdminScreen({ auth }) {
         )}
       </div>
 
-      {/* ── PANEL DERECHO ── */}
-      <div className="bra-right">
-        {!cuentaDetalle ? (
-          <div className="bra-sin-sel">
-            <div className="bra-sin-sel-ico">🍺</div>
-            <div className="bra-sin-sel-txt">Selecciona una cuenta de barra o abre una nueva</div>
-          </div>
-        ) : (
-          <>
-            <div className="bra-right-header">
-              <span className="bra-right-titulo">
-                {cuentaDetalle.nombreCliente ?? cuentaDetalle.mesaNumero}
-              </span>
-              <span className="bra-right-meta">
-                {cuentaDetalle.meseraNombre} · {tiempoAbierta(cuentaDetalle.fechaApertura)}
-              </span>
-              {subtotal > 0 && (
-                <span className="bra-right-total">{fmt(subtotal)}</span>
-              )}
-            </div>
-
-            <div className="bra-right-body">
-
-              {/* Selector de productos */}
-              <div className="bra-picker">
-                <div className="bra-cats">
-                  {categorias.map(cat => (
-                    <button
-                      key={cat.id}
-                      className={`bra-cat-btn${catActiva === cat.id ? ' bra-cat-activa' : ''}`}
-                      onClick={() => setCatActiva(cat.id)}
-                    >
-                      {cat.nombre}
-                    </button>
-                  ))}
-                </div>
-                <div className="bra-prod-grid">
-                  {productos.length === 0 ? (
-                    <div className="bra-prod-vacio">Sin productos en esta categoría</div>
-                  ) : productos.map(p => (
-                    <button
-                      key={p.id}
-                      className="bra-prod-btn"
-                      onClick={() => agregarAlCarrito(p)}
-                    >
-                      <span className="bra-prod-nombre">{p.nombre}</span>
-                      <span className="bra-prod-precio">{fmt(p.precio)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Carrito pendiente */}
-              {carrito.length > 0 && (
-                <div className="bra-carrito">
-                  <div className="bra-carrito-header">
-                    NUEVA ORDEN — {itemsCarrito} ítem{itemsCarrito !== 1 ? 's' : ''} · {fmt(totalCarrito)}
-                  </div>
-                  {carrito.map(x => (
-                    <div key={x.productoId} className="bra-carrito-line">
-                      <span className="bra-cl-nombre">{x.nombre}</span>
-                      <span className="bra-cl-precio">{fmt(x.precio * x.cantidad)}</span>
-                      <div className="bra-cl-controles">
-                        <button className="bra-cl-btn" onClick={() => cambiarCantidad(x.productoId, -1)}>−</button>
-                        <span className="bra-cl-qty">{x.cantidad}</span>
-                        <button className="bra-cl-btn" onClick={() => cambiarCantidad(x.productoId, +1)}>+</button>
-                        <button className="bra-cl-btn bra-cl-del" onClick={() =>
-                          setCarrito(prev => prev.filter(c => c.productoId !== x.productoId))
-                        }>🗑</button>
-                      </div>
-                    </div>
-                  ))}
-                  <button
-                    className="bra-btn-enviar"
-                    onClick={handleEnviarOrden}
-                    disabled={enviando}
-                  >
-                    {enviando ? 'Enviando...' : '▶ ENVIAR ORDEN AL BAR'}
-                  </button>
-                </div>
-              )}
-
-              {/* Productos en cuenta */}
-              {lineas.length > 0 ? (
-                <div className="bra-lineas">
-                  <div className="bra-lineas-header">EN CUENTA</div>
-                  {lineas.map(l => (
-                    <div key={l.productoId} className="bra-linea">
-                      <span className="bra-linea-qty">{l.cantidad}x</span>
-                      <span className="bra-linea-nombre">{l.nombre}</span>
-                      <span className="bra-linea-precio">{fmt(l.subtotal)}</span>
-                    </div>
-                  ))}
-                  <div className="bra-subtotal">
-                    <span>Subtotal</span>
-                    <span>{fmt(subtotal)}</span>
-                  </div>
-                </div>
-              ) : carrito.length === 0 && (
-                <div className="bra-lineas-vacio">Agrega productos para comenzar</div>
-              )}
-
-            </div>
-
-            {/* Footer */}
-            <div className="bra-right-footer">
-              <button
-                className="bra-btn-cancelar-cuenta"
-                onClick={() => { setCancelModal(true); setCancelPin(''); setCancelMotivo('') }}
-              >
-                ✗ CANCELAR CUENTA
-              </button>
-              <button
-                className="bra-btn-cobrar"
-                onClick={() => setCobrarModal(true)}
-                disabled={lineas.length === 0}
-              >
-                💵 COBRAR
-              </button>
-            </div>
-          </>
-        )}
+      {/* ── COL 2: Productos ── */}
+      <div className="bra-col-prods">
+        <div className="bra-col-header">
+          <span className="bra-col-titulo">PRODUCTOS</span>
+          {error && (
+            <button className="bra-error-pill" onClick={() => setError(null)}>
+              ⚠ {error} ✕
+            </button>
+          )}
+        </div>
+        <div className="bra-prods-grid">
+          {productos.length === 0 ? (
+            <div className="bra-prod-vacio">Sin productos en esta categoría</div>
+          ) : productos.map(p => (
+            <button
+              key={p.id}
+              className="bra-prod-btn"
+              onClick={() => seleccionarProducto(p)}
+            >
+              <span className="bra-prod-nombre">{p.nombre}</span>
+              <span className="bra-prod-precio">{fmt(p.precio)}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Toast */}
+      {/* ── COL 3: Carrito + total + cobrar ── */}
+      <div className="bra-col-carrito">
+        <div className="bra-col-header">
+          <span className="bra-col-titulo">🍺 COBRO BARRA</span>
+          {carrito.length > 0 && (
+            <button className="bra-clear-btn" onClick={limpiarCarrito} title="Vaciar carrito">
+              🗑 Vaciar
+            </button>
+          )}
+        </div>
+
+        <div className="bra-carrito-body">
+          {carrito.length === 0 ? (
+            <div className="bra-carrito-vacio">
+              <div className="bra-cv-ico">🍺</div>
+              <div className="bra-cv-txt">Toca un producto para empezar</div>
+            </div>
+          ) : (
+            <div className="bra-carrito-lista">
+              {carrito.map(item => (
+                <div key={item.productoId} className="bra-cart-item">
+                  <div className="bra-cart-info">
+                    <span className="bra-cart-qty">{item.cantidad}×</span>
+                    <span className="bra-cart-nombre">{item.nombre}</span>
+                  </div>
+                  <div className="bra-cart-precio">{fmt(item.subtotal)}</div>
+                  <button
+                    className="bra-cart-quitar"
+                    onClick={() => quitarItem(item.productoId)}
+                    title="Quitar"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bra-total-box">
+          <div className="bra-total-lbl">TOTAL</div>
+          <div className="bra-total-val">{fmt(subtotal)}</div>
+        </div>
+
+        <button
+          className="bra-btn-cobrar-directo"
+          disabled={carrito.length === 0}
+          onClick={() => setCobrarModal(true)}
+        >
+          💵 COBRAR DIRECTO
+        </button>
+      </div>
+
+      {/* ── Toast ── */}
       {toastMsg && <div className="bra-toast">✅ {toastMsg}</div>}
 
-      {/* Modal cancelar */}
-      {cancelModal && (
-        <div className="bra-overlay">
-          <div className="bra-modal-cancel">
-            <div className="bra-mc-header">✗ CANCELAR CUENTA DE BARRA</div>
-            <div className="bra-mc-body">
-              <div className="bra-mc-lbl">PIN Admin</div>
-              <input
-                className="bra-mc-inp"
-                type="password"
-                placeholder="PIN de 4 dígitos"
-                maxLength={6}
-                value={cancelPin}
-                onChange={e => setCancelPin(e.target.value)}
-                autoFocus
-              />
-              <div className="bra-mc-lbl">Motivo de cancelación</div>
-              <textarea
-                className="bra-mc-textarea"
-                placeholder="Motivo..."
-                rows={3}
-                value={cancelMotivo}
-                onChange={e => setCancelMotivo(e.target.value)}
-              />
+      {/* ── Modal NumPad cantidad ── */}
+      {pendiente && (
+        <div className="bra-overlay" onClick={cancelarCantidad}>
+          <div className="bra-numpad-modal" onClick={e => e.stopPropagation()}>
+            <div className="bra-np-header">
+              <span className="bra-np-prod">{pendiente.producto.nombre}</span>
+              <span className="bra-np-precio">{fmt(pendiente.producto.precio)}</span>
             </div>
-            <div className="bra-mc-footer">
-              <button
-                className="bra-mc-btn-no"
-                onClick={() => setCancelModal(false)}
-                disabled={cancelando}
-              >
-                VOLVER
-              </button>
-              <button
-                className="bra-mc-btn-si"
-                onClick={handleCancelarCuenta}
-                disabled={!cancelPin || !cancelMotivo || cancelando}
-              >
-                {cancelando ? 'Cancelando...' : 'CONFIRMAR'}
-              </button>
-            </div>
+            <NumPad
+              title="¿Cuántos?"
+              value={pendiente.cantidad}
+              onChange={(v) => setPendiente(p => p ? { ...p, cantidad: v } : null)}
+              onConfirm={confirmarCantidad}
+              maxLength={3}
+              allowDecimal={false}
+            />
+            <button className="bra-np-cancel" onClick={cancelarCantidad}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
 
-      {/* Modal cobrar */}
+      {/* ── Modal cobrar (reusa CobrarCuentaModal con onSubmit custom) ── */}
       {cobrarModal && cuentaParaCobrar && (
         <CobrarCuentaModal
           cuenta={cuentaParaCobrar}
           auth={auth}
           onClose={() => setCobrarModal(false)}
           onCobrado={handleCobrado}
+          onSubmit={enviarCobroDirecto}
+          btnLabel="💵 COBRAR DIRECTO"
         />
       )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import * as signalR from '@microsoft/signalr'
 import OrdenCard from './components/OrdenCard'
 import MesaCard from './components/MesaCard'
-import { playBeep, unlockAudio } from './utils/sound'
+import { playBeep, playFanfarria, unlockAudio } from './utils/sound'
 import './App.css'
 
 // API_URL robusta: ignora VITE_API_URL si es invalida (ej. "http://" sin host).
@@ -15,13 +15,35 @@ function resolverApiUrl() {
 }
 const API_URL = resolverApiUrl()
 
+// Confeti — paleta dorada + acentos
+const CONFETI_COLORES = ['#f0c842', '#fbbf24', '#facc15', '#22c55e', '#ef4444', '#3b82f6', '#ffffff']
+const CONFETI_PIEZAS = 36
+
+function generarConfeti() {
+  return Array.from({ length: CONFETI_PIEZAS }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,            // %
+    delay: Math.random() * 0.6,           // s
+    duration: 2.4 + Math.random() * 1.4,  // s
+    color: CONFETI_COLORES[Math.floor(Math.random() * CONFETI_COLORES.length)],
+    size: 8 + Math.random() * 8,          // px
+    rotInicial: Math.random() * 360,
+    rotFinal: 360 + Math.random() * 720,
+    drift: -40 + Math.random() * 80,      // px de deriva horizontal
+  }))
+}
+
 export default function App() {
   const [ordenes, setOrdenes] = useState([])
+  const [historial, setHistorial] = useState([])
+  const [tabActiva, setTabActiva] = useState('activo') // 'activo' | 'historial'
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState(null)
   const [clock, setClock] = useState(new Date())
   const [now, setNow] = useState(new Date())
+  const [confeti, setConfeti] = useState(null)
   const connRef = useRef(null)
+  const pendientesAnteriorRef = useRef(0)
 
   // Reloj en vivo (cada segundo)
   useEffect(() => {
@@ -63,6 +85,31 @@ export default function App() {
     }
   }, [])
 
+  // Recargar historial completadas hoy
+  const recargarHistorial = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/api/Cuentas/ordenes/completadas-hoy`)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json()
+      setHistorial(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('No se pudo cargar historial:', err)
+    }
+  }, [])
+
+  // Cargar historial al iniciar (silencioso, para que el footer de stats tenga datos)
+  useEffect(() => {
+    recargarHistorial()
+  }, [recargarHistorial])
+
+  // Auto-refresh historial cada 30s mientras la tab esté activa
+  useEffect(() => {
+    if (tabActiva !== 'historial') return
+    recargarHistorial() // refresh inmediato al cambiar a la tab
+    const id = setInterval(recargarHistorial, 30_000)
+    return () => clearInterval(id)
+  }, [tabActiva, recargarHistorial])
+
   // Conexión SignalR
   useEffect(() => {
     const conn = new signalR.HubConnectionBuilder()
@@ -79,9 +126,38 @@ export default function App() {
       playBeep()
     })
 
-    // Por si el backend emite cuando alguien más marca como listo
+    // El backend emite cuando alguien marca como listo. Quitamos del activo y
+    // agregamos optimistamente al historial para que se vea instantáneo.
     conn.on('OrdenLista', (ordenId) => {
-      setOrdenes(prev => prev.filter(o => o.id !== ordenId))
+      setOrdenes(prev => {
+        const orden = prev.find(o => o.id === ordenId)
+        if (orden) {
+          // Construir entrada de historial localmente
+          const ahora = new Date()
+          const fechaEnvio = new Date(orden.fechaEnvio)
+          const tiempoMinutos = Math.max(0, Math.round((ahora - fechaEnvio) / 60000))
+          const detalles = (orden.detalles ?? orden.ordenDetalles ?? []).map(d => ({
+            productoNombre: d.productoNombre ?? d.nombreProducto ?? d.producto?.nombre ?? '?',
+            cantidad: d.cantidad,
+          }))
+          const entradaHist = {
+            id: orden.id,
+            mesaId: orden.mesaId ?? orden.mesa?.id ?? null,
+            mesaNumero: orden.mesaNumero ?? orden.mesa?.numero ?? '',
+            nombreMesera: orden.nombreMesera ?? orden.mesera?.nombre ?? orden.usuarioNombre ?? '',
+            numeroOrden: orden.numeroOrden ?? 0,
+            fechaEnvio: orden.fechaEnvio,
+            fechaListo: ahora.toISOString(),
+            tiempoMinutos,
+            detalles,
+          }
+          setHistorial(h => {
+            if (h.some(x => x.id === entradaHist.id)) return h
+            return [entradaHist, ...h].slice(0, 200)
+          })
+        }
+        return prev.filter(o => o.id !== ordenId)
+      })
     })
 
     // Unirse al grupo "Barra" — sin esto, NuevaOrden nunca llega
@@ -134,6 +210,38 @@ export default function App() {
     }
   }, [ordenes, recargarPendientes])
 
+  // Marcar TODAS las órdenes de una mesa como listas (con confirmación)
+  const handleTodaLaMesaListo = useCallback(async (grupo) => {
+    if (!grupo || !grupo.ordenes?.length) return
+    const ok = window.confirm(`¿Marcar todas las órdenes de Mesa ${grupo.mesaNumero} como listas?`)
+    if (!ok) return
+
+    // Optimistic: quitarlas todas de pantalla de un golpe
+    const ids = grupo.ordenes.map(o => o.id)
+    const ordenesPrev = ordenes
+    setOrdenes(prev => prev.filter(o => !ids.includes(o.id)))
+
+    try {
+      // Disparar todos los POST en paralelo
+      const resps = await Promise.all(ids.map(id =>
+        fetch(`${API_URL}/api/Cuentas/ordenes/${id}/listo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      ))
+      const fallaron = resps.filter(r => !r.ok)
+      if (fallaron.length > 0) {
+        throw new Error(`${fallaron.length} órden(es) no se pudieron marcar`)
+      }
+    } catch (err) {
+      console.error('Error en TODA LA MESA LISTA:', err)
+      setOrdenes(ordenesPrev)
+      recargarPendientes()
+      setError(`Error: ${err.message}. Reintenta.`)
+      setTimeout(() => setError(null), 5000)
+    }
+  }, [ordenes, recargarPendientes])
+
   // PROMPT F — Agrupar ordenes por mesa y ordenar por tiempo de espera
   const grupos = useMemo(() => {
     const map = new Map()
@@ -172,11 +280,34 @@ export default function App() {
     }
   }, [grupos, now])
 
+  // Stats del historial para el footer (siempre visibles)
+  const statsHist = useMemo(() => {
+    const total = historial.length
+    if (total === 0) return { total: 0, promedio: 0, mejor: 0 }
+    const tiempos = historial.map(h => h.tiempoMinutos ?? 0)
+    const promedio = Math.round(tiempos.reduce((s, x) => s + x, 0) / total)
+    const mejor    = Math.min(...tiempos)
+    return { total, promedio, mejor }
+  }, [historial])
+
   const horaStr = clock.toLocaleTimeString('es-MX', {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
 
   const pendientes = ordenes.length
+
+  // Confeti al pasar de >0 pendientes a 0
+  useEffect(() => {
+    const anterior = pendientesAnteriorRef.current
+    if (anterior > 0 && pendientes === 0) {
+      setConfeti(generarConfeti())
+      try { playFanfarria() } catch { /* noop */ }
+      const id = setTimeout(() => setConfeti(null), 4000)
+      pendientesAnteriorRef.current = pendientes
+      return () => clearTimeout(id)
+    }
+    pendientesAnteriorRef.current = pendientes
+  }, [pendientes])
 
   return (
     <div className="kds-root">
@@ -203,6 +334,22 @@ export default function App() {
         </div>
       </header>
 
+      {/* Tabs ACTIVO / HISTORIAL HOY */}
+      <div className="kds-tabs">
+        <button
+          className={`kds-tab ${tabActiva === 'activo' ? 'is-active' : ''}`}
+          onClick={() => setTabActiva('activo')}
+        >
+          ✓ ACTIVO ({pendientes})
+        </button>
+        <button
+          className={`kds-tab ${tabActiva === 'historial' ? 'is-active' : ''}`}
+          onClick={() => setTabActiva('historial')}
+        >
+          🕒 HISTORIAL HOY ({historial.length})
+        </button>
+      </div>
+
       {error && (
         <div className="error-banner">
           ⚠ {error}
@@ -214,8 +361,8 @@ export default function App() {
         </div>
       )}
 
-      {/* PROMPT F — Banner de metricas vivas */}
-      {metricas && (
+      {/* Banner de metricas vivas (solo en tab activo) */}
+      {tabActiva === 'activo' && metricas && (
         <div className="metricas-bar">
           <div className="met-item">
             <span className="met-num">{metricas.totalMesas}</span>
@@ -234,20 +381,101 @@ export default function App() {
         </div>
       )}
 
-      {pendientes === 0 ? (
-        <div className="empty-state">
-          <div className="empty-check">✓</div>
-          <div className="empty-title">SIN ORDENES PENDIENTES</div>
-          <div className="empty-sub">La barra está al día</div>
-        </div>
+      {/* CONTENIDO según tab */}
+      {tabActiva === 'activo' ? (
+        pendientes === 0 ? (
+          <div className="empty-state">
+            <div className="empty-check">✓</div>
+            <div className="empty-title">SIN ORDENES PENDIENTES</div>
+            <div className="empty-sub">La barra está al día</div>
+          </div>
+        ) : (
+          <div className="mesas-grid">
+            {grupos.map(grupo => (
+              <MesaCard
+                key={grupo.mesaId}
+                grupo={grupo}
+                now={now}
+                onListo={handleListo}
+                onTodaLaMesaListo={handleTodaLaMesaListo}
+              />
+            ))}
+          </div>
+        )
       ) : (
-        <div className="mesas-grid">
-          {grupos.map(grupo => (
-            <MesaCard
-              key={grupo.mesaId}
-              grupo={grupo}
-              now={now}
-              onListo={handleListo}
+        // TAB HISTORIAL HOY
+        historial.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-check">🕒</div>
+            <div className="empty-title">SIN COMPLETADAS HOY</div>
+            <div className="empty-sub">Cuando marques órdenes como listas aparecerán aquí</div>
+          </div>
+        ) : (
+          <div className="hist-grid">
+            {historial.map(h => (
+              <article key={h.id} className="hist-card">
+                <header className="hist-top">
+                  <span className="hist-num">ORDEN #{h.numeroOrden ?? '?'}</span>
+                  <span className="hist-tiempo">{h.tiempoMinutos} min</span>
+                </header>
+                <div className="hist-meta">
+                  <span className="hist-mesa">MESA {h.mesaNumero}</span>
+                  <span className="hist-mesera">{String(h.nombreMesera || '').toUpperCase()}</span>
+                </div>
+                <ul className="hist-detalles">
+                  {(h.detalles ?? []).map((d, i) => (
+                    <li key={i} className="hist-det">
+                      <span className="hist-cant">{d.cantidad}x</span>
+                      <span className="hist-prod">{d.productoNombre ?? '?'}</span>
+                    </li>
+                  ))}
+                </ul>
+                <footer className="hist-footer">
+                  <span className="hist-hora">
+                    Listo: {h.fechaListo
+                      ? new Date(h.fechaListo).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                      : '--:--'}
+                  </span>
+                </footer>
+              </article>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Stats footer (siempre visible) */}
+      <div className="stats-footer">
+        <span className="sf-item">
+          Hoy: <strong>{statsHist.total}</strong> completadas
+        </span>
+        <span className="sf-sep">|</span>
+        <span className="sf-item">
+          Promedio: <strong>{statsHist.promedio}</strong> min
+        </span>
+        <span className="sf-sep">|</span>
+        <span className="sf-item">
+          Mejor: <strong>{statsHist.mejor}</strong> min
+        </span>
+      </div>
+
+      {/* Confeti cuando llegamos a 0 pendientes */}
+      {confeti && (
+        <div className="confeti-layer" aria-hidden="true">
+          {confeti.map(p => (
+            <div
+              key={p.id}
+              className="confeti-pieza"
+              style={{
+                left: `${p.left}%`,
+                width: `${p.size}px`,
+                height: `${p.size * 0.45}px`,
+                background: p.color,
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+                '--rot-ini': `${p.rotInicial}deg`,
+                '--rot-fin': `${p.rotFinal}deg`,
+                '--drift': `${p.drift}px`,
+              }}
             />
           ))}
         </div>

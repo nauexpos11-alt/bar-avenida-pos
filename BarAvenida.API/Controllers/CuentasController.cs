@@ -543,7 +543,7 @@ public class CuentasController : ControllerBase
         var cuenta = await _context.Cuentas.FindAsync(id);
         if (cuenta == null) return NotFound(new { mensaje = "Cuenta no encontrada" });
 
-        var carpeta = Path.Combine("F:", "BarAvenida", "TicketsImpresos");
+        var carpeta = BarAvenida.API.Helpers.PathHelper.TicketsImpresos;
         if (!Directory.Exists(carpeta))
             return Ok(Array.Empty<TicketSimuladoCuentaDto>());
 

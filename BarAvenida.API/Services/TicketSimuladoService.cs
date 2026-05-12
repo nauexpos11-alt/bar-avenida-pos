@@ -6,7 +6,7 @@ namespace BarAvenida.API.Services;
 
 public class TicketSimuladoService : ITicketSimuladoService
 {
-    private const string RUTA_CARPETA = @"F:\BarAvenida\TicketsImpresos";
+    private static readonly string RUTA_CARPETA = BarAvenida.API.Helpers.PathHelper.TicketsImpresos;
 
     private readonly ILogger<TicketSimuladoService> _logger;
 

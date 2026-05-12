@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.9.0
+AppVersion=1.9.8
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.9.0
+OutputBaseFilename=Bar Avenida Server Setup 1.9.8
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible
@@ -69,9 +69,13 @@ Source: "{#SOURCE_ROOT}Scripts\confiar-cert-cliente.ps1";      DestDir: "{sd}\Ba
 
 [Dirs]
 ; Carpetas de runtime con permisos de escritura para el servicio
-Name: "F:\BarAvenida\TicketsImpresos"; Permissions: users-modify
-Name: "F:\BarAvenida\Backups";         Permissions: users-modify
-Name: "F:\BarAvenida\Logs";            Permissions: users-modify
+; Si F: existe, las crea ahi. Si no, fallback a C:\BarAvenida-data\
+Name: "F:\BarAvenida\TicketsImpresos"; Permissions: users-modify; Check: VerificarDriveF
+Name: "F:\BarAvenida\Backups";         Permissions: users-modify; Check: VerificarDriveF
+Name: "F:\BarAvenida\Logs";            Permissions: users-modify; Check: VerificarDriveF
+Name: "C:\BarAvenida-data\TicketsImpresos"; Permissions: users-modify
+Name: "C:\BarAvenida-data\Backups";         Permissions: users-modify
+Name: "C:\BarAvenida-data\Logs";            Permissions: users-modify
 Name: "{sd}\BarAvenida";               Permissions: users-modify
 
 [Icons]
@@ -171,41 +175,11 @@ begin
   Result := DirExists('F:\') or FileExists('F:\');
 end;
 
-// Se ejecuta al iniciar el wizard - valida prerequisitos
+// Se ejecuta al iniciar el wizard.
+// NO valida nada bloqueante - todas las validaciones las hace el script
+// instalar-pc-nueva.ps1 (PowerShell wrapper) antes de invocar este setup.
+// Para instalacion 100% automatica sin cuadritos al usuario.
 function InitializeSetup(): Boolean;
-var
-  ResultCode: Integer;
 begin
-  // 1. Drive F:
-  if not VerificarDriveF() then
-  begin
-    MsgBox(
-      'No se detecto el drive F:' + #13#10 + #13#10 +
-      'Bar Avenida guarda logs, backups y tickets en F:\BarAvenida.' + #13#10 + #13#10 +
-      'Asigna F: a una particion en el Administrador de discos antes de continuar:' + #13#10 +
-      '   1. Tecla Windows + X -> Administracion de discos' + #13#10 +
-      '   2. Click derecho en una particion -> Cambiar letra y rutas' + #13#10 +
-      '   3. Cambiar -> F:',
-      mbError, MB_OK);
-    Result := False;
-    Exit;
-  end;
-
-  // 2. SQL Server
-  if not VerificarSqlServer() then
-  begin
-    if MsgBox(
-      'No se detecto SQL Server en la instancia localhost\MSSQLSERVER01.' + #13#10 + #13#10 +
-      'Bar Avenida necesita SQL Server (Express o superior).' + #13#10 +
-      'Al instalar SQL Server, escribe MSSQLSERVER01 como nombre de instancia.' + #13#10 + #13#10 +
-      'Quieres abrir la pagina de descarga ahora?',
-      mbConfirmation, MB_YESNO) = IDYES then
-    begin
-      ShellExec('open', 'https://www.microsoft.com/es-mx/sql-server/sql-server-downloads', '', '', SW_SHOW, ewNoWait, ResultCode);
-    end;
-    Result := False;
-    Exit;
-  end;
-
   Result := True;
 end;

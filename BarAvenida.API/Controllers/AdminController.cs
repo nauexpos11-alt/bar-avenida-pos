@@ -821,7 +821,7 @@ public class AdminController : ControllerBase
         {
             message = cfg.ImpresionHabilitada
                 ? "Ticket de prueba enviado a la impresora."
-                : @"Ticket de prueba generado en modo simulado. Revise F:\BarAvenida\TicketsImpresos\"
+                : $"Ticket de prueba generado en modo simulado. Revise {BarAvenida.API.Helpers.PathHelper.TicketsImpresos}"
         });
     }
 
@@ -1303,7 +1303,7 @@ public class AdminController : ControllerBase
     public IActionResult GetTicketsSimuladosRecientes([FromQuery] int limit = 10)
     {
         limit = Math.Clamp(limit, 1, 50);
-        const string carpeta = @"F:\BarAvenida\TicketsImpresos";
+        string carpeta = BarAvenida.API.Helpers.PathHelper.TicketsImpresos;
 
         if (!Directory.Exists(carpeta))
             return Ok(new { tickets = Array.Empty<object>() });
@@ -1337,7 +1337,7 @@ public class AdminController : ControllerBase
         if (!System.Text.RegularExpressions.Regex.IsMatch(baseName, @"^ticket-[\w-]+$"))
             return BadRequest(new { message = "Nombre inválido." });
 
-        const string carpeta = @"F:\BarAvenida\TicketsImpresos";
+        string carpeta = BarAvenida.API.Helpers.PathHelper.TicketsImpresos;
         string ruta = Path.Combine(carpeta, baseName + ".html");
 
         if (!System.IO.File.Exists(ruta))

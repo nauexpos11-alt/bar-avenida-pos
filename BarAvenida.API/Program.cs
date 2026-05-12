@@ -21,9 +21,11 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 // ============================================================================
 // SERILOG — Logs persistentes a archivo + consola
+// Fallback automatico: si F:\ no existe, usa C:\BarAvenida-data\
 // ============================================================================
-var logsPath = @"F:\BarAvenida\Logs";
-Directory.CreateDirectory(logsPath);
+var dataRoot = Directory.Exists("F:\\") ? @"F:\BarAvenida" : @"C:\BarAvenida-data";
+var logsPath = Path.Combine(dataRoot, "Logs");
+try { Directory.CreateDirectory(logsPath); } catch { /* el servicio igual debe arrancar */ }
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -41,20 +43,23 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
-var builder = WebApplication.CreateBuilder(args);
+// IMPORTANTE: ContentRootPath se debe establecer ANTES de CreateBuilder
+// para que appsettings.json se cargue desde el directorio del .exe,
+// no desde el working directory (que puede ser C:\Windows\System32 cuando corre como servicio).
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
 
 // Sustituir el logger default por Serilog
 builder.Host.UseSerilog();
 
-// Habilitar Servicio de Windows (no afecta cuando corre con dotnet run)
+// Habilitar Servicio de Windows
 builder.Host.UseWindowsService(opts =>
 {
     opts.ServiceName = "Bar Avenida API";
 });
-
-// Configurar ContentRoot para que funcione cuando corre como servicio
-// (los servicios arrancan con working directory = C:\Windows\System32)
-builder.Environment.ContentRootPath = AppContext.BaseDirectory;
 
 // ============================================================================
 // SEGURIDAD v1.9.0 — Kestrel HTTPS opcional (Round 2)
@@ -63,8 +68,11 @@ builder.Environment.ContentRootPath = AppContext.BaseDirectory;
 // ============================================================================
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(IPAddress.Parse("127.0.0.1"), 7000);
-    try { options.Listen(IPAddress.Parse("192.168.100.10"), 7000); } catch { /* IP no asignada en dev */ }
+    // HTTP :7000 — escucha en TODAS las IPs (IPv4 + IPv6) en cualquier PC.
+    // ListenAnyIP bindea a IPv4 0.0.0.0 + IPv6 :: simultaneamente sin doble-bind.
+    // Asi el backend responde a localhost (que en Win11 resuelve a ::1), a 127.0.0.1,
+    // a 192.168.100.10 (si la PC la tiene), y a cualquier otra IP local.
+    options.ListenAnyIP(7000);
 
     var pfxPath = builder.Configuration["Https:PfxPath"];
     var pfxPwd  = builder.Configuration["Https:PfxPassword"];
@@ -72,15 +80,9 @@ builder.WebHost.ConfigureKestrel(options =>
     {
         try
         {
-            options.Listen(IPAddress.Parse("127.0.0.1"), 7443, lo => lo.UseHttps(pfxPath, pfxPwd));
+            options.ListenAnyIP(7443, lo => lo.UseHttps(pfxPath, pfxPwd));
         }
-        catch (Exception ex) { Log.Warning(ex, "No se pudo iniciar HTTPS en 127.0.0.1:7443"); }
-
-        try
-        {
-            options.Listen(IPAddress.Parse("192.168.100.10"), 7443, lo => lo.UseHttps(pfxPath, pfxPwd));
-        }
-        catch (Exception ex) { Log.Warning(ex, "No se pudo iniciar HTTPS en 192.168.100.10:7443"); }
+        catch (Exception ex) { Log.Warning(ex, "No se pudo iniciar HTTPS"); }
     }
     else
     {
@@ -265,8 +267,8 @@ var app = builder.Build();
 // PIPELINE
 // ============================================================================
 
-// Carpeta de tickets simulados
-Directory.CreateDirectory(@"F:\BarAvenida\TicketsImpresos");
+// Carpeta de tickets simulados (con fallback a C:\BarAvenida-data si F: no existe)
+try { Directory.CreateDirectory(BarAvenida.API.Helpers.PathHelper.TicketsImpresos); } catch { }
 
 // Aplicar migraciones automáticamente al arrancar
 using (var scope = app.Services.CreateScope())
@@ -308,7 +310,8 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-app.UseHttpsRedirection();
+// NO se usa UseHttpsRedirection: las apps Electron usan HTTP :7000 por compatibilidad
+// y para evitar problemas de cert self-signed. Quien quiera HTTPS va directo al :7443.
 
 // CORS estricto v1.9.0
 app.UseCors("BarAvenidaLAN");

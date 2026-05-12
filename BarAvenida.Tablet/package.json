@@ -1,7 +1,7 @@
 {
     "name":  "baravenida-tablet",
     "private":  true,
-    "version":  "1.9.0",
+    "version":  "1.9.8",
     "type":  "module",
     "scripts":  {
                     "dev":  "vite",

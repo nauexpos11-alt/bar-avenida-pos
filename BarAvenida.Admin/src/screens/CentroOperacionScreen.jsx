@@ -42,8 +42,9 @@ function cuentaPasa(cuenta, solsIds, filtros) {
 function sortCuentas(list, ordenPor) {
   return [...list].sort((a, b) => {
     if (ordenPor === 'mesa') {
-      const na = parseInt(a.mesaNumero?.replace(/\D/g, '') || '') || 9999
-      const nb = parseInt(b.mesaNumero?.replace(/\D/g, '') || '') || 9999
+      // mesaNumero puede venir como número o como string ("Mesa 3", "M3", "3", etc.)
+      const na = parseInt(String(a.mesaNumero ?? '').replace(/\D/g, ''), 10) || 9999
+      const nb = parseInt(String(b.mesaNumero ?? '').replace(/\D/g, ''), 10) || 9999
       return na - nb
     }
     if (ordenPor === 'total') return (b.total || 0) - (a.total || 0)

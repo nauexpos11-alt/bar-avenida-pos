@@ -202,7 +202,7 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
         ) : esMia ? (
           <div className="mesa-info">
             <span className="mesa-mesera mesa-mesera-mia">{meseraVisible}</span>
-            <span className="mesa-total mesa-total-mia">${(mesa.totalActual ?? 0).toFixed(0)}</span>
+            <span className="mesa-total mesa-total-mia">${Number(mesa.totalActual ?? 0).toFixed(0)}</span>
           </div>
         ) : esOtra ? (
           <div className="mesa-info">

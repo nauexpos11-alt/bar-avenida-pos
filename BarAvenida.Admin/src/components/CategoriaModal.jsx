@@ -74,7 +74,7 @@ export default function CategoriaModal({ auth, categoria, onGuardado, onCerrar, 
                 key={c}
                 type="button"
                 title={c}
-                className={`cm-color-btn${form.colorHex.toUpperCase() === c ? ' cm-color-sel' : ''}`}
+                className={`cm-color-btn${String(form.colorHex ?? '').toUpperCase() === c ? ' cm-color-sel' : ''}`}
                 style={{ background: c }}
                 onClick={() => set('colorHex', c)}
               />

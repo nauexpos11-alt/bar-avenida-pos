@@ -154,7 +154,7 @@ export default function VerPreciosScreen({ auth, onVolver }) {
                     <td className="vp-td vp-td-plu">{p.plu ?? p.codigo ?? '—'}</td>
                     <td className="vp-td vp-td-desc">{p.nombre}</td>
                     <td className="vp-td vp-td-grupo">{p.categoriaNombre}</td>
-                    <td className="vp-td vp-td-precio">${(p.precio ?? 0).toFixed(2)}</td>
+                    <td className="vp-td vp-td-precio">${Number(p.precio ?? 0).toFixed(2)}</td>
                   </tr>
                 ))
               )}

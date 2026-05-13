@@ -31,7 +31,10 @@ export default function MeserosScreen({ auth, onVolver }) {
 
   const cargar = useCallback(async () => {
     setCargando(true)
-    try { setMeseros(await api.adminGetMeseros(auth.token)) }
+    try {
+      const d = await api.adminGetMeseros(auth.token)
+      setMeseros(Array.isArray(d) ? d : [])
+    }
     catch (e) { toast('Error al cargar: ' + e.message, 'error') }
     finally   { setCargando(false) }
   }, [auth.token, toast])

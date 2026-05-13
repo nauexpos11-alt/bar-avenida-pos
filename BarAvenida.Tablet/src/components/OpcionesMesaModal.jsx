@@ -42,7 +42,8 @@ export default function OpcionesMesaModal({
   const [confirmCobro, setConfirmCobro] = useState(false)
 
   const nombreMesera = cuenta?.nombreMesera ?? cuenta?.mesera?.nombre ?? mesa?.nombreMesera ?? ''
-  const totalActual  = cuenta?.total ?? mesa?.totalActual ?? 0
+  // cuenta.total puede llegar como string desde algunas serializaciones — forzamos número
+  const totalActual  = Number(cuenta?.total ?? mesa?.totalActual ?? 0) || 0
   // Alias viene del backend (cuenta.nombreCliente o mesa.aliasCuenta)
   const aliasMesa    = cuenta?.nombreCliente || mesa?.aliasCuenta || null
 

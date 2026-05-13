@@ -126,7 +126,7 @@ export default function ReportesPanel({ auth, onClose }) {
               <div className="rep-section-title">Ventas por categoría hoy</div>
               {categorias.length === 0
                 ? <div className="rep-empty">Sin datos disponibles</div>
-                : categorias
+                : [...categorias]
                     .sort((a, b) => getCatTotal(b) - getCatTotal(a))
                     .map((c, i) => (
                       <div key={i} className="bar-row">
@@ -146,7 +146,7 @@ export default function ReportesPanel({ auth, onClose }) {
               <div className="rep-section-title">Ventas por mesera hoy</div>
               {meseras.length === 0
                 ? <div className="rep-empty">Sin datos disponibles</div>
-                : meseras
+                : [...meseras]
                     .sort((a, b) => getMesTotal(b) - getMesTotal(a))
                     .map((m, i) => (
                       <div key={i} className="mesera-row">

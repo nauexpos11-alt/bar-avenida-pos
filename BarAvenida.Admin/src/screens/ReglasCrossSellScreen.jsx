@@ -153,7 +153,7 @@ export default function ReglasCrossSellScreen({ auth, onVolver }) {
                   <td className="rcs-td-origen">{r.productoOrigenNombre}</td>
                   <td className="rcs-td-arrow">→</td>
                   <td className="rcs-td-sugerido">{r.productoSugeridoNombre}</td>
-                  <td className="rcs-td-precio">${r.productoSugeridoPrecio.toFixed(0)}</td>
+                  <td className="rcs-td-precio">${Number(r.productoSugeridoPrecio ?? 0).toFixed(0)}</td>
                   <td className="rcs-td-prio">{r.prioridad}</td>
                   <td className="rcs-td-activo">
                     <button

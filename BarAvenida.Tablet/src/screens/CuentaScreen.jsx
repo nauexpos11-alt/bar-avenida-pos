@@ -320,7 +320,7 @@ export default function CuentaScreen({ auth, mesa, cuenta: cuentaInit, onVolver,
               >
                 <span className="cmd-cant">{item.cantidad}</span>
                 <span className="cmd-desc">{item.nombre}</span>
-                <span className="cmd-imp">${(item.precio * item.cantidad).toFixed(0)}</span>
+                <span className="cmd-imp">${(Number(item.precio || 0) * Number(item.cantidad || 0)).toFixed(0)}</span>
               </button>
             ))
           )}
@@ -342,7 +342,7 @@ export default function CuentaScreen({ auth, mesa, cuenta: cuentaInit, onVolver,
                   })}
                 >
                   <span className="cs-sug-nombre">{s.nombre}</span>
-                  <span className="cs-sug-precio">+${s.precio.toFixed(2)}</span>
+                  <span className="cs-sug-precio">+${Number(s.precio ?? 0).toFixed(2)}</span>
                 </button>
               ))}
             </div>
@@ -361,7 +361,7 @@ export default function CuentaScreen({ auth, mesa, cuenta: cuentaInit, onVolver,
         <div className="comanda-total-bar">
           <div className="cs-subtotal">
             <span className="cs-total-label">CUENTA</span>
-            <span className="cs-total-val">${totalCuenta.toFixed(2)}</span>
+            <span className="cs-total-val">${Number(totalCuenta || 0).toFixed(2)}</span>
           </div>
           <div className="cs-orden-total">
             <span className="cs-total-label">ORDEN</span>

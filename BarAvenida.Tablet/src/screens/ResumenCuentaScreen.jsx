@@ -84,7 +84,9 @@ export default function ResumenCuentaScreen({
 
   const filas    = aplanarDetalles(cuenta)
   const subtotal = filas.reduce((s, r) => s + r.importe, 0)
-  const total    = cuenta?.total ?? subtotal
+  // cuenta.total puede venir como string ("123.45") desde algunas serializaciones del backend.
+  // Forzamos número para evitar que `total.toFixed(...)` y comparaciones con 0 fallen.
+  const total    = Number(cuenta?.total ?? subtotal) || 0
 
   const mesaNum  = mesa?.numero  ?? cuenta?.mesaNumero ?? cuenta?.mesa?.numero ?? '?'
   // Alias viene del backend (cuenta.nombreCliente o mesa.aliasCuenta)

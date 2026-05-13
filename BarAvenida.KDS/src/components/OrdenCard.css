@@ -1,198 +1,295 @@
-/* ── Tarjeta base ─────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   KDS · OrdenCard — la card hero del KDS
+   Número de mesa hero · glass · pulsos por urgencia
+   ══════════════════════════════════════════════════════════════════ */
+
 .orden-card {
-  border-radius: 14px;
-  border: 3px solid;
-  padding: 20px 22px;
+  position: relative;
+  border-radius: 18px;
+  border: 2px solid;
+  padding: 24px 26px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  animation: cardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  gap: 16px;
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  animation: cardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   will-change: transform, opacity;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.10),
+    0 12px 32px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow: hidden;
+  transition: transform var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              box-shadow var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
+}
+
+.orden-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.15),
+    0 20px 48px rgba(0,0,0,0.50),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* Brillo superior */
+.orden-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  pointer-events: none;
 }
 
 .orden-card.removing {
-  animation: cardOut 0.42s ease-in both;
+  animation: cardOut 0.46s ease-in both;
   pointer-events: none;
 }
 
 @keyframes cardIn {
-  from { opacity: 0; transform: translateY(-20px) scale(0.93); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
+  from { opacity: 0; transform: translateY(-24px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
 }
 
 @keyframes cardOut {
   from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.86); }
+  to   { opacity: 0; transform: scale(0.85); }
 }
 
-/* ── Variantes de color ───────────────────────────── */
+/* ── Variantes de color por urgencia ───────────────────── */
+
 /* Verde: < 2 min */
 .card-green {
-  background: #0a1f10;
-  border-color: #22c55e;
+  background: linear-gradient(160deg, rgba(10, 31, 16, 0.85) 0%, rgba(6, 22, 11, 0.85) 100%);
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.10),
+    0 12px 32px rgba(0,0,0,0.35),
+    0 0 36px rgba(34, 197, 94, 0.10),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
 /* Amarillo: 2–5 min */
 .card-yellow {
-  background: #1a1500;
-  border-color: #eab308;
+  background: linear-gradient(160deg, rgba(26, 21, 0, 0.88) 0%, rgba(18, 14, 0, 0.85) 100%);
+  border-color: rgba(234, 179, 8, 0.7);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.10),
+    0 12px 32px rgba(0,0,0,0.35),
+    0 0 40px rgba(234, 179, 8, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
-/* Rojo: > 5 min — pulsa lentamente */
+/* Rojo: > 5 min — pulsa */
 .card-red {
-  background: #1a0505;
-  border-color: #ef4444;
-  box-shadow: 0 0 28px rgba(239, 68, 68, 0.18);
-  animation: cardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both,
-             redPulse 1.8s 0.35s ease-in-out infinite;
+  background: linear-gradient(160deg, rgba(26, 5, 5, 0.9) 0%, rgba(15, 3, 3, 0.85) 100%);
+  border-color: rgba(239, 68, 68, 0.85);
+  animation: cardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             redPulse 1.8s 0.42s ease-in-out infinite;
 }
 
 .card-red.removing {
-  animation: cardOut 0.42s ease-in both;
+  animation: cardOut 0.46s ease-in both;
 }
 
 @keyframes redPulse {
-  0%, 100% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.18); }
-  50%       { box-shadow: 0 0 48px rgba(239, 68, 68, 0.45); }
+  0%, 100% {
+    box-shadow:
+      0 12px 32px rgba(0,0,0,0.35),
+      0 0 28px rgba(239, 68, 68, 0.22),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  50% {
+    box-shadow:
+      0 12px 32px rgba(0,0,0,0.4),
+      0 0 56px rgba(239, 68, 68, 0.55),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
 }
 
-/* ── Parte superior ───────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   Top: número de mesa HERO + badge
+   ══════════════════════════════════════════════════════════════════ */
 .card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
 .mesa-num {
-  font-size: 3rem;
+  font-size: 3.6rem;
   font-weight: 900;
-  letter-spacing: 0.03em;
-  line-height: 1;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
   color: #ffffff;
+  text-shadow:
+    0 2px 16px rgba(0,0,0,0.5),
+    0 0 32px rgba(255, 255, 255, 0.08);
 }
 
 .badge-agregado {
-  background: #ea580c;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 900;
-  padding: 6px 12px;
-  border-radius: 6px;
-  letter-spacing: 0.12em;
+  padding: 7px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.16em;
   white-space: nowrap;
-  margin-top: 6px;
-  animation: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: 8px;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 12px rgba(249, 115, 22, 0.45),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes badgePop {
   from { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.08); opacity: 1; }
   to   { transform: scale(1); opacity: 1; }
 }
 
-/* ── Nombre mesera ────────────────────────────────── */
+/* ── Nombre mesera ─────────────────────────────────────── */
 .mesera-nombre {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  letter-spacing: 0.07em;
-  color: #d1d5db;
+  letter-spacing: -0.015em;
+  color: #d8dde6;
+  position: relative;
+  z-index: 1;
 }
 
-/* ── Separador ────────────────────────────────────── */
+/* ── Separador ─────────────────────────────────────────── */
 .sep {
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 1;
 }
 
-/* ── Lista de productos ───────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   Lista de productos — gigante para visibilidad a 3m
+   ══════════════════════════════════════════════════════════════════ */
 .detalles {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .det-row {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 14px;
 }
 
 .det-cant {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 900;
-  color: #facc15;
-  min-width: 52px;
+  color: var(--gold-bright, #facc15);
+  min-width: 56px;
   text-align: right;
   line-height: 1;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 24px rgba(250, 204, 21, 0.32);
 }
 
 .det-prod {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  color: #f0f0f0;
-  letter-spacing: 0.02em;
-  line-height: 1.25;
+  color: #ffffff;
+  letter-spacing: -0.012em;
+  line-height: 1.22;
 }
 
-/* ── Footer ───────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   Footer (hora + botón LISTO)
+   ══════════════════════════════════════════════════════════════════ */
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 2px;
+  gap: 14px;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .tiempo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .hora {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #d1d5db;
+  color: #d8dde6;
+  letter-spacing: -0.015em;
 }
 
 .elapsed {
-  font-size: 0.95rem;
-  color: #6b7280;
+  font-size: 0.96rem;
+  color: #8a8f97;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
-/* ── Botón LISTO ──────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   Botón LISTO
+   ══════════════════════════════════════════════════════════════════ */
 .btn-listo {
-  background: #16a34a;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
   color: #fff;
   border: none;
-  border-radius: 10px;
-  padding: 16px 28px;
-  font-size: 1.55rem;
+  border-radius: 14px;
+  padding: 18px 32px;
+  font-size: 1.65rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
   touch-action: manipulation;
-  transition: background 0.12s, transform 0.1s;
   user-select: none;
+  font-family: inherit;
+  box-shadow:
+    0 6px 18px rgba(22, 163, 74, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: transform var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              filter var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              box-shadow var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
 }
 
 .btn-listo:hover:not(:disabled) {
-  background: #15803d;
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(22, 163, 74, 0.55),
+    inset 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .btn-listo:active:not(:disabled) {
-  background: #14532d;
-  transform: scale(0.95);
+  transform: scale(0.96);
+  filter: brightness(1.1);
+  transition-duration: 80ms;
+  box-shadow:
+    0 4px 10px rgba(22, 163, 74, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .btn-listo:disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
 }

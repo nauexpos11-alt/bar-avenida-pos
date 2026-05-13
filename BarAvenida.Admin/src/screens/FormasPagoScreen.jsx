@@ -22,7 +22,10 @@ export default function FormasPagoScreen({ auth, onVolver }) {
 
   const cargar = useCallback(async () => {
     setCargando(true)
-    try { setFormas(await api.adminGetFormasPago(auth.token)) }
+    try {
+      const d = await api.adminGetFormasPago(auth.token)
+      setFormas(Array.isArray(d) ? d : [])
+    }
     catch (e) { toast('Error al cargar: ' + e.message, 'error') }
     finally   { setCargando(false) }
   }, [auth.token, toast])
@@ -31,15 +34,23 @@ export default function FormasPagoScreen({ auth, onVolver }) {
 
   const abrirNuevo = () => { setForm(VACIO); setModal({ modo: 'nuevo' }) }
   const abrirEditar = (f) => {
-    setForm({ nombre: f.nombre, codigo: f.codigo, comisionPorcentaje: f.comisionPorcentaje, activaParaCobro: f.activaParaCobro, orden: f.orden })
+    setForm({
+      nombre:             f.nombre ?? '',
+      codigo:             f.codigo ?? '',
+      comisionPorcentaje: f.comisionPorcentaje ?? 0,
+      activaParaCobro:    f.activaParaCobro ?? true,
+      orden:              f.orden ?? 0,
+    })
     setModal({ modo: 'editar', fp: f })
   }
 
   const handleGuardar = async () => {
-    if (!form.nombre.trim()) { toast('El nombre es requerido', 'error'); return }
+    const nomStr = String(form.nombre ?? '').trim()
+    const codStr = String(form.codigo ?? '').trim().toUpperCase()
+    if (!nomStr) { toast('El nombre es requerido', 'error'); return }
     setGuardando(true)
     try {
-      const dto = { ...form, nombre: form.nombre.trim(), codigo: form.codigo.trim().toUpperCase(), comisionPorcentaje: Number(form.comisionPorcentaje), orden: Number(form.orden) }
+      const dto = { ...form, nombre: nomStr, codigo: codStr, comisionPorcentaje: Number(form.comisionPorcentaje), orden: Number(form.orden) }
       if (modal.modo === 'nuevo') { await api.adminCreateFormaPago(auth.token, dto); toast('Forma de pago creada') }
       else                        { await api.adminUpdateFormaPago(auth.token, modal.fp.id, dto); toast('Forma de pago actualizada') }
       setModal(null)

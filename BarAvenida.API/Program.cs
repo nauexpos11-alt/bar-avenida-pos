@@ -141,13 +141,34 @@ builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BarAvenidaLAN", policy => policy
-        .WithOrigins(
-            "http://localhost:7000",  "http://localhost:7443",
-            "https://localhost:7000", "https://localhost:7443",
-            "http://192.168.100.10:7000",  "https://192.168.100.10:7443",
-            "http://localhost:3001", "http://localhost:3002", "http://localhost:3003",
-            "http://localhost:5173", "http://localhost:5174", "http://localhost:5175"
-        )
+        .SetIsOriginAllowed(origin =>
+        {
+            // Acepta cualquier origen local (LAN privada o loopback).
+            // Esto permite que la PC del bar tenga cualquier IP (192.168.x.x, 10.x.x.x, etc.)
+            // y las tablets se conecten escaneando el QR aunque la IP cambie.
+            if (string.IsNullOrEmpty(origin)) return false;
+            try
+            {
+                var uri = new Uri(origin);
+                var host = uri.Host.ToLowerInvariant();
+                // Loopback
+                if (host == "localhost" || host.StartsWith("127.")) return true;
+                // IPv6 loopback
+                if (host == "[::1]" || host == "::1") return true;
+                // Rangos LAN privados
+                if (host.StartsWith("192.168.")) return true;
+                if (host.StartsWith("10.")) return true;
+                // 172.16.0.0 - 172.31.255.255
+                if (host.StartsWith("172."))
+                {
+                    var parts = host.Split('.');
+                    if (parts.Length >= 2 && int.TryParse(parts[1], out var oct2) && oct2 >= 16 && oct2 <= 31)
+                        return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        })
         .AllowAnyMethod()
         .AllowAnyHeader()
         .AllowCredentials());

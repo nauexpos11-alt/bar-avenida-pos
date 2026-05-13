@@ -54,12 +54,15 @@ function LineChartVentas({ data }) {
   const pl = 54, pr = 10, pt = 10, pb = 28
   const iW = W - pl - pr
   const iH = H - pt - pb
-  const maxV = Math.max(...data.map(d => d.ventas), 1)
+  // Defensa: si el backend devuelve menos de 24 horas (o ninguna), no rompemos
+  const safeData = Array.isArray(data) && data.length > 0 ? data : []
+  const maxV = Math.max(...safeData.map(d => d.ventas ?? 0), 1)
 
-  const sx = (i) => pl + (i / 23) * iW
+  const denom = Math.max(1, safeData.length - 1)
+  const sx = (i) => pl + (i / denom) * iW
   const sy = (v) => pt + (1 - v / maxV) * iH
 
-  const pts = data.map((d, i) => ({ ...d, sx: sx(i), sy: sy(d.ventas) }))
+  const pts = safeData.map((d, i) => ({ ...d, sx: sx(i), sy: sy(d.ventas ?? 0) }))
   const line = pts.map(p => `${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(' ')
 
   const yTicks = [0, 0.33, 0.67, 1]
@@ -90,9 +93,9 @@ function LineChartVentas({ data }) {
         </text>
       ))}
 
-      {maxV > 1 && (
+      {maxV > 1 && pts.length > 0 && (
         <polygon
-          points={`${pts[0].sx.toFixed(1)},${(pt + iH).toFixed(1)} ${line} ${pts[23].sx.toFixed(1)},${(pt + iH).toFixed(1)}`}
+          points={`${pts[0].sx.toFixed(1)},${(pt + iH).toFixed(1)} ${line} ${pts[pts.length - 1].sx.toFixed(1)},${(pt + iH).toFixed(1)}`}
           fill="url(#dlLineGrad)"
         />
       )}

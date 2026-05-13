@@ -1,7 +1,78 @@
+/* ══════════════════════════════════════════════════════════════════
+   BAR AVENIDA — KDS · DESIGN SYSTEM v2
+   Tipografía gigante · glassmorphism · pulsos cinematográficos
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Paleta ─────────────────────────────────────────── */
+  --gold:        #f0c842;
+  --gold-light:  #fbbf24;
+  --gold-bright: #facc15;
+  --gold-dark:   #d4a017;
+
+  --bg:          #0a0a0a;
+  --bg-deep:     #060606;
+  --surface:     #111111;
+  --surface-2:   #1a1a1a;
+  --surface-3:   #1f1f1f;
+  --surface-elev:#242424;
+  --border:      #1e1e1e;
+  --border2:     #2a2a2a;
+  --border-soft: rgba(255,255,255,0.06);
+  --border-glow: rgba(240, 200, 66, 0.15);
+
+  --text:        #f5f5f5;
+  --text-dim:    #aaaaaa;
+  --text-muted:  #888888;
+  --text-faint:  #555555;
+
+  --success:     #22c55e;
+  --success-soft:#4ade80;
+  --warn:        #f59e0b;
+  --danger:      #ef4444;
+  --danger-soft: #f87171;
+  --info:        #3b82f6;
+
+  /* ── Radios ─────────────────────────────────────────── */
+  --radius-xs: 6px;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* ── Espaciado ─────────────────────────────────────── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-2xl: 48px;
+
+  /* ── Sombras ────────────────────────────────────────── */
+  --shadow-md: 0 1px 2px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.30);
+  --shadow-lg: 0 1px 2px rgba(0,0,0,0.1), 0 8px 24px rgba(0,0,0,0.3), 0 16px 48px rgba(0,0,0,0.2);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,0.55);
+  --inset-top: inset 0 1px 0 rgba(255,255,255,0.06);
+
+  /* ── Animaciones ───────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast:    150ms;
+  --dur:         200ms;
+  --dur-med:     320ms;
+  --dur-slow:    600ms;
+
+  /* ── Glass ─────────────────────────────────────────── */
+  --glass-bg:    rgba(26, 26, 26, 0.72);
+  --glass-blur:  blur(20px) saturate(1.6);
+  --glass-border:1px solid rgba(240, 200, 66, 0.15);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body, #root {
@@ -9,9 +80,110 @@ html, body, #root {
 }
 
 body {
-  background: #0d0d0d;
-  color: #f0f0f0;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1400px 700px at 50% -10%, rgba(240, 200, 66, 0.045), transparent 65%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: -0.011em;
+  font-feature-settings: 'tnum' 1, 'lnum' 1, 'ss01' 1, 'cv11' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+}
+
+/* Headings con tracking apretado */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* ── Selección, scrollbar, focus ────────────────────────── */
+::selection {
+  background: rgba(240, 200, 66, 0.42);
+  color: #fff;
+}
+
+::-webkit-scrollbar          { width: 10px; height: 10px; }
+::-webkit-scrollbar-track    { background: rgba(0,0,0,0.25); }
+::-webkit-scrollbar-thumb    {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--gold-light) 100%);
+  border-radius: 6px;
+  border: 2px solid rgba(0,0,0,0.35);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--gold-light); background-clip: padding-box; }
+* { scrollbar-color: var(--gold) rgba(0,0,0,0.25); scrollbar-width: thin; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── Animaciones globales ───────────────────────────────── */
+@keyframes fadeIn      { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp    { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn     { from { opacity: 0; transform: scale(0.93) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes pulse       { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes blink       { 50% { opacity: 0.25; } }
+@keyframes glow        { 0%, 100% { box-shadow: 0 0 10px rgba(240, 200, 66, 0.18); } 50% { box-shadow: 0 0 24px rgba(240, 200, 66, 0.42); } }
+@keyframes shimmerBg   { 0% { background-position: -800px 0; } 100% { background-position: 800px 0; } }
+@keyframes rotateBg    { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+.fade-in-up { animation: fadeInUp var(--dur-med) var(--ease-out) both; }
+.fade-in    { animation: fadeIn var(--dur) var(--ease-out) both; }
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 0%, #242424 50%, #1a1a1a 100%);
+  background-size: 800px 100%;
+  animation: shimmerBg 1.4s linear infinite;
+  border-radius: var(--radius-xs);
+}
+
+/* Botones primarios — gradiente dorado premium */
+button.btn-primary,
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  color: #0a0a0a;
+  font-weight: 800;
+  border: none;
+  border-radius: var(--radius);
+  box-shadow:
+    0 4px 12px rgba(240, 200, 66, 0.35),
+    inset 0 1px 0 rgba(255,255,255,0.35);
+  transition: transform var(--dur-fast) var(--ease-out),
+              filter var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+button.btn-primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  filter: saturate(1.15) brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(240, 200, 66, 0.45), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+button.btn-primary:active:not(:disabled),
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* Tabular numerals helper */
+.tnum, [data-tnum] { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

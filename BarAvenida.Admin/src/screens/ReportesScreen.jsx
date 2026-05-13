@@ -88,7 +88,18 @@ export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }
     }
   }, [tab, desde, hasta, auth.token])
 
-  useEffect(() => { cargar(initialTab, desde, hasta) }, [])
+  useEffect(() => { cargar(initialTab, desde, hasta) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Si el usuario navega a otra tab desde el menu (ej: rep-ventas-resumen -> rep-productos-top),
+  // App.jsx re-renderiza este componente con distinto initialTab. Sin este efecto la tab
+  // interna se quedaba pegada en la primera elegida.
+  useEffect(() => {
+    if (initialTab && initialTab !== tab) {
+      setTab(initialTab)
+      cargar(initialTab, desde, hasta)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTab])
 
   const handleTab = (k) => {
     setTab(k)

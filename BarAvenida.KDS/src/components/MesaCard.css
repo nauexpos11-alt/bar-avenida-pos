@@ -1,207 +1,359 @@
+/* ══════════════════════════════════════════════════════════════════
+   KDS · MesaCard — la card más vista del bar
+   Tipografía gigante · glass · conic-gradient para urgentes
+   ══════════════════════════════════════════════════════════════════ */
+
 .mesa-card {
-  background: #1a1a1a;
-  border: 3px solid;
-  border-radius: 10px;
-  padding: 14px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(31, 31, 31, 0.85) 0%, rgba(20, 20, 20, 0.85) 100%);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 2px solid;
+  border-radius: var(--radius-lg, 14px);
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  animation: mcCardIn 0.22s ease-out;
+  gap: 12px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.10),
+    0 8px 24px rgba(0,0,0,0.30),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: mcCardIn 0.32s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  transition: transform var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              box-shadow var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
+  overflow: hidden;
+}
+
+.mesa-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.20),
+    0 16px 48px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Capa de brillo superior sutil */
+.mesa-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 50%, transparent 100%);
+  pointer-events: none;
 }
 
 @keyframes mcCardIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
-.mesa-card.mc-green  { border-color: #16a34a; box-shadow: 0 0 0 1px rgba(22,163,74,0.15); }
-.mesa-card.mc-yellow { border-color: #fbbf24; box-shadow: 0 0 0 1px rgba(251,191,36,0.20); }
-.mesa-card.mc-red    { border-color: #dc2626; }
+/* ── Color por urgencia ────────────────────────────────── */
+.mesa-card.mc-green {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(22,163,74,0.15),
+    0 8px 24px rgba(0,0,0,0.3),
+    0 0 32px rgba(34, 197, 94, 0.08);
+}
 
+.mesa-card.mc-yellow {
+  border-color: rgba(251, 191, 36, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(251,191,36,0.20),
+    0 8px 24px rgba(0,0,0,0.3),
+    0 0 36px rgba(251, 191, 36, 0.12);
+}
+
+.mesa-card.mc-red {
+  border-color: rgba(220, 38, 38, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(220,38,38,0.25),
+    0 8px 24px rgba(0,0,0,0.3),
+    0 0 44px rgba(220, 38, 38, 0.18);
+}
+
+/* ── URGENTE — anillo cónico animado + pulso ───────────── */
 .mesa-card.mc-urgente {
-  border-color: #dc2626;
-  animation: mcUrgentePulse 1.2s ease-in-out infinite, mcCardIn 0.22s ease-out;
-  box-shadow: 0 0 0 2px rgba(220,38,38,0.5);
+  border-color: transparent;
+  animation: mcCardIn 0.32s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+             mcUrgentePulse 1.4s ease-in-out infinite;
+}
+
+.mesa-card.mc-urgente::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    #dc2626,
+    #ef4444,
+    #f87171,
+    #dc2626,
+    #991b1b,
+    #dc2626
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: rotateBg 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes mcUrgentePulse {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(220,38,38,0.4); }
-  50%      { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.45), 0 8px 24px rgba(0,0,0,0.3); }
+  50%      { box-shadow: 0 0 0 10px rgba(220,38,38,0), 0 12px 36px rgba(220,38,38,0.35); }
 }
 
-/* -- Cabecera de mesa -------------------------------------- */
+@keyframes rotateBg { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ── Cabecera de mesa ──────────────────────────────────── */
 .mc-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
+  z-index: 1;
 }
 
 .mc-mesa {
-  font-size: 2rem;
+  font-size: 2.4rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  color: #fff;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
 }
 
 .mc-badge-urgente {
-  background: #dc2626;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #fff;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
-  animation: mcBadgeFlash 1s ease-in-out infinite;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow:
+    0 4px 12px rgba(239, 68, 68, 0.45),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  animation: mcBadgeFlash 1.1s ease-in-out infinite;
 }
 
 @keyframes mcBadgeFlash {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.65; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(0.97); }
 }
 
 .mc-mesera {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #ddd;
-  letter-spacing: 0.06em;
+  color: #e0e0e0;
+  letter-spacing: -0.005em;
+  position: relative;
+  z-index: 1;
 }
 
 .mc-sep {
   border: none;
-  border-top: 1px solid #2e2e2e;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin: 0;
+  position: relative;
+  z-index: 1;
 }
 
-/* -- Ordenes internas ------------------------------------- */
+/* ══════════════════════════════════════════════════════════════════
+   Ordenes internas
+   ══════════════════════════════════════════════════════════════════ */
 .mc-ordenes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .mc-orden {
-  background: #0f0f0f;
-  border: 1px solid #2e2e2e;
-  border-radius: 6px;
-  padding: 10px 12px;
+  background: rgba(15, 15, 15, 0.85);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: opacity 0.36s, transform 0.36s;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: opacity 0.36s var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              transform 0.36s var(--ease-out, cubic-bezier(0.4,0,0.2,1));
 }
 
 .mc-orden.removing {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateX(40px) scale(0.95);
 }
 
 .mc-orden-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  letter-spacing: 0.06em;
 }
 
 .mc-orden-num {
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 900;
-  color: #f0c842;
+  color: var(--gold, #f0c842);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.02em;
   line-height: 1;
+  text-shadow: 0 0 18px rgba(240, 200, 66, 0.25);
 }
 
 .mc-orden-agr {
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #fbbf24;
-  letter-spacing: 0.1em;
-  margin-left: 6px;
+  font-weight: 800;
+  color: var(--gold-light, #fbbf24);
+  letter-spacing: 0.14em;
+  margin-left: 8px;
   vertical-align: middle;
+  text-transform: uppercase;
+  background: rgba(251, 191, 36, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .mc-orden-hora {
-  color: #888;
-  font-size: 0.82rem;
+  color: var(--text-muted, #888);
+  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  letter-spacing: 0;
 }
 
-/* -- Productos -------------------------------------------- */
+/* ══════════════════════════════════════════════════════════════════
+   Productos — tipografía grande para visibilidad a distancia
+   ══════════════════════════════════════════════════════════════════ */
 .mc-detalles {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .mc-det {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  font-size: 1.05rem;
-  color: #f1f1f1;
+  font-size: 1.12rem;
+  color: #f5f5f5;
+  letter-spacing: -0.005em;
 }
 
 .mc-cant {
-  color: #fbbf24;
+  color: var(--gold-light, #fbbf24);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  min-width: 32px;
+  min-width: 34px;
+  font-size: 1.2rem;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
 }
 
 .mc-prod {
-  color: #fff;
+  color: #ffffff;
   font-weight: 600;
 }
 
-/* -- Boton listo ------------------------------------------ */
+/* ══════════════════════════════════════════════════════════════════
+   Botón LISTO (verde)
+   ══════════════════════════════════════════════════════════════════ */
 .mc-btn-listo {
-  margin-top: 4px;
-  background: #16a34a;
+  margin-top: 6px;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
   color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--radius, 10px);
+  padding: 10px;
+  font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.12s, transform 0.08s;
+  font-family: inherit;
+  box-shadow:
+    0 4px 12px rgba(22, 163, 74, 0.35),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: transform var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              filter var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              box-shadow var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
 }
-.mc-btn-listo:hover   { background: #22c55e; }
-.mc-btn-listo:active  { background: #15803d; transform: scale(0.97); }
-.mc-btn-listo:disabled { opacity: 0.5; cursor: not-allowed; }
+.mc-btn-listo:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.5), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.mc-btn-listo:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+.mc-btn-listo:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.3); }
 
-/* -- Botón TODA LA MESA LISTA ----------------------------- */
+/* ══════════════════════════════════════════════════════════════════
+   Botón TODA LA MESA LISTA (dorado, primario)
+   ══════════════════════════════════════════════════════════════════ */
 .mc-btn-toda-mesa {
-  background: #f0c842;
+  background: linear-gradient(135deg, var(--gold, #f0c842) 0%, var(--gold-light, #fbbf24) 100%);
   color: #0a0a0a;
   border: none;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 0.95rem;
+  border-radius: var(--radius, 10px);
+  padding: 12px;
+  font-size: 1rem;
   font-weight: 900;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
-  box-shadow: 0 0 0 1px rgba(240, 200, 66, 0.25);
+  font-family: inherit;
+  box-shadow:
+    0 4px 14px rgba(240, 200, 66, 0.4),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+  transition: transform var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              filter var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
+              box-shadow var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
 }
-.mc-btn-toda-mesa:hover   { background: #fbd34a; box-shadow: 0 0 0 2px rgba(240, 200, 66, 0.4); }
-.mc-btn-toda-mesa:active  { background: #d9b13b; transform: scale(0.98); }
-.mc-btn-toda-mesa:disabled { opacity: 0.5; cursor: not-allowed; }
+.mc-btn-toda-mesa:hover:not(:disabled) {
+  filter: saturate(1.15) brightness(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(240, 200, 66, 0.55), inset 0 1px 0 rgba(255,255,255,0.45);
+}
+.mc-btn-toda-mesa:active:not(:disabled) {
+  transform: scale(0.98);
+  transition-duration: 80ms;
+}
+.mc-btn-toda-mesa:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.3); }
 
-/* -- Footer ----------------------------------------------- */
+/* ══════════════════════════════════════════════════════════════════
+   Footer
+   ══════════════════════════════════════════════════════════════════ */
 .mc-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  color: #999;
+  font-size: 0.9rem;
+  color: var(--text-dim, #aaa);
   font-weight: 700;
+  letter-spacing: -0.005em;
+  position: relative;
+  z-index: 1;
 }
 
-.mc-tiempo { color: #fbbf24; }
-.mc-count  { color: #888; }
+.mc-tiempo {
+  color: var(--gold-light, #fbbf24);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.mc-count {
+  color: var(--text-muted, #888);
+  font-variant-numeric: tabular-nums;
+}

@@ -31,8 +31,8 @@ export default function MesasScreen({ auth, onVolver }) {
         api.adminGetMesas(auth.token),
         api.adminGetAreas(auth.token),
       ])
-      setMesas(m)
-      setAreas(a)
+      setMesas(Array.isArray(m) ? m : [])
+      setAreas(Array.isArray(a) ? a : [])
     } catch (e) { toast('Error al cargar: ' + e.message, 'error') }
     finally     { setCargando(false) }
   }, [auth.token, toast])
@@ -70,16 +70,17 @@ export default function MesasScreen({ auth, onVolver }) {
     setModal({ modo: 'nuevo' })
   }
   const abrirEditar = (m) => {
-    setForm({ numero: m.numero, areaId: m.areaId, capacidad: m.capacidad, activa: m.activa })
+    setForm({ numero: String(m.numero ?? ''), areaId: m.areaId, capacidad: m.capacidad, activa: m.activa })
     setModal({ modo: 'editar', mesa: m })
   }
 
   const handleGuardar = async () => {
-    if (!form.numero.trim()) { toast('El número es requerido', 'error'); return }
+    const numStr = String(form.numero ?? '').trim()
+    if (!numStr)             { toast('El número es requerido', 'error'); return }
     if (!form.areaId)        { toast('Selecciona un área', 'error'); return }
     setGuardando(true)
     try {
-      const dto = { numero: form.numero.trim(), areaId: Number(form.areaId), capacidad: Number(form.capacidad), activa: form.activa }
+      const dto = { numero: numStr, areaId: Number(form.areaId), capacidad: Number(form.capacidad), activa: form.activa }
       if (modal.modo === 'nuevo') { await api.adminCreateMesa(auth.token, dto); toast('Mesa creada') }
       else                        { await api.adminUpdateMesa(auth.token, modal.mesa.id, dto); toast('Mesa actualizada') }
       setModal(null)

@@ -23,7 +23,10 @@ export default function AreasScreen({ auth, onVolver }) {
 
   const cargar = useCallback(async () => {
     setCargando(true)
-    try { setAreas(await api.adminGetAreas(auth.token)) }
+    try {
+      const d = await api.adminGetAreas(auth.token)
+      setAreas(Array.isArray(d) ? d : [])
+    }
     catch (e) { toast('Error al cargar áreas: ' + e.message, 'error') }
     finally   { setCargando(false) }
   }, [auth.token, toast])

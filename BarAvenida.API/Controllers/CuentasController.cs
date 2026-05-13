@@ -63,8 +63,12 @@ public class CuentasController : ControllerBase
         if (mesera == null || (mesera.Rol != "Mesera" && mesera.Rol != "Admin"))
             return BadRequest(new { mensaje = "Mesera no válida" });
 
-        // Generar folio (último folio + 1)
-        int ultimoFolio = await _context.Cuentas.MaxAsync(c => (int?)c.Folio) ?? 0;
+        // Folio del DIA (resetea cada dia a 1) — Coronado: visible al abrir cuenta
+        var hoyAp = DateTime.Today;
+        var mananaAp = hoyAp.AddDays(1);
+        int ultimoFolio = await _context.Cuentas
+            .Where(c => c.FechaApertura >= hoyAp && c.FechaApertura < mananaAp)
+            .MaxAsync(c => (int?)c.Folio) ?? 0;
 
         var cuenta = new Cuenta
         {
@@ -838,13 +842,16 @@ public class CuentasController : ControllerBase
                 return BadRequest(new { mensaje = $"Producto {item.ProductoId} no válido" });
         }
 
-        // Folio correlativo global (mismo criterio que el resto del sistema)
-        int ultimoFolio = await _context.Cuentas.MaxAsync(c => (int?)c.Folio) ?? 0;
+        // Folio del DIA (resetea cada dia a 1) — Coronado
+        var hoy = DateTime.Today;
+        var manana = hoy.AddDays(1);
+        int ultimoFolio = await _context.Cuentas
+            .Where(c => c.FechaApertura >= hoy && c.FechaApertura < manana)
+            .MaxAsync(c => (int?)c.Folio) ?? 0;
 
         // Correlativo del día para "BARRA #N" — incluye TODAS las cuentas barra
         // (abiertas, cobradas, canceladas) creadas hoy, para que cada cobro
         // directo tenga un nombre único.
-        var hoy = DateTime.Today;
         int barrasHoy = await _context.Cuentas.CountAsync(c =>
             c.MesaId == null
             && c.FechaApertura >= hoy
@@ -1006,7 +1013,12 @@ public class CuentasController : ControllerBase
         if (mesera == null)
             return BadRequest(new { mensaje = "Usuario no válido" });
 
-        int ultimoFolio = await _context.Cuentas.MaxAsync(c => (int?)c.Folio) ?? 0;
+        // Folio del DIA (resetea cada dia a 1) — Coronado
+        var hoyRap = DateTime.Today;
+        var mananaRap = hoyRap.AddDays(1);
+        int ultimoFolio = await _context.Cuentas
+            .Where(c => c.FechaApertura >= hoyRap && c.FechaApertura < mananaRap)
+            .MaxAsync(c => (int?)c.Folio) ?? 0;
         int barrasAbiertas = await _context.Cuentas
             .CountAsync(c => c.MesaId == null && c.Estado == "Abierta");
 

@@ -16,4 +16,5 @@ public class MesaDto
     public string? AliasCuenta { get; set; }            // Alias personalizado de la cuenta (ej. "Mesa Señor")
     public string? AreaCuenta { get; set; }             // Si la cuenta tiene area distinta a la mesa, va aqui
     public DateTime? FechaApertura { get; set; }
+    public int? Folio { get; set; }                      // Folio del dia de la cuenta abierta (null si libre)
 }

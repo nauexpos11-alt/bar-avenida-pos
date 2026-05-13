@@ -1155,6 +1155,59 @@ public class AdminController : ControllerBase
         return Ok(new { message = $"{usuario.Nombre} eliminado permanentemente." });
     }
 
+    // DELETE /api/admin/usuarios/{id} — eliminacion DEFINITIVA forzada (requiere PIN admin)
+    // Borra el usuario aunque tenga referencias. Las cuentas/solicitudes que apuntaban
+    // a este usuario se transfieren al admin que ejecuta el borrado (preserva FK).
+    // Los eventos de auditoria del usuario quedan con UsuarioId NULL (la FK ya lo permite).
+    [HttpDelete("usuarios/{id:int}")]
+    public async Task<IActionResult> EliminarUsuarioDefinitivo(
+        int id,
+        [FromBody] PinConfirmacionDto dto,
+        CancellationToken ct)
+    {
+        var (ok, error, admin) = await VerificarPinAdmin(dto?.Pin);
+        if (!ok) return error!;
+
+        var usuario = await _db.Usuarios.FindAsync(new object[] { id }, ct);
+        if (usuario is null) return NotFound(new { message = $"Usuario {id} no encontrado." });
+
+        if (admin != null && admin.Id == id)
+            return BadRequest(new { message = "No puedes eliminarte a ti mismo." });
+
+        // Validar que NO es el ultimo admin activo
+        if (usuario.Rol == "Admin")
+        {
+            var adminsActivos = await _db.Usuarios.CountAsync(u => u.Rol == "Admin" && u.Activo && u.Id != id, ct);
+            if (adminsActivos == 0)
+                return BadRequest(new { message = "No se puede eliminar al último administrador activo." });
+        }
+
+        var nombreBorrado = usuario.Nombre;
+        var codigoBorrado = usuario.Codigo;
+        var adminId = admin!.Id;
+
+        // Transferir cuentas y solicitudes al admin que ejecuta el borrado (preserva FK NOT NULL).
+        // Las referencias en auditoria pueden quedar sueltas (UsuarioId nullable en EventosAuditoria).
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE Cuentas SET MeseraId = {0} WHERE MeseraId = {1}", adminId, id);
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE SolicitudesCancelacion SET MeseraId = {0} WHERE MeseraId = {1}", adminId, id);
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE EventosAuditoria SET UsuarioId = NULL WHERE UsuarioId = {0}", id);
+
+        _db.Usuarios.Remove(usuario);
+        await _db.SaveChangesAsync(ct);
+
+        var u = UsuarioActual();
+        await _audit.LogAsync(
+            "Usuario", "UsuarioEliminado",
+            $"Usuario eliminado definitivamente: {nombreBorrado} ({codigoBorrado}). Cuentas transferidas al admin que ejecuto el borrado.",
+            u.id, u.nombre,
+            $"{{\"usuarioId\":{id},\"codigo\":\"{codigoBorrado}\",\"transferidoAdmin\":{adminId}}}");
+
+        return Ok(new { message = $"{nombreBorrado} eliminado definitivamente." });
+    }
+
     // ── CRUD FORMAS DE PAGO ──────────────────────────────────────────────────────
 
     [HttpGet("formas-pago")]

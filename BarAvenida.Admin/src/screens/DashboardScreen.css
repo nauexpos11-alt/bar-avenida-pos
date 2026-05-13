@@ -301,6 +301,21 @@
   transition: transform 0.15s, box-shadow 0.15s;
   text-align: center;
   font-family: inherit;
+  position: relative;
+}
+
+/* Folio del dia visible en la esquina superior izquierda */
+.mc-folio {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #f0c842;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 4px rgba(0,0,0,0.7);
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .mesa-lib  { background: var(--libre-bg);   border-color: var(--libre-border); }

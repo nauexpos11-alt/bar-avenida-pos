@@ -265,6 +265,46 @@ public class ReportesController : ControllerBase
         });
     }
 
+    // GET /api/Reportes/productos-vendidos-hoy
+    // Vista "productos vendidos hoy" — actualizada en tiempo real (auto-refresh frontend cada 30s)
+    [HttpGet("productos-vendidos-hoy")]
+    public async Task<IActionResult> ProductosVendidosHoy(CancellationToken ct = default)
+    {
+        var hoy = DateTime.Today;
+        var manana = hoy.AddDays(1);
+
+        var detalles = await _db.OrdenDetalles
+            .AsNoTracking()
+            .Include(d => d.Producto).ThenInclude(p => p!.Categoria)
+            .Include(d => d.Orden).ThenInclude(o => o!.Cuenta)
+            .Where(d => d.Orden!.Cuenta!.Estado == "Cobrada"
+                     && d.Orden.Cuenta.FechaCierre >= hoy
+                     && d.Orden.Cuenta.FechaCierre <  manana)
+            .ToListAsync(ct);
+
+        var agrupado = detalles
+            .GroupBy(d => new {
+                d.ProductoId,
+                Nombre    = d.Producto!.Nombre,
+                Categoria = d.Producto.Categoria!.Nombre,
+                Color     = d.Producto.Categoria.ColorHex
+            })
+            .Select(g => new {
+                productoId      = g.Key.ProductoId,
+                nombre          = g.Key.Nombre,
+                categoria       = g.Key.Categoria,
+                color           = g.Key.Color,
+                cantidadVendida = g.Sum(x => x.Cantidad),
+                totalAcumulado  = g.Sum(x => x.Subtotal),
+            })
+            .OrderByDescending(x => x.cantidadVendida)
+            .ToList();
+
+        var totalHoy = detalles.Sum(d => d.Subtotal);
+
+        return Ok(new { totalHoy, productos = agrupado });
+    }
+
     // GET /api/Reportes/exportar-csv?tipo=resumen|productos|meseros&desde=&hasta=
     [HttpGet("exportar-csv")]
     public async Task<IActionResult> ExportarCsv(

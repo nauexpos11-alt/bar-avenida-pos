@@ -175,6 +175,8 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
     const meseraVisible = mesa.meseraActual || mesa.nombreMesera || (cobroSnap?.mesera ?? '')
     const montoVisible  = mesa.totalActual ?? (porCobrar ? (cobroSnap?.monto ?? 0) : (sol?.monto ?? 0))
 
+    const tieneFolio = mesa.folio != null && (ocupada || porCobrar || tieneSolicitud)
+
     return (
       <button
         key={mesa.id}
@@ -182,6 +184,10 @@ export default function MesasScreen({ auth, onLogout, onIrCuenta, onIrResumen, o
         onClick={() => handleTapMesa(mesa)}
         disabled={cargandoCuenta || porCobrar || esOtra}
       >
+        {/* Folio del dia — visible en esquina superior izquierda mientras la cuenta esta abierta */}
+        {tieneFolio && (
+          <span className="mesa-folio-badge">#{mesa.folio}</span>
+        )}
         {/* Si hay alias mostrar SOLO el alias (sin numero grande). Si no, el numero. */}
         {alias
           ? <span className="mesa-alias-titulo" title={`Mesa ${mesa.numero}`}>{alias}</span>

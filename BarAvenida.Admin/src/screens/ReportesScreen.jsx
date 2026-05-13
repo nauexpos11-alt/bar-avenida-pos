@@ -7,12 +7,13 @@ import PieChart  from '../components/charts/PieChart'
 import './ReportesScreen.css'
 
 const TABS = [
-  { key: 'ventas',    label: 'Ventas'         },
-  { key: 'productos', label: 'Productos top'  },
-  { key: 'meseros',   label: 'Meseros'        },
-  { key: 'categorias',label: 'Categorías'     },
-  { key: 'hora',      label: 'Por hora'       },
-  { key: 'metodos',   label: 'Métodos de pago'},
+  { key: 'vendidos-hoy', label: '🍺 Productos vendidos hoy' },
+  { key: 'ventas',       label: 'Ventas'         },
+  { key: 'productos',    label: 'Productos top'  },
+  { key: 'meseros',      label: 'Meseros'        },
+  { key: 'categorias',   label: 'Categorías'     },
+  { key: 'hora',         label: 'Por hora'       },
+  { key: 'metodos',      label: 'Métodos de pago'},
 ]
 
 function toIsoDate(d) { return d.toISOString().slice(0, 10) }
@@ -56,7 +57,7 @@ function KpiCard({ label, value, sub }) {
   )
 }
 
-export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }) {
+export default function ReportesScreen({ auth, initialTab = 'vendidos-hoy', onVolver }) {
   const [tab, setTab]       = useState(initialTab)
   const [desde, setDesde]   = useState(toIsoDate(new Date()))
   const [hasta, setHasta]   = useState(toIsoDate(new Date()))
@@ -72,12 +73,13 @@ export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }
       const q = { desde: d, hasta: h }
       let res
       switch (tabKey) {
-        case 'ventas':     res = await api.adminGetReporteVentas(t, q);    break
-        case 'productos':  res = await api.adminGetReporteProductos(t, { ...q, limit: 20 }); break
-        case 'meseros':    res = await api.adminGetReporteMeseros(t, q);   break
-        case 'categorias': res = await api.adminGetReporteCategorias(t, q);break
-        case 'hora':       res = await api.adminGetReporteVentasHora(t, q);break
-        case 'metodos':    res = await api.adminGetReporteMetodosPago(t, q);break
+        case 'vendidos-hoy': res = await api.adminGetProductosVendidosHoy(t);             break
+        case 'ventas':       res = await api.adminGetReporteVentas(t, q);                 break
+        case 'productos':    res = await api.adminGetReporteProductos(t, { ...q, limit: 20 }); break
+        case 'meseros':      res = await api.adminGetReporteMeseros(t, q);                break
+        case 'categorias':   res = await api.adminGetReporteCategorias(t, q);             break
+        case 'hora':         res = await api.adminGetReporteVentasHora(t, q);             break
+        case 'metodos':      res = await api.adminGetReporteMetodosPago(t, q);            break
         default: res = null
       }
       setData(res)
@@ -89,6 +91,19 @@ export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }
   }, [tab, desde, hasta, auth.token])
 
   useEffect(() => { cargar(initialTab, desde, hasta) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-refresh silencioso cada 30s SOLO en la vista "Productos vendidos hoy"
+  // (no muestra spinner — actualiza data en background).
+  useEffect(() => {
+    if (tab !== 'vendidos-hoy') return
+    const id = setInterval(async () => {
+      try {
+        const res = await api.adminGetProductosVendidosHoy(auth.token)
+        setData(res)
+      } catch { /* silencioso: si falla, mantenemos la data anterior */ }
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [tab, auth.token])
 
   // Si el usuario navega a otra tab desde el menu (ej: rep-ventas-resumen -> rep-productos-top),
   // App.jsx re-renderiza este componente con distinto initialTab. Sin este efecto la tab
@@ -171,6 +186,7 @@ export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }
 
         {!loading && !error && data && (
           <>
+            {tab === 'vendidos-hoy' && <TabVendidosHoy data={data} />}
             {tab === 'ventas'    && <TabVentas    data={data} onCsv={() => handleCsv('resumen')}  csvBusy={csvBusy} />}
             {tab === 'productos' && <TabProductos data={data} onCsv={() => handleCsv('productos')} csvBusy={csvBusy} />}
             {tab === 'meseros'   && <TabMeseros   data={data} onCsv={() => handleCsv('meseros')}  csvBusy={csvBusy} />}
@@ -179,6 +195,62 @@ export default function ReportesScreen({ auth, initialTab = 'ventas', onVolver }
             {tab === 'metodos'   && <TabMetodos    data={data} />}
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────────
+// "PRODUCTOS VENDIDOS HOY" — vista en tiempo real (auto-refresh 30s)
+// El backend devuelve { totalHoy, productos:[{productoId,nombre,categoria,color,cantidadVendida,totalAcumulado}] }
+// ──────────────────────────────────────────────────────────────────
+function TabVendidosHoy({ data }) {
+  const productos = data?.productos ?? []
+  const totalHoy  = data?.totalHoy ?? 0
+
+  const fechaHoy = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+
+  if (productos.length === 0) {
+    return (
+      <div className="rep-tab-content">
+        <div className="vh-header">
+          <div className="vh-fecha">{fechaHoy}</div>
+          <div className="vh-total-line">TOTAL VENDIDO HOY: <span className="vh-total-amt">{fmtMXN(0)}</span></div>
+        </div>
+        <div className="vh-empty">
+          <div className="vh-empty-icon">🍻</div>
+          <div className="vh-empty-title">Aún no hay productos vendidos hoy</div>
+          <div className="vh-empty-sub">En cuanto se cobre una cuenta, los productos aparecerán aquí.</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rep-tab-content">
+      <div className="vh-header">
+        <div className="vh-fecha">{fechaHoy}</div>
+        <div className="vh-total-line">TOTAL VENDIDO HOY: <span className="vh-total-amt">{fmtMXN(totalHoy)}</span></div>
+      </div>
+
+      <div className="vh-grid">
+        {productos.map(p => {
+          const color = p.color || '#f0c842'
+          const styleBg = {
+            background: `radial-gradient(circle at top left, ${color}22 0%, #0d0d0d 70%)`,
+            borderColor: `${color}55`,
+          }
+          return (
+            <div key={p.productoId} className="vh-card" style={styleBg}>
+              <div className="vh-card-cat" style={{ color }}>{p.categoria}</div>
+              <div className="vh-card-nombre">{p.nombre}</div>
+              <div className="vh-card-cant">{p.cantidadVendida}<span className="vh-card-x">×</span></div>
+              <div className="vh-card-total">{fmtMXN(p.totalAcumulado)}</div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

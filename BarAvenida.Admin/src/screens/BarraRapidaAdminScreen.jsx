@@ -106,9 +106,44 @@ export default function BarraRapidaAdminScreen({ auth }) {
   }
 
   // ── Carrito ───────────────────────────────────────────────
+  // Click producto = suma +1 al carrito (rapido para cobros de barra)
   const seleccionarProducto = (producto) => {
-    // Abrir NumPad con cantidad inicial vacía
-    setPendiente({ producto, cantidad: '' })
+    setCarrito(prev => {
+      const idx = prev.findIndex(x => x.productoId === producto.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = {
+          ...next[idx],
+          cantidad: next[idx].cantidad + 1,
+          subtotal: (next[idx].cantidad + 1) * next[idx].precio,
+        }
+        return next
+      }
+      return [...prev, {
+        productoId: producto.id,
+        nombre:     producto.nombre,
+        precio:     producto.precio,
+        cantidad:   1,
+        subtotal:   producto.precio,
+      }]
+    })
+  }
+
+  // Cambiar cantidad de un item del carrito (+1, -1, o numero directo)
+  const cambiarCantidad = (productoId, delta) => {
+    setCarrito(prev => {
+      return prev.map(x => {
+        if (x.productoId !== productoId) return x
+        const nuevaCant = x.cantidad + delta
+        if (nuevaCant <= 0) return null
+        return { ...x, cantidad: nuevaCant, subtotal: nuevaCant * x.precio }
+      }).filter(Boolean)
+    })
+  }
+
+  // Click sobre el numero de cantidad: abre NumPad para meter cantidad grande
+  const abrirNumPadCantidad = (item) => {
+    setPendiente({ producto: { id: item.productoId, nombre: item.nombre, precio: item.precio }, cantidad: '' })
   }
 
   const confirmarCantidad = (cantStr) => {
@@ -125,8 +160,8 @@ export default function BarraRapidaAdminScreen({ auth }) {
         const next = [...prev]
         next[idx] = {
           ...next[idx],
-          cantidad: next[idx].cantidad + cant,
-          subtotal: (next[idx].cantidad + cant) * next[idx].precio,
+          cantidad: cant,                    // REEMPLAZA cantidad (no suma)
+          subtotal: cant * next[idx].precio,
         }
         return next
       }
@@ -303,17 +338,32 @@ export default function BarraRapidaAdminScreen({ auth }) {
               {carrito.map(item => (
                 <div key={item.productoId} className="bra-cart-item">
                   <div className="bra-cart-info">
-                    <span className="bra-cart-qty">{item.cantidad}×</span>
                     <span className="bra-cart-nombre">{item.nombre}</span>
+                    <span className="bra-cart-precio-unit">{fmt(item.precio)} c/u</span>
+                  </div>
+                  <div className="bra-cart-qty-controls">
+                    <button
+                      className="bra-qty-btn bra-qty-minus"
+                      onClick={() => cambiarCantidad(item.productoId, -1)}
+                      title="Quitar 1"
+                    >−</button>
+                    <button
+                      className="bra-qty-num"
+                      onClick={() => abrirNumPadCantidad(item)}
+                      title="Click para escribir cantidad exacta"
+                    >{item.cantidad}</button>
+                    <button
+                      className="bra-qty-btn bra-qty-plus"
+                      onClick={() => cambiarCantidad(item.productoId, 1)}
+                      title="Sumar 1"
+                    >+</button>
                   </div>
                   <div className="bra-cart-precio">{fmt(item.subtotal)}</div>
                   <button
                     className="bra-cart-quitar"
                     onClick={() => quitarItem(item.productoId)}
-                    title="Quitar"
-                  >
-                    Quitar
-                  </button>
+                    title="Quitar item"
+                  >×</button>
                 </div>
               ))}
             </div>

@@ -55,7 +55,8 @@ public class MesasController : ControllerBase
                 EstadoCuenta    = cuentaAbierta?.Estado,
                 AliasCuenta     = cuentaAbierta?.NombreCliente,
                 AreaCuenta      = cuentaAbierta?.Area,
-                FechaApertura   = cuentaAbierta?.FechaApertura
+                FechaApertura   = cuentaAbierta?.FechaApertura,
+                Folio           = cuentaAbierta?.Folio,
             };
 
             resultado.Add(dto);
@@ -96,7 +97,8 @@ public class MesasController : ControllerBase
             MeseraActualId  = cuentaAbierta?.MeseraId,
             EstadoCuenta    = cuentaAbierta?.Estado,
             AliasCuenta     = cuentaAbierta?.NombreCliente,
-            FechaApertura   = cuentaAbierta?.FechaApertura
+            FechaApertura   = cuentaAbierta?.FechaApertura,
+            Folio           = cuentaAbierta?.Folio,
         };
 
         return Ok(dto);

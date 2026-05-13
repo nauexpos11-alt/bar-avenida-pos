@@ -307,10 +307,13 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
                     className={`mesa-card${ocu ? ' mesa-ocu' : ' mesa-lib'}${isSel ? ' mesa-sel' : ''}`}
                     onClick={() => handleClickMesaCard(mesa)}
                   >
+                    {ocu && mesa.folio != null && (
+                      <span className="mc-folio">#{mesa.folio}</span>
+                    )}
                     <span className="mc-num">{mesa.numero}</span>
                     {ocu ? (
                       <>
-                        <span className="mc-mes">{(mesa.nombreMesera ?? '').split(' ')[0]}</span>
+                        <span className="mc-mes">{(mesa.nombreMesera ?? mesa.meseraActual ?? '').split(' ')[0]}</span>
                         <span className="mc-tot">{fmt(mesa.totalActual ?? 0)}</span>
                       </>
                     ) : (

@@ -22,6 +22,13 @@ export default function MeserosScreen({ auth, onVolver }) {
   const [pinAdminInput,setPinAdminInput]= useState('')
   const [guardandoPin, setGuardandoPin] = useState(false)
   const [pinAdminError,setPinAdminError]= useState('')
+  // Modal de eliminacion definitiva — pide PIN admin
+  const [modalEliminar,    setModalEliminar]    = useState(null)  // { mesero }
+  const [pinEliminar,      setPinEliminar]      = useState('')
+  const [pinEliminarError, setPinEliminarError] = useState('')
+  const [eliminando,       setEliminando]       = useState(false)
+  // Filtro por rol
+  const [filtroRol,    setFiltroRol]    = useState('Todos')   // Todos | Admin | Mesera
 
   const toast = useCallback((msg, tipo = 'ok') => {
     const id = Date.now()
@@ -43,7 +50,9 @@ export default function MeserosScreen({ auth, onVolver }) {
 
   const abrirNuevo = () => { setForm(VACIO); setModal({ modo: 'nuevo' }) }
   const abrirEditar = (m) => {
-    setForm({ nombre: m.nombre, codigo: m.codigo, pin: '', rol: m.rol, activo: m.activo })
+    // Si el rol guardado es "Barman" (legacy), al editar default cambia a "Admin"
+    const rolEdit = (m.rol === 'Mesera' || m.rol === 'Admin') ? m.rol : 'Admin'
+    setForm({ nombre: m.nombre, codigo: m.codigo, pin: '', rol: rolEdit, activo: m.activo })
     setModal({ modo: 'editar', mesero: m })
   }
 
@@ -118,6 +127,36 @@ export default function MeserosScreen({ auth, onVolver }) {
     } catch (e) { toast(e.message, 'error') }
   }
 
+  // Eliminacion DEFINITIVA forzada con PIN admin — borra al usuario aunque tenga
+  // cuentas (las referencias en auditoria/cuentas quedan sueltas). Solicitud Coronado.
+  const abrirEliminar = (m) => {
+    setPinEliminar('')
+    setPinEliminarError('')
+    setModalEliminar({ mesero: m })
+  }
+
+  const handleEliminarDefinitivo = async () => {
+    if (isPinAdminInvalido(pinEliminar)) { setPinEliminarError('Ingresa tu PIN admin (mín. 4 dígitos)'); return }
+    setPinEliminarError('')
+    setEliminando(true)
+    try {
+      await api.adminEliminarUsuario(auth.token, modalEliminar.mesero.id, pinEliminar)
+      toast(`${modalEliminar.mesero.nombre} eliminado definitivamente`)
+      setModalEliminar(null)
+      cargar()
+    } catch (e) {
+      const msg = e?.message || ''
+      if (/pin admin/i.test(msg)) {
+        setPinEliminarError(msg)
+        setPinEliminar('')
+      } else {
+        toast(msg || 'Error al eliminar', 'error')
+      }
+    } finally {
+      setEliminando(false)
+    }
+  }
+
   const fmtFecha = d => new Date(d).toLocaleDateString('es-MX')
 
   return (
@@ -137,7 +176,22 @@ export default function MeserosScreen({ auth, onVolver }) {
       </div>
 
       <div className="msr-body">
-        {cargando ? <div className="msr-loader">Cargando...</div> : (
+        {/* Filtros por rol — chips */}
+        <div className="msr-filtros">
+          {['Todos', 'Admin', 'Mesera'].map(f => (
+            <button
+              key={f}
+              className={`msr-chip-filtro ${filtroRol === f ? 'msr-chip-filtro-activo' : ''}`}
+              onClick={() => setFiltroRol(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {cargando ? <div className="msr-loader">Cargando...</div> : (() => {
+          const visibles = filtroRol === 'Todos' ? meseros : meseros.filter(m => m.rol === filtroRol)
+          return (
           <table className="msr-tabla">
             <thead>
               <tr>
@@ -150,8 +204,8 @@ export default function MeserosScreen({ auth, onVolver }) {
               </tr>
             </thead>
             <tbody>
-              {meseros.length === 0 && <tr><td colSpan={6} className="msr-vacio">No hay meseros registrados</td></tr>}
-              {meseros.map((m, i) => (
+              {visibles.length === 0 && <tr><td colSpan={6} className="msr-vacio">No hay usuarios para este filtro</td></tr>}
+              {visibles.map((m, i) => (
                 <tr key={m.id} className={i % 2 === 0 ? 'msr-par' : 'msr-impar'}>
                   <td className="msr-td-nombre">{m.nombre}</td>
                   <td className="msr-td-cod">{m.codigo}</td>
@@ -170,13 +224,15 @@ export default function MeserosScreen({ auth, onVolver }) {
                       {m.activo ? 'Desactivar' : 'Activar'}
                     </button>
                     <button className="msr-btn-pin"  onClick={() => abrirResetPin(m)} title="Resetear PIN">🔑 PIN</button>
-                    <button className="msr-btn-perm" onClick={() => handleEliminarPerm(m)} title="Eliminar permanentemente">🗑️</button>
+                    <button className="msr-btn-elim" onClick={() => abrirEliminar(m)} title="Eliminar (irreversible)">Eliminar</button>
+                    <button className="msr-btn-perm" onClick={() => handleEliminarPerm(m)} title="Eliminar (sólo si no tiene cuentas)">🗑️</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+          )
+        })()}
       </div>
 
       {modal && (
@@ -201,8 +257,8 @@ export default function MeserosScreen({ auth, onVolver }) {
 
               <label className="msr-lbl">Rol</label>
               <select className="msr-input" value={form.rol} onChange={e => setForm(f => ({ ...f, rol: e.target.value }))}>
+                <option value="Admin">Admin</option>
                 <option value="Mesera">Mesera</option>
-                <option value="Barman">Barman</option>
               </select>
 
               {modal.modo === 'editar' && (
@@ -218,6 +274,49 @@ export default function MeserosScreen({ auth, onVolver }) {
                 {guardando ? 'Guardando...' : 'Guardar'}
               </button>
               <button className="msr-btn-cerrar" onClick={() => setModal(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalEliminar && (
+        <div className="msr-overlay" onClick={() => !eliminando && setModalEliminar(null)}>
+          <div className="msr-modal" onClick={e => e.stopPropagation()}>
+            <div className="msr-modal-header" style={{ color: '#ff6b6b' }}>
+              <span>Eliminar usuario — {modalEliminar.mesero.nombre}</span>
+              <button className="msr-btn-x" onClick={() => !eliminando && setModalEliminar(null)}>✕</button>
+            </div>
+            <div className="msr-modal-body">
+              <div style={{ background: '#2a0e0e', border: '1px solid #6b1f1f', borderRadius: 6, padding: 12, color: '#fecaca', fontSize: '.85rem', lineHeight: 1.5 }}>
+                <strong style={{ color: '#ff6b6b' }}>⚠ Acción irreversible.</strong> Esto borra
+                permanentemente al usuario <strong>{modalEliminar.mesero.nombre}</strong> y sus
+                referencias en auditoría quedan sueltas. ¿Confirmas?
+              </div>
+
+              <label className="msr-lbl" style={{ marginTop: 12 }}>
+                Tu PIN admin <span style={{ color: '#c0392b' }}>*</span>
+              </label>
+              <input
+                className="msr-input"
+                type="password"
+                inputMode="numeric"
+                value={pinEliminar}
+                maxLength={6}
+                autoFocus
+                onChange={e => { setPinEliminar(e.target.value.replace(/\D/g,'').slice(0,6)); if (pinEliminarError) setPinEliminarError('') }}
+                placeholder="Confirmación admin"
+                onKeyDown={e => e.key === 'Enter' && !eliminando && handleEliminarDefinitivo()}
+                style={pinEliminarError ? { borderColor: '#c0392b' } : undefined}
+              />
+              {pinEliminarError && (
+                <div style={{ marginTop: 6, color: '#ff6b6b', fontSize: 12 }}>{pinEliminarError}</div>
+              )}
+            </div>
+            <div className="msr-modal-footer">
+              <button className="msr-btn-elim-confirm" onClick={handleEliminarDefinitivo} disabled={eliminando}>
+                {eliminando ? 'Eliminando...' : 'Eliminar definitivamente'}
+              </button>
+              <button className="msr-btn-cerrar" onClick={() => setModalEliminar(null)} disabled={eliminando}>Cancelar</button>
             </div>
           </div>
         </div>

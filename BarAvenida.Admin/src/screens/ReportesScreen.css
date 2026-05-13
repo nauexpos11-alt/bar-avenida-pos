@@ -427,6 +427,132 @@
 .rep-metodo-total { font-size: 22px; font-weight: 700; font-family: monospace; margin: 4px 0; }
 .rep-metodo-sub   { font-size: 12px; color: #666; }
 
+/* ═══ "PRODUCTOS VENDIDOS HOY" ═══════════════════════════════════════ */
+.vh-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, #1a1306 0%, #0a0a0a 80%);
+  border: 1px solid #2a2010;
+  border-radius: 10px;
+}
+
+.vh-fecha {
+  font-size: 13px;
+  color: #888;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+}
+
+.vh-total-line {
+  font-size: 22px;
+  color: #f0f0f0;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.vh-total-amt {
+  color: #f0c842;
+  font-family: 'Courier New', monospace;
+  font-size: 26px;
+  margin-left: 8px;
+}
+
+.vh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.vh-card {
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  backdrop-filter: blur(4px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  min-height: 130px;
+  position: relative;
+  overflow: hidden;
+}
+
+.vh-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(240, 200, 66, 0.18), 0 2px 8px rgba(0,0,0,0.4);
+  border-color: rgba(240, 200, 66, 0.5);
+}
+
+.vh-card-cat {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.vh-card-nombre {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f0f0;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.vh-card-cant {
+  font-size: 38px;
+  font-weight: 900;
+  color: #f0c842;
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+  margin-top: 4px;
+  letter-spacing: -0.02em;
+}
+
+.vh-card-x {
+  font-size: 22px;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.vh-card-total {
+  font-size: 15px;
+  color: #ddd;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.vh-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  background: #0d0d0d;
+  border: 1px dashed #2a2a2a;
+  border-radius: 12px;
+}
+
+.vh-empty-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.vh-empty-title {
+  font-size: 17px;
+  color: #f0c842;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.vh-empty-sub {
+  font-size: 13px;
+  color: #777;
+}
+
 /* === CSV BUTTON === */
 .rep-csv-btn {
   background: #1a1a1a;

@@ -233,6 +233,8 @@ export const api = {
   adminUpdateMesero:  (t, id, dto) => req(`/api/admin/meseros/${id}`, { method: 'PUT', body: JSON.stringify(dto) }, t),
   adminDeleteMesero:        (t, id) => req(`/api/admin/meseros/${id}`,           { method: 'DELETE' }, t),
   adminDeleteMeseroPerm:    (t, id) => req(`/api/admin/meseros/${id}/permanent`, { method: 'DELETE' }, t),
+  // Eliminacion definitiva forzada — requiere PIN admin. Endpoint: DELETE /api/admin/usuarios/{id}
+  adminEliminarUsuario:     (t, id, pin) => req(`/api/admin/usuarios/${id}`, { method: 'DELETE', body: JSON.stringify({ pin }) }, t),
   adminSeedFormasPago:      (t)     => req('/api/admin/formas-pago/seed',        { method: 'POST' }, t),
 
   // Admin — Formas de pago
@@ -283,6 +285,7 @@ export const api = {
     if (hasta) p.set('hasta', hasta)
     return req(`/api/Reportes/metodos-pago?${p}`, {}, t)
   },
+  adminGetProductosVendidosHoy: (t) => req('/api/Reportes/productos-vendidos-hoy', {}, t),
   adminExportarCsv: async (t, tipo, desde, hasta) => {
     const p = new URLSearchParams({ tipo })
     if (desde) p.set('desde', desde)

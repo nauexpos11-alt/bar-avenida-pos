@@ -1,30 +1,44 @@
-/* ── Root ─────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════════
+   MESAS SCREEN (Tablet) — Touch interface premium · v3
+══════════════════════════════════════════════════════════════════════════════ */
 .mesas-root {
   display: flex;
   flex-direction: column;
   height: 100%;
   background:
-    radial-gradient(1000px 600px at 50% -10%, rgba(240, 200, 66, 0.035), transparent 60%),
+    radial-gradient(1200px 800px at 50% -10%, rgba(240, 200, 66, 0.045), transparent 60%),
+    radial-gradient(900px 700px at 20% 110%, rgba(240, 200, 66, 0.025), transparent 60%),
     var(--bg);
   overflow: hidden;
   position: relative;
 }
 
-/* ── Barra de acciones superior ───────────────────── */
+/* ───────────── ACTION BAR ───────────── */
 .action-bar {
   display: flex;
   align-items: center;
-  background: rgba(8, 8, 8, 0.85);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border-bottom: 1px solid rgba(240, 200, 66, 0.22);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 -1px 0 rgba(240,200,66,0.05);
+  background:
+    linear-gradient(180deg, rgba(12, 12, 12, 0.88) 0%, rgba(8, 8, 8, 0.88) 100%);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 1px 0 rgba(240, 200, 66, 0.10),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   height: 72px;
   flex-shrink: 0;
-  padding: 0 8px;
+  padding: 0 10px;
   gap: 6px;
   position: relative;
   z-index: 50;
+}
+.action-bar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 200, 66, 0.18) 50%, transparent);
+  pointer-events: none;
 }
 
 .action-bar-logo {
@@ -48,10 +62,10 @@
 }
 
 .logo-av {
-  font-size: 1.1rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 40%, #f0c842 80%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -311,7 +325,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* ── Tarjeta de mesa ──────────────────────────────── */
+/* ───────────── TARJETA DE MESA ───────────── */
 .mesa-card {
   position: relative;
   display: flex;
@@ -320,67 +334,81 @@
   justify-content: center;
   gap: 4px;
   aspect-ratio: 1;
-  min-height: 92px;
-  border-radius: var(--radius-lg);
-  border: 2px solid;
+  min-height: 96px;
+  border-radius: 14px;
+  border: 1.5px solid;
   cursor: pointer;
   padding: 10px;
   overflow: hidden;
+  isolation: isolate;
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.20),
-    0 6px 18px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.05);
-  transition: transform 100ms var(--ease-out),
-              filter var(--dur-fast) var(--ease-out),
-              box-shadow var(--dur) var(--ease-out),
-              opacity var(--dur-fast) var(--ease-out);
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 6px 16px -4px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 120ms var(--ease-snappy),
+    filter 150ms var(--ease-snappy),
+    box-shadow 220ms var(--ease-snappy),
+    border-color 200ms var(--ease-snappy),
+    opacity 150ms var(--ease-snappy);
 }
 
-/* Brillo superior sutil */
+/* Top reflection hairline */
 .mesa-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.14) 50%, transparent 100%);
+  top: 0; left: 10%; right: 10%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 50%, transparent);
   pointer-events: none;
 }
 
 .mesa-card:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow:
-    0 2px 4px rgba(0,0,0,0.25),
-    0 12px 28px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    0 12px 28px -4px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .mesa-card:active:not(:disabled) {
-  transform: scale(0.93);
+  transform: scale(0.94);
   filter: brightness(1.15);
   transition-duration: 60ms;
 }
 
-.mesa-card:disabled { opacity: 0.4; cursor: default; }
+.mesa-card:disabled { opacity: 0.42; cursor: default; }
 
 .mesa-libre {
-  background: linear-gradient(160deg, rgba(13, 35, 24, 0.95) 0%, rgba(8, 24, 15, 0.95) 100%);
-  border-color: rgba(34, 197, 94, 0.65);
+  background:
+    linear-gradient(160deg, rgba(13, 38, 28, 0.92) 0%, rgba(8, 26, 18, 0.92) 100%);
+  border-color: rgba(16, 185, 129, 0.55);
 }
+.mesa-libre:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.30), 0 12px 28px -4px rgba(16, 185, 129, 0.16); }
+
 .mesa-ocupada {
-  background: linear-gradient(160deg, rgba(31, 8, 8, 0.95) 0%, rgba(20, 5, 5, 0.95) 100%);
-  border-color: rgba(239, 68, 68, 0.65);
+  background:
+    linear-gradient(160deg, rgba(34, 8, 8, 0.94) 0%, rgba(22, 5, 5, 0.94) 100%);
+  border-color: rgba(239, 68, 68, 0.55);
 }
+.mesa-ocupada:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.30), 0 12px 28px -4px rgba(239, 68, 68, 0.16); }
+
 .mesa-pendiente {
-  background: linear-gradient(160deg, rgba(31, 20, 0, 0.95) 0%, rgba(20, 13, 0, 0.95) 100%);
-  border-color: rgba(245, 158, 11, 0.7);
+  background:
+    linear-gradient(160deg, rgba(34, 22, 0, 0.94) 0%, rgba(22, 14, 0, 0.94) 100%);
+  border-color: rgba(245, 158, 11, 0.62);
 }
 
 .mesa-numero {
-  font-size: 2.05rem;
-  font-weight: 900;
+  font-size: 2.125rem;
+  font-weight: 800;
+  font-family: 'Inter', system-ui, sans-serif;
   color: #fff;
   line-height: 1;
-  letter-spacing: -0.03em;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  letter-spacing: -0.038em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Folio del dia — esquina superior izquierda de la card */
@@ -508,26 +536,30 @@
 
 /* Card mesero */
 .sidebar-mesero {
-  padding: 16px 12px 14px;
-  border-bottom: 1px solid #1e1e1e;
+  padding: 18px 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   text-align: center;
   flex-shrink: 0;
+  background:
+    radial-gradient(280px 140px at 50% 0%, rgba(240, 200, 66, 0.06), transparent 70%);
 }
 
 .mesero-codigo {
-  font-size: 2.4rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #f0c842 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.038em;
   line-height: 1;
-  text-shadow: 0 0 24px rgba(240, 200, 66, 0.25);
+  text-shadow: 0 0 28px rgba(240, 200, 66, 0.30);
+  font-variant-numeric: tabular-nums;
 }
 
 .mesero-nombre {
@@ -587,10 +619,15 @@
 .btn-area:active { background: rgba(240, 200, 66, 0.10); }
 
 .btn-area.area-activa {
-  background: linear-gradient(90deg, rgba(240, 200, 66, 0.18) 0%, rgba(240, 200, 66, 0.03) 100%);
-  border-left-color: var(--gold-light);
+  background:
+    linear-gradient(90deg, rgba(240, 200, 66, 0.20) 0%, rgba(240, 200, 66, 0.03) 100%);
+  border-left: 3px solid;
+  border-image: linear-gradient(180deg, var(--gold-light), var(--gold-dark)) 1;
   color: var(--gold-light);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 3px 0 0 rgba(240, 200, 66, 0.85);
+  font-weight: 700;
 }
 
 /* Footer sidebar */
@@ -819,20 +856,34 @@
   .mesa-card   { min-height: 72px; }
 }
 
-/* ── Mesa de la mesera logueada (amarilla) ────────── */
+/* ───────────── MESA DE LA MESERA LOGUEADA (dorada) ───────────── */
 .mesa-mia {
-  background: linear-gradient(160deg, rgba(36, 28, 0, 0.95) 0%, rgba(22, 17, 0, 0.95) 100%);
-  border-color: var(--gold);
+  background:
+    radial-gradient(400px 200px at 50% -10%, rgba(240, 200, 66, 0.08), transparent 60%),
+    linear-gradient(160deg, rgba(38, 30, 0, 0.95) 0%, rgba(22, 17, 0, 0.95) 100%);
+  border-color: rgba(240, 200, 66, 0.65);
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.2),
-    0 6px 18px rgba(0,0,0,0.25),
-    0 0 24px rgba(240, 200, 66, 0.18),
-    inset 0 1px 0 rgba(255,255,255,0.07);
+    0 0 0 1px rgba(240, 200, 66, 0.16),
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 8px 22px -4px rgba(0, 0, 0, 0.30),
+    0 0 28px rgba(240, 200, 66, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.mesa-mia:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(240, 200, 66, 0.32),
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    0 14px 32px -4px rgba(0, 0, 0, 0.40),
+    0 0 40px rgba(240, 200, 66, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .mesa-mia .mesa-numero {
-  color: var(--gold);
-  text-shadow: 0 0 16px rgba(240, 200, 66, 0.4);
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #f0c842 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(240, 200, 66, 0.45);
 }
 
 .mesa-mesera-mia { color: #c8a830 !important; }

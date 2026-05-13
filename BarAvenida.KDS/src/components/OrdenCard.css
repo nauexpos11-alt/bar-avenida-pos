@@ -1,48 +1,64 @@
-/* ══════════════════════════════════════════════════════════════════
-   KDS · OrdenCard — la card hero del KDS
-   Número de mesa hero · glass · pulsos por urgencia
-   ══════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════════
+   KDS · OrdenCard — la card hero del KDS · v3
+   Multi-layer depth · giant typography · urgency pulses · semantic gradients
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .orden-card {
   position: relative;
   border-radius: 18px;
-  border: 2px solid;
+  border: 1.5px solid;
   padding: 24px 26px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  animation: cardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  animation: cardIn 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   will-change: transform, opacity;
-  box-shadow:
-    0 1px 2px rgba(0,0,0,0.10),
-    0 12px 32px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.05);
   overflow: hidden;
-  transition: transform var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
-              box-shadow var(--dur, 200ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.10),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35),
+    0 32px 64px -16px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 220ms var(--ease-snappy),
+    box-shadow 280ms var(--ease-snappy);
 }
 
 .orden-card:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 4px 8px rgba(0,0,0,0.15),
-    0 20px 48px rgba(0,0,0,0.50),
-    inset 0 1px 0 rgba(255,255,255,0.07);
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    0 20px 48px -8px rgba(0, 0, 0, 0.50),
+    0 40px 80px -16px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-/* Brillo superior */
+/* Top hairline reflection */
 .orden-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+  top: 0; left: 8%; right: 8%; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.22) 50%, transparent 100%);
   pointer-events: none;
 }
 
+/* Bottom subtle glow (gets colored per variant) */
+.orden-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px 200px at 50% 120%, var(--card-glow, transparent), transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .orden-card.removing {
-  animation: cardOut 0.46s ease-in both;
+  animation: cardOut 460ms ease-in both;
   pointer-events: none;
 }
 
@@ -56,60 +72,69 @@
   to   { opacity: 0; transform: scale(0.85); }
 }
 
-/* ── Variantes de color por urgencia ───────────────────── */
+/* ───────────── VARIANTES POR URGENCIA ───────────── */
 
 /* Verde: < 2 min */
 .card-green {
-  background: linear-gradient(160deg, rgba(10, 31, 16, 0.85) 0%, rgba(6, 22, 11, 0.85) 100%);
-  border-color: rgba(34, 197, 94, 0.7);
+  --card-glow: rgba(16, 185, 129, 0.18);
+  background:
+    linear-gradient(160deg, rgba(10, 30, 22, 0.88) 0%, rgba(6, 22, 16, 0.88) 100%);
+  border-color: rgba(16, 185, 129, 0.55);
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.10),
-    0 12px 32px rgba(0,0,0,0.35),
-    0 0 36px rgba(34, 197, 94, 0.10),
-    inset 0 1px 0 rgba(255,255,255,0.05);
+    0 0 0 1px rgba(16, 185, 129, 0.10),
+    0 1px 2px rgba(0, 0, 0, 0.10),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35),
+    0 0 36px rgba(16, 185, 129, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* Amarillo: 2–5 min */
 .card-yellow {
-  background: linear-gradient(160deg, rgba(26, 21, 0, 0.88) 0%, rgba(18, 14, 0, 0.85) 100%);
-  border-color: rgba(234, 179, 8, 0.7);
+  --card-glow: rgba(234, 179, 8, 0.22);
+  background:
+    linear-gradient(160deg, rgba(28, 22, 0, 0.90) 0%, rgba(18, 14, 0, 0.88) 100%);
+  border-color: rgba(234, 179, 8, 0.60);
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.10),
-    0 12px 32px rgba(0,0,0,0.35),
-    0 0 40px rgba(234, 179, 8, 0.12),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    0 0 0 1px rgba(234, 179, 8, 0.10),
+    0 1px 2px rgba(0, 0, 0, 0.10),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35),
+    0 0 40px rgba(234, 179, 8, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Rojo: > 5 min — pulsa */
+/* Rojo: > 5 min — pulses */
 .card-red {
-  background: linear-gradient(160deg, rgba(26, 5, 5, 0.9) 0%, rgba(15, 3, 3, 0.85) 100%);
-  border-color: rgba(239, 68, 68, 0.85);
-  animation: cardIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both,
-             redPulse 1.8s 0.42s ease-in-out infinite;
+  --card-glow: rgba(239, 68, 68, 0.28);
+  background:
+    linear-gradient(160deg, rgba(30, 6, 6, 0.92) 0%, rgba(18, 4, 4, 0.88) 100%);
+  border-color: rgba(239, 68, 68, 0.80);
+  animation:
+    cardIn 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    redPulse 1.8s 480ms ease-in-out infinite;
 }
 
 .card-red.removing {
-  animation: cardOut 0.46s ease-in both;
+  animation: cardOut 460ms ease-in both;
 }
 
 @keyframes redPulse {
   0%, 100% {
     box-shadow:
-      0 12px 32px rgba(0,0,0,0.35),
+      0 0 0 1px rgba(239, 68, 68, 0.14),
+      0 12px 32px -8px rgba(0, 0, 0, 0.35),
       0 0 28px rgba(239, 68, 68, 0.22),
-      inset 0 1px 0 rgba(255,255,255,0.05);
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
   50% {
     box-shadow:
-      0 12px 32px rgba(0,0,0,0.4),
-      0 0 56px rgba(239, 68, 68, 0.55),
-      inset 0 1px 0 rgba(255,255,255,0.08);
+      0 0 0 1px rgba(239, 68, 68, 0.30),
+      0 12px 32px -8px rgba(0, 0, 0, 0.4),
+      0 0 64px rgba(239, 68, 68, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Top: número de mesa HERO + badge
-   ══════════════════════════════════════════════════════════════════ */
+/* ───────────── TOP: número mesa HERO + badge ───────────── */
 .card-top {
   display: flex;
   align-items: flex-start;
@@ -121,31 +146,39 @@
 }
 
 .mesa-num {
-  font-size: 3.6rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+  font-size: 3.75rem;
+  font-weight: 800;
+  font-family: 'Inter Display', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
   color: #ffffff;
   text-shadow:
-    0 2px 16px rgba(0,0,0,0.5),
-    0 0 32px rgba(255, 255, 255, 0.08);
+    0 2px 16px rgba(0, 0, 0, 0.5),
+    0 0 32px rgba(255, 255, 255, 0.10);
+  font-variant-numeric: tabular-nums;
 }
 
 .badge-agregado {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(255, 255, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, #fb923c 0%, #f97316 50%, #c2410c 100%);
   color: #fff;
-  font-size: 0.84rem;
-  font-weight: 900;
+  font-size: 0.8125rem;
+  font-weight: 700;
   padding: 7px 14px;
   border-radius: 999px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   white-space: nowrap;
   margin-top: 8px;
   text-transform: uppercase;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.25);
   box-shadow:
-    0 4px 12px rgba(249, 115, 22, 0.45),
-    inset 0 1px 0 rgba(255,255,255,0.25);
-  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 4px 12px -2px rgba(249, 115, 22, 0.45),
+    0 8px 20px -4px rgba(249, 115, 22, 0.35);
+  animation: badgePop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes badgePop {
@@ -154,27 +187,26 @@
   to   { transform: scale(1); opacity: 1; }
 }
 
-/* ── Nombre mesera ─────────────────────────────────────── */
+/* ───────────── NOMBRE MESERA ───────────── */
 .mesera-nombre {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+  font-size: 1.4375rem;
+  font-weight: 600;
+  letter-spacing: -0.018em;
   color: #d8dde6;
   position: relative;
   z-index: 1;
 }
 
-/* ── Separador ─────────────────────────────────────────── */
+/* ───────────── SEP ───────────── */
 .sep {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.10) 50%, transparent);
   position: relative;
   z-index: 1;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Lista de productos — gigante para visibilidad a 3m
-   ══════════════════════════════════════════════════════════════════ */
+/* ───────────── PRODUCTOS ───────────── */
 .detalles {
   list-style: none;
   display: flex;
@@ -191,29 +223,31 @@
 }
 
 .det-cant {
-  font-size: 2.2rem;
-  font-weight: 900;
-  color: var(--gold-bright, #facc15);
-  min-width: 56px;
+  font-size: 2.25rem;
+  font-weight: 800;
+  font-family: 'Inter Display', 'Inter', system-ui, sans-serif;
+  min-width: 58px;
   text-align: right;
   line-height: 1;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
-  text-shadow: 0 0 24px rgba(250, 204, 21, 0.32);
+  letter-spacing: -0.032em;
+  background: linear-gradient(135deg, #fde68a 0%, #facc15 50%, #f0c842 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 24px rgba(250, 204, 21, 0.35);
 }
 
 .det-prod {
-  font-size: 1.6rem;
-  font-weight: 600;
+  font-size: 1.625rem;
+  font-weight: 500;
   color: #ffffff;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.015em;
   line-height: 1.22;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Footer (hora + botón LISTO)
-   ══════════════════════════════════════════════════════════════════ */
+/* ───────────── FOOTER ───────────── */
 .card-footer {
   display: flex;
   align-items: center;
@@ -232,31 +266,36 @@
 
 .hora {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'zero' 1;
   color: #d8dde6;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.018em;
+  font-family: 'JetBrains Mono', 'Inter', system-ui, sans-serif;
 }
 
 .elapsed {
-  font-size: 0.96rem;
+  font-size: 0.9375rem;
   color: #8a8f97;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   Botón LISTO
-   ══════════════════════════════════════════════════════════════════ */
+/* ───────────── BOTÓN LISTO ───────────── */
 .btn-listo {
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  position: relative;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(255, 255, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, #34d399 0%, #10b981 50%, #047857 100%);
   color: #fff;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.28);
   border-radius: 14px;
-  padding: 18px 32px;
-  font-size: 1.65rem;
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  padding: 18px 34px;
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
@@ -264,32 +303,36 @@
   user-select: none;
   font-family: inherit;
   box-shadow:
-    0 6px 18px rgba(22, 163, 74, 0.4),
-    inset 0 1px 0 rgba(255,255,255,0.25);
-  transition: transform var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
-              filter var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1)),
-              box-shadow var(--dur-fast, 150ms) var(--ease-out, cubic-bezier(0.4,0,0.2,1));
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.20),
+    0 6px 18px -2px rgba(16, 185, 129, 0.38),
+    0 16px 38px -8px rgba(16, 185, 129, 0.42);
+  transition:
+    transform 150ms var(--ease-snappy),
+    filter 150ms var(--ease-snappy),
+    box-shadow 220ms var(--ease-snappy);
 }
 
 .btn-listo:hover:not(:disabled) {
-  filter: brightness(1.08);
+  filter: brightness(1.06) saturate(1.08);
   transform: translateY(-2px);
   box-shadow:
-    0 10px 28px rgba(22, 163, 74, 0.55),
-    inset 0 1px 0 rgba(255,255,255,0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 3px 5px rgba(0, 0, 0, 0.25),
+    0 10px 28px -4px rgba(16, 185, 129, 0.50),
+    0 24px 52px -10px rgba(16, 185, 129, 0.55);
 }
 
 .btn-listo:active:not(:disabled) {
-  transform: scale(0.96);
-  filter: brightness(1.1);
+  transform: translateY(0.5px) scale(0.97);
+  filter: brightness(1.08);
   transition-duration: 80ms;
-  box-shadow:
-    0 4px 10px rgba(22, 163, 74, 0.4),
-    inset 0 1px 0 rgba(255,255,255,0.3);
 }
 
 .btn-listo:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  filter: grayscale(0.3);
+  filter: grayscale(0.35);
 }

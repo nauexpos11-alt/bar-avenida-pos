@@ -1,11 +1,11 @@
-/* ══════════════════════════════════════════════════════════════════
-   Toast — glass + bounce spring
-   ══════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════════
+   Toast — Linear-tier · spring entrance · semantic color glow
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .toast-container {
   position: fixed;
-  top: 80px;
-  right: 20px;
+  top: 84px;
+  right: 22px;
   z-index: 2000;
   display: flex;
   flex-direction: column;
@@ -17,58 +17,81 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 22px;
-  border-radius: var(--radius-lg);
-  font-size: 0.88rem;
+  padding: 13px 20px;
+  border-radius: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.008em;
   border: 1px solid;
   white-space: nowrap;
-  max-width: 400px;
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  max-width: 420px;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  pointer-events: auto;
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.4),
-    0 4px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 12px 32px -8px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.toast-in  { animation: toastSlideIn 0.4s var(--ease-bounce) both; }
-.toast-out { animation: toastFadeOut 0.32s var(--ease-out) both; }
+.toast-in  { animation: toastSlideIn 380ms var(--ease-spring) both; }
+.toast-out { animation: toastFadeOut 280ms var(--ease-snappy) both; }
 
 @keyframes toastSlideIn {
-  from { opacity: 0; transform: translateX(40px) scale(0.9); }
+  from { opacity: 0; transform: translateX(48px) scale(0.92); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes toastFadeOut {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(40px); }
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(48px) scale(0.96); }
 }
 
 .toast-success {
-  background: linear-gradient(135deg, rgba(20, 83, 45, 0.85) 0%, rgba(15, 60, 33, 0.85) 100%);
-  border-color: rgba(34, 197, 94, 0.6);
-  color: #86efac;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 24px rgba(34, 197, 94, 0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(6, 95, 70, 0.20) 100%),
+    rgba(15, 24, 22, 0.88);
+  border-color: rgba(16, 185, 129, 0.42);
+  color: #6ee7b7;
+  box-shadow:
+    0 0 0 1px rgba(16, 185, 129, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 12px 32px -8px rgba(0, 0, 0, 0.4),
+    0 0 24px -4px rgba(16, 185, 129, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .toast-error {
-  background: linear-gradient(135deg, rgba(59, 0, 0, 0.85) 0%, rgba(40, 0, 0, 0.85) 100%);
-  border-color: rgba(239, 68, 68, 0.6);
+  background:
+    linear-gradient(180deg, rgba(239, 68, 68, 0.16) 0%, rgba(127, 29, 29, 0.20) 100%),
+    rgba(24, 12, 12, 0.88);
+  border-color: rgba(239, 68, 68, 0.42);
   color: #fca5a5;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 24px rgba(239, 68, 68, 0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 12px 32px -8px rgba(0, 0, 0, 0.4),
+    0 0 24px -4px rgba(239, 68, 68, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .toast-info {
-  background: linear-gradient(135deg, rgba(30, 58, 95, 0.85) 0%, rgba(20, 42, 70, 0.85) 100%);
-  border-color: rgba(59, 130, 246, 0.6);
+  background:
+    linear-gradient(180deg, rgba(59, 130, 246, 0.16) 0%, rgba(30, 58, 138, 0.20) 100%),
+    rgba(12, 18, 28, 0.88);
+  border-color: rgba(59, 130, 246, 0.42);
   color: #93c5fd;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 24px rgba(59, 130, 246, 0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 12px 32px -8px rgba(0, 0, 0, 0.4),
+    0 0 24px -4px rgba(59, 130, 246, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .toast-icon {
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
   flex-shrink: 0;
-  font-weight: 800;
+  font-weight: 700;
   filter: drop-shadow(0 0 4px currentColor);
 }
 

@@ -2,8 +2,10 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #0a0a0a;
-  color: #f0f0f0;
+  background:
+    radial-gradient(1200px 800px at 50% -10%, rgba(240, 200, 66, 0.03), transparent 60%),
+    var(--bg);
+  color: var(--text);
   font-family: inherit;
 }
 
@@ -12,34 +14,53 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #111;
-  border-bottom: 2px solid #222;
+  padding: 14px 24px;
+  background:
+    linear-gradient(180deg, rgba(15, 15, 15, 0.85) 0%, rgba(10, 10, 10, 0.85) 100%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   gap: 16px;
+  position: relative;
+}
+.dl-header::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 200, 66, 0.12) 50%, transparent);
+  pointer-events: none;
 }
 
 .dl-volver {
-  background: none;
-  border: 1px solid #333;
-  color: #999;
-  padding: 6px 14px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  padding: 7px 14px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  transition: border-color 0.15s, color 0.15s;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  font-family: inherit;
   white-space: nowrap;
+  transition: all 150ms var(--ease-snappy);
 }
-.dl-volver:hover { border-color: #f0c842; color: #f0c842; }
+.dl-volver:hover {
+  border-color: rgba(240, 200, 66, 0.40);
+  color: var(--gold);
+  background: rgba(240, 200, 66, 0.06);
+}
 
 .dl-titulo {
   font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  color: #f0c842;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   margin: 0;
   white-space: nowrap;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #f0c842 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .dl-update {

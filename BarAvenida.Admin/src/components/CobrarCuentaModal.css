@@ -6,18 +6,23 @@
 .ccm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.88);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px) saturate(150%) brightness(0.7);
+  -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 300;
-  backdrop-filter: blur(6px);
+  animation: fadeIn 200ms var(--ease-out);
 }
 
 .ccm-modal {
-  background: #0f0f0f;
-  border: 1px solid var(--gold-dark, #a0820d);
-  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(22, 22, 22, 0.92) 0%, rgba(12, 12, 12, 0.94) 100%);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
   width: 97vw;
   max-width: 1140px;
   height: 92vh;
@@ -25,31 +30,47 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  animation: ccmIn 0.18s ease-out;
+  animation: ccmIn 320ms var(--ease-spring);
+  box-shadow:
+    0 0 0 1px rgba(240, 200, 66, 0.08),
+    0 24px 56px -12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.ccm-modal::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 12%; right: 12%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 200, 66, 0.50), transparent);
+  pointer-events: none;
 }
 
 @keyframes ccmIn {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ── Header ──────────────────────────────── */
+/* Header */
 .ccm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  height: 48px;
-  background: #111;
-  border-bottom: 1px solid #222;
+  padding: 0 22px;
+  height: 52px;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 17, 0.6), rgba(10, 10, 10, 0.6));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
 }
 
 .ccm-header-title {
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #f0c842;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #f0c842 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .ccm-header-close {

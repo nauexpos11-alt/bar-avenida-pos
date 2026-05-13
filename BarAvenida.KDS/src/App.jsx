@@ -246,17 +246,25 @@ export default function App() {
   const grupos = useMemo(() => {
     const map = new Map()
     for (const orden of ordenes) {
-      const mesaId = orden.mesaId ?? orden.mesa?.id ?? orden.mesaNumero
-      if (!map.has(mesaId)) {
-        map.set(mesaId, {
+      const mesaId = orden.mesaId ?? orden.mesa?.id ?? orden.mesaNumero ?? orden.cuentaId
+      // Si NO hay mesaId (cobro rapido barra), agrupar por cuenta
+      const groupKey = mesaId ?? `cuenta-${orden.cuentaId}`
+      if (!map.has(groupKey)) {
+        const aliasCliente = orden.nombreCliente ?? orden.cuenta?.nombreCliente ?? orden.aliasMesa ?? null
+        const folio = orden.folio ?? orden.cuenta?.folio ?? orden.numeroFolio ?? null
+        // OJO: el backend manda "meseraNombre" (camelCase), no "nombreMesera"
+        const meseraNombre = (orden.meseraNombre || orden.nombreMesera || orden.mesera?.nombre || orden.usuarioNombre || '').toString().trim()
+        map.set(groupKey, {
           mesaId,
           mesaNumero: orden.mesaNumero ?? orden.mesa?.numero ?? mesaId,
-          mesera:     orden.nombreMesera ?? orden.mesera?.nombre ?? orden.usuarioNombre ?? 'Mesera',
+          mesera:     meseraNombre || '—',
+          aliasCliente,         // Nombre del cliente / alias (ej. "NAU", "Mesa Juan")
+          folio,                // Folio diario de la cuenta
           ordenes:    [],
           primeraFecha: orden.fechaEnvio,
         })
       }
-      const g = map.get(mesaId)
+      const g = map.get(groupKey)
       g.ordenes.push(orden)
       if (new Date(orden.fechaEnvio) < new Date(g.primeraFecha)) {
         g.primeraFecha = orden.fechaEnvio

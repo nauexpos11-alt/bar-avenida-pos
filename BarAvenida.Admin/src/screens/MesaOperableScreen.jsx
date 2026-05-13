@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import CobrarCuentaModal from '../components/CobrarCuentaModal'
 import EditarInfoCuentaModal from '../components/EditarInfoCuentaModal'
+import Icon from '../components/Icon'
 import './MesaOperableScreen.css'
 
 // ── Helpers ──────────────────────────────────────────────
@@ -52,6 +53,11 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
   const [carrito, setCarrito]   = useState([])
   const [enviando, setEnviando] = useState(false)
   const [abriendo, setAbriendo] = useState(false)
+  // Modal de "personalizar cuenta nueva" — Coronado: admin puede personalizar como mesera
+  const [modalAbrir, setModalAbrir] = useState(false)
+  const [nuevaCuentaAlias,    setNuevaCuentaAlias]    = useState('')
+  const [nuevaCuentaPersonas, setNuevaCuentaPersonas] = useState(1)
+  const [nuevaCuentaArea,     setNuevaCuentaArea]     = useState('')
 
   // Solicitudes de cancelación pendientes (banner)
   const [solicitudes, setSolicitudes] = useState([])
@@ -178,7 +184,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
     conn.on('CuentaCobrada', (data) => {
       const id = typeof data === 'object' ? data?.id : data
       if (id === cuentaIdRef.current) {
-        showToast('Cuenta cobrada ✓')
+        showToast('Cuenta cobrada')
         setCuenta(null)
         cargarMesa()
       }
@@ -195,7 +201,16 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
   }, [auth.token, cargarMesa, cargarSolicitudes, showToast])
 
   // ── Acciones ────────────────────────────────────────────
-  const handleAbrirCuenta = async () => {
+  // Click "ABRIR CUENTA" abre modal de personalización (igual que mesera)
+  const handleAbrirCuenta = () => {
+    setNuevaCuentaAlias('')
+    setNuevaCuentaPersonas(1)
+    setNuevaCuentaArea('')
+    setError(null)
+    setModalAbrir(true)
+  }
+
+  const confirmarAbrirCuenta = async () => {
     if (abriendo) return
     setAbriendo(true)
     setError(null)
@@ -203,11 +218,14 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       await api.abrirCuenta(auth.token, {
         mesaId:         mesa.id,
         meseraId:       auth.id,
-        numeroPersonas: 1,
+        numeroPersonas: Math.max(1, parseInt(nuevaCuentaPersonas, 10) || 1),
+        nombreCliente:  nuevaCuentaAlias?.trim() || null,
+        area:           nuevaCuentaArea?.trim() || null,
       })
       const m = await cargarMesa()
       await cargarCuenta(m)
-      showToast('Cuenta abierta ✓')
+      setModalAbrir(false)
+      showToast(nuevaCuentaAlias ? `Cuenta "${nuevaCuentaAlias}" abierta` : 'Cuenta abierta')
     } catch (e) {
       setError(e.message || 'Error al abrir cuenta')
     } finally {
@@ -247,7 +265,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       // Recarga inmediata
       const c = await api.getCuenta(cuenta.id, auth.token)
       setCuenta(c)
-      showToast('Orden enviada ✓')
+      showToast('Orden enviada')
     } catch (e) {
       setError(e.message || 'Error al enviar orden')
     } finally {
@@ -268,7 +286,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       const c = await api.getCuenta(cuenta.id, auth.token)
       setCuenta(c)
       setEditarModal(false)
-      showToast('Info actualizada ✓')
+      showToast('Info actualizada')
     } catch (e) {
       setError(e.message || 'Error al editar info')
     }
@@ -284,7 +302,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       setCancelMotivo('')
       setCuenta(null)
       cargarMesa()
-      showToast('Cuenta cancelada ✓')
+      showToast('Cuenta cancelada')
     } catch (e) {
       setError(e.message || 'Error al cancelar cuenta')
     } finally {
@@ -299,7 +317,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
     try {
       if (accionSol === 'aprobar') {
         await api.adminAprobarSolicitud(auth.token, solSeleccionada.id, pinSol)
-        showToast('✅ Solicitud APROBADA')
+        showToast('Solicitud APROBADA')
       } else {
         await api.adminRechazarSolicitud(auth.token, solSeleccionada.id, pinSol)
         showToast('🚫 Solicitud RECHAZADA')
@@ -341,29 +359,84 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
     return (
       <div className="mop-root">
         <div className="mop-header">
-          <button className="mop-btn-volver" onClick={onVolver}>◀ VOLVER</button>
+          <button className="mop-btn-volver" onClick={onVolver}><Icon name="back" size={16} /> VOLVER</button>
           <h1 className="mop-titulo">Mesa #{numeroMesa}</h1>
           <div style={{ width: 100 }} />
         </div>
 
         {error && (
           <div className="mop-error">
-            ⚠ {error}
-            <button onClick={() => setError(null)}>✕</button>
+            <Icon name="warning" size={14} /> {error}
+            <button onClick={() => setError(null)} aria-label="Cerrar"><Icon name="close" size={14} /></button>
           </div>
         )}
 
         <div className="mop-empty">
-          <div className="mop-empty-icon">🪑</div>
+          <div className="mop-empty-icon"><Icon name="mesas" size={56} strokeWidth={1.2} /></div>
           <div className="mop-empty-txt">Esta mesa no tiene cuenta abierta</div>
           <button
             className="mop-btn-abrir"
             onClick={handleAbrirCuenta}
             disabled={abriendo || !mesa}
           >
-            {abriendo ? 'Abriendo…' : '+ ABRIR CUENTA'}
+            <Icon name="add" size={16} /> ABRIR CUENTA
           </button>
         </div>
+
+        {/* Modal de personalizar cuenta nueva — admin como mesera */}
+        {modalAbrir && (
+          <div className="mop-modal-overlay" onClick={() => !abriendo && setModalAbrir(false)}>
+            <div className="mop-modal" onClick={e => e.stopPropagation()}>
+              <div className="mop-modal-head">
+                <h3>Abrir cuenta en Mesa {mesa?.numero}</h3>
+                <button className="mop-modal-close" onClick={() => !abriendo && setModalAbrir(false)} aria-label="Cerrar"><Icon name="close" size={18} /></button>
+              </div>
+              <div className="mop-modal-body">
+                <label className="mop-field">
+                  <span className="mop-field-lbl">Nombre / Alias del cliente <span className="mop-field-hint">(opcional — ej. "NAU", "Mesa Juan")</span></span>
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={40}
+                    value={nuevaCuentaAlias}
+                    onChange={e => setNuevaCuentaAlias(e.target.value)}
+                    placeholder="Sin alias"
+                  />
+                </label>
+                <label className="mop-field">
+                  <span className="mop-field-lbl">Número de personas</span>
+                  <div className="mop-pers-row">
+                    <button type="button" onClick={() => setNuevaCuentaPersonas(n => Math.max(1, (parseInt(n,10)||1) - 1))}>−</button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={nuevaCuentaPersonas}
+                      onChange={e => setNuevaCuentaPersonas(e.target.value)}
+                    />
+                    <button type="button" onClick={() => setNuevaCuentaPersonas(n => Math.min(20, (parseInt(n,10)||1) + 1))}>+</button>
+                  </div>
+                </label>
+                <label className="mop-field">
+                  <span className="mop-field-lbl">Área <span className="mop-field-hint">(opcional)</span></span>
+                  <input
+                    type="text"
+                    maxLength={30}
+                    value={nuevaCuentaArea}
+                    onChange={e => setNuevaCuentaArea(e.target.value)}
+                    placeholder="Salón, Terraza, VIP…"
+                  />
+                </label>
+              </div>
+              <div className="mop-modal-footer">
+                <button className="mop-btn-cancel" onClick={() => setModalAbrir(false)} disabled={abriendo}>Cancelar</button>
+                <button className="mop-btn-confirm" onClick={confirmarAbrirCuenta} disabled={abriendo}>
+                  {abriendo ? 'Abriendo…' : (<><Icon name="check" size={16} /> ABRIR CUENTA</>)}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {toastMsg && <div className="mop-toast">{toastMsg}</div>}
       </div>
@@ -391,7 +464,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       {/* ── Banner solicitudes pendientes ── */}
       {solicitudes.length > 0 && (
         <div className="mop-banner-sol">
-          <div className="mop-banner-sol-icon">🔔</div>
+          <div className="mop-banner-sol-icon"><Icon name="bell" size={24} /></div>
           <div className="mop-banner-sol-info">
             <div className="mop-banner-sol-titulo">
               {solicitudes.length} solicitud{solicitudes.length !== 1 ? 'es' : ''} de cancelación pendiente{solicitudes.length !== 1 ? 's' : ''}
@@ -408,13 +481,13 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
                     className="mop-sol-btn mop-sol-btn-aprobar"
                     onClick={() => { setSolSel(s); setAccionSol('aprobar') }}
                   >
-                    ✓ APROBAR
+                    <Icon name="check" size={14} /> APROBAR
                   </button>
                   <button
                     className="mop-sol-btn mop-sol-btn-rechazar"
                     onClick={() => { setSolSel(s); setAccionSol('rechazar') }}
                   >
-                    ✕ RECHAZAR
+                    <Icon name="close" size={14} /> RECHAZAR
                   </button>
                 </div>
               </div>
@@ -426,13 +499,13 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       {/* ── Banner por cobrar ── */}
       {esPorCobrar && (
         <div className="mop-banner-cobrar">
-          <span className="mop-banner-cobrar-txt">⏳ Esta cuenta está EN ESPERA DE COBRO</span>
+          <span className="mop-banner-cobrar-txt">Esta cuenta está EN ESPERA DE COBRO</span>
           <button
             className="mop-banner-cobrar-btn pulse"
             onClick={() => setCobrarModal(true)}
             disabled={total <= 0}
           >
-            💰 COBRAR {fmt(total)}
+            <Icon name="cobrar" size={16} /> COBRAR {fmt(total)}
           </button>
         </div>
       )}
@@ -440,8 +513,8 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
       {/* ── Error ── */}
       {error && (
         <div className="mop-error">
-          ⚠ {error}
-          <button onClick={() => setError(null)}>✕</button>
+          <Icon name="warning" size={14} /> {error}
+          <button onClick={() => setError(null)} aria-label="Cerrar"><Icon name="close" size={14} /></button>
         </div>
       )}
 
@@ -560,19 +633,19 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
               onClick={() => setCobrarModal(true)}
               disabled={total <= 0}
             >
-              💰 COBRAR
+              <Icon name="cobrar" size={16} /> COBRAR
             </button>
             <button
               className="mop-btn-editar"
               onClick={() => setEditarModal(true)}
             >
-              ✏️ Editar info
+              <Icon name="edit" size={14} /> Editar info
             </button>
             <button
               className="mop-btn-cancelar"
               onClick={() => { setCancelModal(true); setCancelPin(''); setCancelMotivo('') }}
             >
-              🚫 Cancelar cuenta
+              <Icon name="cancel" size={14} /> Cancelar cuenta
             </button>
           </div>
 
@@ -584,7 +657,7 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
         <div className="mop-overlay" onClick={() => { if (!procesandoSol) { setSolSel(null); setAccionSol(null); setPinSol('') } }}>
           <div className="mop-modal" onClick={e => e.stopPropagation()}>
             <div className="mop-modal-header">
-              {accionSol === 'aprobar' ? '✓ APROBAR SOLICITUD' : '✕ RECHAZAR SOLICITUD'}
+              {accionSol === 'aprobar' ? 'APROBAR SOLICITUD' : 'RECHAZAR SOLICITUD'}
             </div>
             <div className="mop-modal-body">
               <div className="mop-modal-msg">

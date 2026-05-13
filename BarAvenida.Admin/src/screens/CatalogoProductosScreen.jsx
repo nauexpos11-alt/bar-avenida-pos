@@ -3,6 +3,7 @@ import { api } from '../api'
 import CategoriaModal from '../components/CategoriaModal'
 import PinAdminModal from '../components/PinAdminModal'
 import ToastContainer from '../components/Toast'
+import Icon from '../components/Icon'
 import './CatalogoProductosScreen.css'
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -55,7 +56,7 @@ function EmptyState({ mensaje }) {
     <tr>
       <td colSpan={20} className="cat-empty-cell">
         <div className="cat-empty">
-          <span className="cat-empty-icon">📦</span>
+          <span className="cat-empty-icon"><Icon name="productos" size={56} strokeWidth={1.2} /></span>
           <p className="cat-empty-msg">{mensaje}</p>
         </div>
       </td>
@@ -146,7 +147,7 @@ function TablaCategorias({ categorias, loading, onEditar, onEliminar }) {
                 <BadgeEstado activo={c.activa} />
               </td>
               <td className="cat-td cat-td-acciones">
-                <BtnAccion onClick={() => onEditar(c)} titulo="Editar" variante="edit">✏</BtnAccion>
+                <BtnAccion onClick={() => onEditar(c)} titulo="Editar" variante="edit"><Icon name="edit" size={14} /></BtnAccion>
                 <BtnAccion
                   onClick={() => onEliminar(c)}
                   titulo={c.cantidadProductosTotales > 0 ? `Tiene ${c.cantidadProductosTotales} productos — reasígnalos antes` : 'Eliminar categoría'}
@@ -208,7 +209,7 @@ function EditorProducto({ producto, categorias, auth, onGuardado, onCancelar, on
     <div className="ep-root">
       <div className="ep-header">
         <span className="ep-titulo">{esNuevo ? 'NUEVO PRODUCTO' : 'EDITAR PRODUCTO'}</span>
-        <button className="ep-close" onClick={onCancelar} title="Cerrar editor">✕</button>
+        <button className="ep-close" onClick={onCancelar} title="Cerrar editor" aria-label="Cerrar editor"><Icon name="close" size={14} /></button>
       </div>
 
       <div className="ep-fields">
@@ -575,7 +576,7 @@ export default function CatalogoProductosScreen({ auth }) {
               />
             ) : (
               <div className="cat-editor-vacio">
-                <span className="cat-editor-vacio-ico">📦</span>
+                <span className="cat-editor-vacio-ico"><Icon name="productos" size={56} strokeWidth={1.2} /></span>
                 <p className="cat-editor-vacio-msg">
                   Haz clic en un producto<br />para editar, o presiona<br />
                   <strong>+ Nuevo Producto</strong>

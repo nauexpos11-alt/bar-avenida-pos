@@ -5,6 +5,7 @@ import CobrarCuentaModal    from '../components/CobrarCuentaModal'
 import CuentaCard           from '../components/CuentaCard'
 import EditarInfoCuentaModal from '../components/EditarInfoCuentaModal'
 import MoverAreaModal       from '../components/MoverAreaModal'
+import Icon                 from '../components/Icon'
 import './CentroOperacionScreen.css'
 
 const LS_FILTROS = 'ba_centro_filtros'
@@ -212,7 +213,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
   const handleCobrado = () => {
     setModalCobrar(false); setSelId(null); setDetalle(null)
     cargarCuentas(); cargarSolicitudes()
-    mostrarToast('Cuenta cobrada ✓')
+    mostrarToast('Cuenta cobrada')
   }
   const handleAprobar = async () => {
     if (!solicitudActiva) return
@@ -220,7 +221,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
       await api.aprobarSolicitud(auth.token, solicitudActiva.id)
       cargarCuentas(); cargarSolicitudes()
       if (selId) cargarDetalle(selId)
-      mostrarToast('Solicitud aprobada ✓')
+      mostrarToast('Solicitud aprobada')
     } catch (e) { mostrarToast(e.message || 'Error', 'err') }
   }
   const handleRechazar = async () => {
@@ -237,7 +238,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
       await api.editarInfoCuenta(auth.token, detalle.id, dto)
       setModalEditar(false)
       cargarCuentas(); cargarDetalle(detalle.id)
-      mostrarToast('Info actualizada ✓')
+      mostrarToast('Info actualizada')
     } catch (e) { mostrarToast(e.message || 'Error', 'err') }
   }
   const handleMoverGuardar = async (areaNueva) => {
@@ -252,13 +253,13 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
     try {
       await api.adminAbrirCuentaRapida(auth.token, { meseraId: auth.id })
       cargarCuentas()
-      mostrarToast('Nueva barra abierta ✓')
+      mostrarToast('Nueva barra abierta')
     } catch (e) { mostrarToast(e.message || 'Error al abrir barra', 'err') }
   }
   const handleTicket = async () => {
     try {
       await api.adminReimprimirCuenta(auth.token, detalle.id)
-      mostrarToast('Ticket reimpreso ✓')
+      mostrarToast('Ticket reimpreso')
     } catch (e) { mostrarToast(e.message || 'Error al reimprimir', 'err') }
   }
 
@@ -268,7 +269,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
       {/* ── Header ── */}
       <div className="co-header">
         <div className="co-header-left">
-          <span className="co-title">🎯 CENTRO DE OPERACIÓN</span>
+          <span className="co-title"><Icon name="centro" size={18} /> CENTRO DE OPERACIÓN</span>
           <div className="co-stats">
             <span>{cuentas.length} cuenta{cuentas.length !== 1 ? 's' : ''} activa{cuentas.length !== 1 ? 's' : ''}</span>
             <span className="co-sep">·</span>
@@ -281,7 +282,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
             )}
           </div>
         </div>
-        <button className="co-btn-nueva-barra" onClick={handleNuevaBarra}>+ NUEVA BARRA</button>
+        <button className="co-btn-nueva-barra" onClick={handleNuevaBarra}><Icon name="add" size={16} /> NUEVA BARRA</button>
       </div>
 
       {/* ── Toast ── */}
@@ -358,7 +359,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
 
           {!detalle && !cargandoDet && (
             <div className="co-placeholder">
-              <div className="co-ph-ico">🎯</div>
+              <div className="co-ph-ico"><Icon name="centro" size={56} strokeWidth={1.2} /></div>
               <div className="co-ph-txt">Selecciona una cuenta del panel izquierdo</div>
             </div>
           )}
@@ -379,10 +380,10 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                     ? `Mesa ${detalle.mesaNumero}`
                     : (detalle.nombreCliente || 'BARRA')}
                   {detalle.estado === 'PorCobrar' && (
-                    <span className="co-badge-cobrar">💵 COBRANDO</span>
+                    <span className="co-badge-cobrar"><Icon name="cobrar" size={12} /> COBRANDO</span>
                   )}
                   {solicitudActiva && (
-                    <span className="co-badge-sol">🔔 SOLICITUD</span>
+                    <span className="co-badge-sol"><Icon name="bell" size={12} /> SOLICITUD</span>
                   )}
                 </div>
                 <div className="co-det-meta">
@@ -405,7 +406,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
               {solicitudActiva && (
                 <div className="co-sol-banner">
                   <div className="co-sol-info">
-                    🔔 {solicitudActiva.tipo === 'Cuenta' ? 'Cancelar cuenta' : 'Cancelar productos'}
+                    <Icon name="bell" size={14} /> {solicitudActiva.tipo === 'Cuenta' ? 'Cancelar cuenta' : 'Cancelar productos'}
                     {solicitudActiva.motivo ? ` — ${solicitudActiva.motivo}` : ''}
                     {' · '}por {solicitudActiva.meseraNombre}
                     {' · '}hace {tiempoAbierta(solicitudActiva.fechaSolicitud)}
@@ -434,7 +435,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                         </span>
                         <span className="co-ord-hora">· {fmtHora(orden.fechaEnvio)}</span>
                         {orden.esAgregado && <span className="co-ord-agr">(Agregado)</span>}
-                        {isListo && <span className="co-ord-listo">✓ Listo</span>}
+                        {isListo && <span className="co-ord-listo"><Icon name="check" size={12} /> Listo</span>}
                       </div>
                       {!isCol && (
                         <ul className="co-detalles">
@@ -477,7 +478,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                   disabled={!estaActiva}
                   onClick={() => estaActiva && setModalCobrar(true)}
                 >
-                  <span className="co-accion-ico">💵</span>
+                  <span className="co-accion-ico"><Icon name="cobrar" size={22} /></span>
                   <span>COBRAR</span>
                 </button>
                 <button
@@ -485,7 +486,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                   disabled={!estaActiva}
                   onClick={() => estaActiva && onIrPantalla?.('pos-barra', 'Barra')}
                 >
-                  <span className="co-accion-ico">➕</span>
+                  <span className="co-accion-ico"><Icon name="add" size={22} /></span>
                   <span>PROD.</span>
                 </button>
                 <button
@@ -493,7 +494,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                   disabled={!puedeEditar}
                   onClick={() => puedeEditar && setModalEditar(true)}
                 >
-                  <span className="co-accion-ico">✏️</span>
+                  <span className="co-accion-ico"><Icon name="edit" size={22} /></span>
                   <span>EDITAR</span>
                 </button>
                 <button
@@ -501,7 +502,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                   disabled={!puedeEditar}
                   onClick={() => puedeEditar && setModalMover(true)}
                 >
-                  <span className="co-accion-ico">🚪</span>
+                  <span className="co-accion-ico"><Icon name="arrow_right" size={22} /></span>
                   <span>MOVER</span>
                 </button>
                 <button
@@ -510,7 +511,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
                   onClick={puedeTicket ? handleTicket : undefined}
                   title={estaActiva ? 'El ticket se genera al cobrar' : undefined}
                 >
-                  <span className="co-accion-ico">🖨</span>
+                  <span className="co-accion-ico"><Icon name="imprimir" size={22} /></span>
                   <span>TICKET</span>
                 </button>
               </div>

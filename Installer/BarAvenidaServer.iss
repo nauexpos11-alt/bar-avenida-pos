@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.10.1
+AppVersion=1.10.2
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.10.1
+OutputBaseFilename=Bar Avenida Server Setup 1.10.2
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible

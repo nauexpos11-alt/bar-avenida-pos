@@ -2,11 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import CobrarCuentaModal from '../components/CobrarCuentaModal'
-import NumPad from '../components/NumPad'
 import './BarraRapidaAdminScreen.css'
 
 function tiempoAbierta(fechaApertura) {
-  const min = Math.floor((Date.now() - new Date(fechaApertura).getTime()) / 60000)
+  if (!fechaApertura) return ''
+  const t = new Date(fechaApertura).getTime()
+  if (Number.isNaN(t)) return ''
+  const min = Math.floor((Date.now() - t) / 60000)
   if (min < 1) return 'menos de 1 min'
   if (min < 60) return `${min} min`
   const h = Math.floor(min / 60)
@@ -27,8 +29,8 @@ export default function BarraRapidaAdminScreen({ auth }) {
   // Carrito de cobro directo
   const [carrito, setCarrito] = useState([])
 
-  // NumPad para capturar cantidad de un producto recién pulsado
-  const [pendiente, setPendiente] = useState(null) // { producto, cantidad }
+  // Item seleccionado dentro del carrito (productoId del item activo en el NumPad)
+  const [itemSelId, setItemSelId] = useState(null)
 
   // Cuentas barra viejas (panel lateral - historial)
   const [cuentasViejas, setCuentasViejas] = useState([])
@@ -97,7 +99,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
       .catch(e => console.warn('SignalR BarraRapidaAdmin:', e.message))
 
     connRef.current = conn
-    return () => conn.stop()
+    return () => { try { conn.stop() } catch {} }
   }, [auth.token, cargarCuentasViejas])
 
   const showToast = (msg) => {
@@ -106,7 +108,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
   }
 
   // ── Carrito ───────────────────────────────────────────────
-  // Click producto = suma +1 al carrito (rapido para cobros de barra)
+  // Click producto = suma +1 al carrito y lo selecciona en el NumPad
   const seleccionarProducto = (producto) => {
     setCarrito(prev => {
       const idx = prev.findIndex(x => x.productoId === producto.id)
@@ -127,9 +129,10 @@ export default function BarraRapidaAdminScreen({ auth }) {
         subtotal:   producto.precio,
       }]
     })
+    setItemSelId(producto.id)
   }
 
-  // Cambiar cantidad de un item del carrito (+1, -1, o numero directo)
+  // Cambiar cantidad de un item del carrito (+1, -1)
   const cambiarCantidad = (productoId, delta) => {
     setCarrito(prev => {
       return prev.map(x => {
@@ -139,67 +142,79 @@ export default function BarraRapidaAdminScreen({ auth }) {
         return { ...x, cantidad: nuevaCant, subtotal: nuevaCant * x.precio }
       }).filter(Boolean)
     })
-  }
-
-  // Click sobre el numero de cantidad: abre NumPad para meter cantidad grande
-  const abrirNumPadCantidad = (item) => {
-    setPendiente({ producto: { id: item.productoId, nombre: item.nombre, precio: item.precio }, cantidad: '' })
-  }
-
-  const confirmarCantidad = (cantStr) => {
-    if (!pendiente) return
-    const cant = parseInt(cantStr || '0', 10)
-    if (!cant || cant <= 0) {
-      setPendiente(null)
-      return
-    }
-    const { producto } = pendiente
+    // Si quitamos el item seleccionado, deseleccionar
     setCarrito(prev => {
-      const idx = prev.findIndex(x => x.productoId === producto.id)
-      if (idx >= 0) {
-        const next = [...prev]
-        next[idx] = {
-          ...next[idx],
-          cantidad: cant,                    // REEMPLAZA cantidad (no suma)
-          subtotal: cant * next[idx].precio,
-        }
-        return next
+      if (itemSelId === productoId && !prev.find(x => x.productoId === productoId)) {
+        setItemSelId(null)
       }
-      return [...prev, {
-        productoId: producto.id,
-        nombre:     producto.nombre,
-        precio:     producto.precio,
-        cantidad:   cant,
-        subtotal:   producto.precio * cant,
-      }]
+      return prev
     })
-    setPendiente(null)
   }
-
-  const cancelarCantidad = () => setPendiente(null)
 
   const quitarItem = (productoId) => {
     setCarrito(prev => prev.filter(x => x.productoId !== productoId))
+    if (itemSelId === productoId) setItemSelId(null)
   }
 
-  const limpiarCarrito = () => setCarrito([])
+  const limpiarCarrito = () => {
+    setCarrito([])
+    setItemSelId(null)
+  }
+
+  // Cambiar cantidad directa del item seleccionado (NumPad live)
+  const fijarCantidadItem = (productoId, nuevaCant) => {
+    if (productoId == null) return
+    const c = parseInt(nuevaCant || '0', 10)
+    if (!Number.isFinite(c) || c < 0) return
+    setCarrito(prev => prev.map(x => {
+      if (x.productoId !== productoId) return x
+      return { ...x, cantidad: c <= 0 ? 1 : c, subtotal: (c <= 0 ? 1 : c) * x.precio }
+    }))
+  }
+
+  // ── NumPad fijo: handlers ───────────────────────────────────
+  const itemSel = carrito.find(x => x.productoId === itemSelId) || null
+
+  const npPushDigit = (d) => {
+    if (!itemSel) return
+    // Si la cantidad actual del item es 1 y no se ha "tocado" aún, reemplazamos.
+    // Estrategia simple: pushDigit siempre concatena, pero limitamos a 3 dígitos.
+    const actual = String(itemSel.cantidad)
+    if (actual === '1' || actual === '0') {
+      // primer dígito reemplaza
+      fijarCantidadItem(itemSel.productoId, d)
+      return
+    }
+    if (actual.length >= 3) return
+    fijarCantidadItem(itemSel.productoId, actual + d)
+  }
+
+  const npBack = () => {
+    if (!itemSel) return
+    const actual = String(itemSel.cantidad)
+    const next = actual.slice(0, -1)
+    fijarCantidadItem(itemSel.productoId, next === '' ? '1' : next)
+  }
+
+  const npClear = () => {
+    if (!itemSel) return
+    fijarCantidadItem(itemSel.productoId, '1')
+  }
 
   // ── Cobro directo ────────────────────────────────────────
   const subtotal = carrito.reduce((s, x) => s + x.subtotal, 0)
   const totalItems = carrito.reduce((s, x) => s + x.cantidad, 0)
 
   const cuentaParaCobrar = carrito.length > 0 ? {
-    id:             null,                  // todavía no existe
+    id:             null,
     folio:          '—',
     mesaNumero:     'BARRA',
     meseraNombre:   auth?.nombre ?? 'Admin',
-    total:          subtotal,              // CobrarCuentaModal trata "subtotal" = cuenta.total
+    total:          subtotal,
     productosCount: totalItems,
   } : null
 
   const enviarCobroDirecto = async (cobroDto) => {
-    // cobroDto viene del CobrarCuentaModal con: metodoPago, montoEfectivo,
-    // montoTarjeta, efectivoRecibido, rfcCliente, razonSocialCliente, descuento
     const dto = {
       productos: carrito.map(x => ({ productoId: x.productoId, cantidad: x.cantidad })),
       metodoPago:    cobroDto.metodoPago,
@@ -210,7 +225,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
           : 0,
       montoTarjeta: cobroDto.metodoPago === 'Mixto'
         ? Number(cobroDto.montoTarjeta || 0)
-        : 0,    // en "Tarjeta" puro el back calcula sobre baseTotal
+        : 0,
       descuento:      Number(cobroDto.descuento || 0),
       imprimirTicket: true,
       rfc:            cobroDto.rfcCliente ?? null,
@@ -220,7 +235,6 @@ export default function BarraRapidaAdminScreen({ auth }) {
 
     const res = await api.adminCobroRapidoBarra(auth.token, dto)
 
-    // Adaptar al shape que CobrarCuentaModal espera mostrar en su pantalla "ok"
     return {
       id:             res.cuentaId,
       folio:          res.folio,
@@ -237,7 +251,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
   const handleCobrado = (res) => {
     setCobrarModal(false)
     setCarrito([])
-    setPendiente(null)
+    setItemSelId(null)
     if (res?.folio != null) {
       showToast(`Cobrado #${res.folio} - ${fmt(res.total)}`)
     } else {
@@ -296,17 +310,18 @@ export default function BarraRapidaAdminScreen({ auth }) {
           <span className="bra-col-titulo">PRODUCTOS</span>
           {error && (
             <button className="bra-error-pill" onClick={() => setError(null)}>
-              ⚠ {error} ✕
+              {error}  ✕
             </button>
           )}
         </div>
         <div className="bra-prods-grid">
           {productos.length === 0 ? (
             <div className="bra-prod-vacio">Sin productos en esta categoría</div>
-          ) : productos.map(p => (
+          ) : productos.map((p, i) => (
             <button
               key={p.id}
               className="bra-prod-btn"
+              style={{ '--i': i }}
               onClick={() => seleccionarProducto(p)}
             >
               <span className="bra-prod-nombre">{p.nombre}</span>
@@ -316,56 +331,113 @@ export default function BarraRapidaAdminScreen({ auth }) {
         </div>
       </div>
 
-      {/* ── COL 3: Carrito + total + cobrar ── */}
+      {/* ── COL 3: NumPad fijo + Carrito + Total + Cobrar ── */}
       <div className="bra-col-carrito">
-        <div className="bra-col-header">
-          <span className="bra-col-titulo">🍺 COBRO BARRA</span>
+
+        {/* ── NumPad fijo en la parte superior ── */}
+        <div className="bra-numpad-fixed">
+          <div className={`bra-np-display ${itemSel ? 'bra-np-display-active' : 'bra-np-display-empty'}`}>
+            {itemSel ? (
+              <>
+                <div className="bra-np-prod-line">
+                  <span className="bra-np-prod-nombre">{itemSel.nombre}</span>
+                  <span className="bra-np-prod-precio">{fmt(itemSel.precio)}</span>
+                </div>
+                <div className="bra-np-cant-line">
+                  <span className="bra-np-cant-x">x</span>
+                  <span className="bra-np-cant-val">{itemSel.cantidad}</span>
+                  <span className="bra-np-cant-sub">{fmt(itemSel.subtotal)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="bra-np-placeholder">Selecciona un producto</div>
+            )}
+          </div>
+
+          <div className="bra-np-grid">
+            {['7','8','9','4','5','6','1','2','3'].map(k => (
+              <button
+                key={k}
+                type="button"
+                className="bra-np-key"
+                disabled={!itemSel}
+                onClick={() => npPushDigit(k)}
+              >{k}</button>
+            ))}
+            <button
+              type="button"
+              className="bra-np-key bra-np-key-back"
+              disabled={!itemSel}
+              onClick={npBack}
+              aria-label="Borrar último dígito"
+            >⌫</button>
+            <button
+              type="button"
+              className="bra-np-key"
+              disabled={!itemSel}
+              onClick={() => npPushDigit('0')}
+            >0</button>
+            <button
+              type="button"
+              className="bra-np-key bra-np-key-clear"
+              disabled={!itemSel}
+              onClick={npClear}
+            >C</button>
+          </div>
+        </div>
+
+        {/* ── Header carrito ── */}
+        <div className="bra-cart-header">
+          <span className="bra-cart-titulo">COBRO BARRA</span>
           {carrito.length > 0 && (
             <button className="bra-clear-btn" onClick={limpiarCarrito} title="Vaciar carrito">
-              🗑 Vaciar
+              Vaciar
             </button>
           )}
         </div>
 
+        {/* ── Body carrito ── */}
         <div className="bra-carrito-body">
           {carrito.length === 0 ? (
             <div className="bra-carrito-vacio">
-              <div className="bra-cv-ico">🍺</div>
               <div className="bra-cv-txt">Toca un producto para empezar</div>
             </div>
           ) : (
             <div className="bra-carrito-lista">
-              {carrito.map(item => (
-                <div key={item.productoId} className="bra-cart-item">
-                  <div className="bra-cart-info">
-                    <span className="bra-cart-nombre">{item.nombre}</span>
-                    <span className="bra-cart-precio-unit">{fmt(item.precio)} c/u</span>
+              {carrito.map(item => {
+                const sel = itemSelId === item.productoId
+                return (
+                  <div
+                    key={item.productoId}
+                    className={`bra-cart-item${sel ? ' bra-cart-item-sel' : ''}`}
+                    onClick={() => setItemSelId(item.productoId)}
+                  >
+                    <div className="bra-cart-info">
+                      <span className="bra-cart-nombre">{item.nombre}</span>
+                      <span className="bra-cart-precio-unit">{fmt(item.precio)} c/u</span>
+                    </div>
+                    <div className="bra-cart-qty-controls" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="bra-qty-btn bra-qty-minus"
+                        onClick={() => cambiarCantidad(item.productoId, -1)}
+                        title="Quitar 1"
+                      >−</button>
+                      <span className="bra-qty-num">{item.cantidad}</span>
+                      <button
+                        className="bra-qty-btn bra-qty-plus"
+                        onClick={() => cambiarCantidad(item.productoId, 1)}
+                        title="Sumar 1"
+                      >+</button>
+                    </div>
+                    <div className="bra-cart-precio">{fmt(item.subtotal)}</div>
+                    <button
+                      className="bra-cart-quitar"
+                      onClick={(e) => { e.stopPropagation(); quitarItem(item.productoId) }}
+                      title="Quitar item"
+                    >×</button>
                   </div>
-                  <div className="bra-cart-qty-controls">
-                    <button
-                      className="bra-qty-btn bra-qty-minus"
-                      onClick={() => cambiarCantidad(item.productoId, -1)}
-                      title="Quitar 1"
-                    >−</button>
-                    <button
-                      className="bra-qty-num"
-                      onClick={() => abrirNumPadCantidad(item)}
-                      title="Click para escribir cantidad exacta"
-                    >{item.cantidad}</button>
-                    <button
-                      className="bra-qty-btn bra-qty-plus"
-                      onClick={() => cambiarCantidad(item.productoId, 1)}
-                      title="Sumar 1"
-                    >+</button>
-                  </div>
-                  <div className="bra-cart-precio">{fmt(item.subtotal)}</div>
-                  <button
-                    className="bra-cart-quitar"
-                    onClick={() => quitarItem(item.productoId)}
-                    title="Quitar item"
-                  >×</button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -380,37 +452,14 @@ export default function BarraRapidaAdminScreen({ auth }) {
           disabled={carrito.length === 0}
           onClick={() => setCobrarModal(true)}
         >
-          💵 COBRAR DIRECTO
+          COBRAR DIRECTO
         </button>
       </div>
 
       {/* ── Toast ── */}
-      {toastMsg && <div className="bra-toast">✅ {toastMsg}</div>}
+      {toastMsg && <div className="bra-toast">{toastMsg}</div>}
 
-      {/* ── Modal NumPad cantidad ── */}
-      {pendiente && (
-        <div className="bra-overlay" onClick={cancelarCantidad}>
-          <div className="bra-numpad-modal" onClick={e => e.stopPropagation()}>
-            <div className="bra-np-header">
-              <span className="bra-np-prod">{pendiente.producto.nombre}</span>
-              <span className="bra-np-precio">{fmt(pendiente.producto.precio)}</span>
-            </div>
-            <NumPad
-              title="¿Cuántos?"
-              value={pendiente.cantidad}
-              onChange={(v) => setPendiente(p => p ? { ...p, cantidad: v } : null)}
-              onConfirm={confirmarCantidad}
-              maxLength={3}
-              allowDecimal={false}
-            />
-            <button className="bra-np-cancel" onClick={cancelarCantidad}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal cobrar (reusa CobrarCuentaModal con onSubmit custom) ── */}
+      {/* ── Modal cobrar ── */}
       {cobrarModal && cuentaParaCobrar && (
         <CobrarCuentaModal
           cuenta={cuentaParaCobrar}
@@ -418,7 +467,7 @@ export default function BarraRapidaAdminScreen({ auth }) {
           onClose={() => setCobrarModal(false)}
           onCobrado={handleCobrado}
           onSubmit={enviarCobroDirecto}
-          btnLabel="💵 COBRAR DIRECTO"
+          btnLabel="COBRAR DIRECTO"
         />
       )}
 

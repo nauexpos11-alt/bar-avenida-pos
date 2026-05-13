@@ -67,8 +67,11 @@ public class OrdenDto
     public int Id { get; set; }
     public int CuentaId { get; set; }
     public int NumeroOrden { get; set; }
+    public int? MesaId { get; set; }
     public string MesaNumero { get; set; } = string.Empty;
     public string MeseraNombre { get; set; } = string.Empty;
+    public string? NombreCliente { get; set; }   // alias del cliente (ej "NAU", "Mesa Juan")
+    public int? Folio { get; set; }               // folio diario de la cuenta
     public DateTime FechaEnvio { get; set; }
     public DateTime? FechaListo { get; set; }
     public string Estado { get; set; } = string.Empty;

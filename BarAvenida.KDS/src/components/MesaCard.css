@@ -173,12 +173,57 @@
 }
 
 .mc-mesera {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-soft);
   letter-spacing: -0.008em;
   position: relative;
   z-index: 1;
+}
+.mc-mesera-lbl {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-faint, #777);
+  text-transform: uppercase;
+}
+.mc-mesera-nom {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.011em;
+}
+
+/* Alias del cliente (ej "NAU", "Mesa Juan") - debajo del numero de mesa */
+.mc-alias {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--gold, #f0c842);
+  letter-spacing: -0.015em;
+  margin-top: 2px;
+  text-shadow: 0 1px 8px rgba(240, 200, 66, 0.35);
+  position: relative;
+  z-index: 1;
+}
+
+/* Folio pill al lado del numero de mesa */
+.mc-folio-pill {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, rgba(240, 200, 66, 0.2), rgba(251, 191, 36, 0.15));
+  border: 1px solid rgba(240, 200, 66, 0.45);
+  border-radius: 999px;
+  color: var(--gold, #f0c842);
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  text-shadow: 0 1px 4px rgba(240, 200, 66, 0.4);
+  font-variant-numeric: tabular-nums;
 }
 
 .mc-sep {

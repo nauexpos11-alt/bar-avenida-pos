@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import ReportesPanel from '../components/ReportesPanel'
 import ModalCobrar   from '../components/ModalCobrar'
+import Icon          from '../components/Icon'
 import logoBar       from '../assets/logo-bar-avenida.jpeg'
 import './DashboardScreen.css'
 
@@ -98,7 +99,7 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
         setCuentaSel(null)
         setMesaSel(null)
       }
-      addToast('Cuenta cobrada ✓', 'success')
+      addToast('Cuenta cobrada', 'success')
     })
 
     conn.on('CuentaActualizada', (cuenta) => {
@@ -123,7 +124,7 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
       }
     })
 
-    conn.on('OrdenLista',      () => addToast('Orden lista en barra ✓', 'success'))
+    conn.on('OrdenLista',      () => addToast('Orden lista en barra', 'success'))
     conn.on('VentaRegistrada', cargarKpis)
     conn.on('VentaCobrada',    () => reloadRef.current())
 
@@ -222,19 +223,24 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
 
           {/* Encabezado del panel izquierdo */}
           <div className="dash-left-header">
-            <img src={logoBar} className="dash-logo-sm" alt="Bar Avenida" />
+            <div className="dash-logo-wrap">
+              <img src={logoBar} className="dash-logo-sm" alt="Bar Avenida" />
+              <span className="dash-logo-orbit dash-logo-orbit-1" />
+              <span className="dash-logo-orbit dash-logo-orbit-2" />
+              <span className="dash-logo-orbit dash-logo-orbit-3" />
+            </div>
             <span className="dash-left-title">BAR AVENIDA</span>
             <span className={`conn-pill ${connected ? 'conn-ok' : 'conn-err'}`}>
-              ● {connected ? 'En línea' : 'Sin señal'}
+              <span className="conn-dot" /> {connected ? 'En línea' : 'Sin señal'}
             </span>
           </div>
 
           {/* KPIs 2×2 */}
           <div className="kpis-grid">
-            <KpiCard color="gold"  icon="💰" label="VENTAS HOY"     value={fmt(kpis?.ventasHoy ?? kpis?.totalVentas)}         animIndex={0} />
-            <KpiCard color="red"   icon="🍺" label="MESAS ABIERTAS" value={kpis?.cuentasAbiertas ?? ocupadas}                  animIndex={1} />
-            <KpiCard color="blue"  icon="📋" label="TOTAL EN MESAS" value={fmt(kpis?.totalEnMesasAbiertas ?? kpis?.totalMesas)} animIndex={2} />
-            <KpiCard color="green" icon="🎯" label="TICKET PROM."   value={fmt(kpis?.ticketPromedio ?? kpis?.promedioTicket)}  animIndex={3} />
+            <KpiCard color="gold"  iconName="cobrar"  label="VENTAS HOY"     value={fmt(kpis?.ventasHoy ?? kpis?.totalVentas)}         animIndex={0} />
+            <KpiCard color="red"   iconName="cerveza" label="MESAS ABIERTAS" value={kpis?.cuentasAbiertas ?? ocupadas}                  animIndex={1} />
+            <KpiCard color="blue"  iconName="cuentas" label="TOTAL EN MESAS" value={fmt(kpis?.totalEnMesasAbiertas ?? kpis?.totalMesas)} animIndex={2} />
+            <KpiCard color="green" iconName="centro"  label="TICKET PROM."   value={fmt(kpis?.ticketPromedio ?? kpis?.promedioTicket)}  animIndex={3} />
           </div>
 
           {/* Separador */}
@@ -251,17 +257,27 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
               cuentasAbiertas.map(c => {
                 const mesaN  = c.mesaNumero ?? c.mesa?.numero ?? c.mesaId ?? '?'
                 const mesera = c.nombreMesera ?? c.mesera?.nombre ?? '—'
+                const alias  = c.nombreCliente ?? c.aliasCuenta ?? c.alias ?? null
+                const folio  = c.folio ?? null
                 const isSel  = cuentaSel?.id === c.id
+                // Etiqueta principal: alias si existe (NAU, "Mesa Juan"), sino M{numero}
+                const labelPrincipal = alias ? alias : `M${mesaN}`
                 return (
                   <div
                     key={c.id}
                     className={`cuenta-row${isSel ? ' cuenta-row-sel' : ''}`}
                     onClick={() => handleTapMesa({ id: c.mesaId ?? c.mesa?.id, numero: mesaN, estado: 'Ocupada', cuentaId: c.id })}
                   >
-                    <span className="cr-mesa">M{mesaN}</span>
+                    <span className="cr-mesa" title={alias ? `Mesa ${mesaN} · ${alias}` : `Mesa ${mesaN}`}>
+                      {labelPrincipal}
+                      {folio != null && <span className="cr-folio">#{folio}</span>}
+                    </span>
                     <div className="cr-info">
                       <span className="cr-mesera">{mesera}</span>
-                      <span className="cr-hora">{fmtHora(c.fechaApertura ?? c.createdAt)}</span>
+                      <span className="cr-hora">
+                        {alias && <span className="cr-mesa-num">M{mesaN} · </span>}
+                        {fmtHora(c.fechaApertura ?? c.createdAt)}
+                      </span>
                     </div>
                     <span className="cr-total">{fmt(c.total)}</span>
                     {(c.total === 0 || c.total === '0') && (
@@ -270,11 +286,13 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
                         title="Cancelar mesa vacía"
                         onClick={e => {
                           e.stopPropagation()
-                          const mins = Math.round((Date.now() - new Date(c.fechaApertura ?? c.createdAt).getTime()) / 60000)
+                          const fechaRaw = c.fechaApertura ?? c.createdAt
+                          const t = fechaRaw ? new Date(fechaRaw).getTime() : NaN
+                          const mins = Number.isFinite(t) ? Math.round((Date.now() - t) / 60000) : 0
                           setCancelModal({ cuentaId: c.id, mesaN, minutosAbierta: mins })
                         }}
                       >
-                        ✕
+                        <Icon name="close" size={14} />
                       </button>
                     )}
                   </div>
@@ -294,7 +312,7 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
               <span className="ms-item ms-libres">{mesas.length - ocupadas} libres</span>
               <span className="ms-item ms-total">{mesas.length} total</span>
               <button className="btn-reportes ripple" onClick={() => setShowReportes(true)}>
-                📊 RESUMEN HOY
+                <Icon name="reportes" size={16} /> RESUMEN HOY
               </button>
             </div>
             <div className="mesas-grid">
@@ -313,6 +331,9 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
                     <span className="mc-num">{mesa.numero}</span>
                     {ocu ? (
                       <>
+                        {mesa.aliasCuenta && (
+                          <span className="mc-alias">{mesa.aliasCuenta}</span>
+                        )}
                         <span className="mc-mes">{(mesa.nombreMesera ?? mesa.meseraActual ?? '').split(' ')[0]}</span>
                         <span className="mc-tot">{fmt(mesa.totalActual ?? 0)}</span>
                       </>
@@ -337,7 +358,7 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
                     <span className="det-mesa">MESA {cuentaSel.mesaNumero ?? mesaSel?.numero ?? '?'}</span>
                     <span className="det-mesera">{cuentaSel.nombreMesera ?? '—'}</span>
                   </div>
-                  <button className="det-close" onClick={() => { setCuentaSel(null); setMesaSel(null) }}>✕</button>
+                  <button className="det-close" onClick={() => { setCuentaSel(null); setMesaSel(null) }} aria-label="Cerrar"><Icon name="close" size={16} /></button>
                 </div>
 
                 <div className="det-total-box">
@@ -422,13 +443,13 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────
-function KpiCard({ icon, label, value, color, animIndex }) {
+function KpiCard({ iconName, label, value, color, animIndex }) {
   return (
     <div
       className={`kpi-card kpi-${color}`}
       style={{ animationDelay: `${animIndex * 50}ms` }}
     >
-      <span className="kpi-icon">{icon}</span>
+      <span className="kpi-icon"><Icon name={iconName} size={22} /></span>
       <span className="kpi-value">{value ?? '—'}</span>
       <span className="kpi-label">{label}</span>
     </div>

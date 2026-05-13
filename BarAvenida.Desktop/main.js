@@ -115,14 +115,20 @@ async function arrancarFlujoCarga() {
 }
 
 function cargarApp(servidorUrl) {
-  const url = `${servidorUrl}/admin`
-  win.loadURL(url, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+  // Cache-busting: timestamp único cada arranque para forzar index.html fresco
+  // (los assets ya tienen hash en su filename, esto solo invalida el HTML root)
+  const cb = Date.now()
+  const url = `${servidorUrl}/admin/?_=${cb}`
+  win.loadURL(url, { extraHeaders: 'pragma: no-cache\ncache-control: no-cache, no-store, must-revalidate\n' }).catch(() => {})
 
   win.webContents.removeAllListeners('did-fail-load')
   win.webContents.on('did-fail-load', (_event, _code, _desc, urlFallida) => {
     if (urlFallida === url || urlFallida.startsWith(servidorUrl)) {
       setTimeout(() => {
-        if (win) win.loadURL(url, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+        if (win) {
+          const cb2 = Date.now()
+          win.loadURL(`${servidorUrl}/admin/?_=${cb2}`, { extraHeaders: 'pragma: no-cache\ncache-control: no-cache\n' }).catch(() => {})
+        }
       }, RETRY_DELAY)
     }
   })

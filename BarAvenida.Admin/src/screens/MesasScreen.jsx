@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import ToastContainer from '../components/Toast'
+import ModalConfirmar from '../components/ModalConfirmar'
+import Icon from '../components/Icon'
 import './MesasScreen.css'
 
 const VACIO = { numero: '', areaId: '', capacidad: 4, activa: true }
@@ -16,6 +18,8 @@ export default function MesasScreen({ auth, onVolver }) {
   const [form,              setForm]              = useState(VACIO)
   const [filtroArea,        setFiltroArea]        = useState('')
   const [seleccion,         setSeleccion]         = useState(new Set())
+  const [confirmDelete,     setConfirmDelete]     = useState(null)        // mesa individual
+  const [confirmBulk,       setConfirmBulk]       = useState(false)
 
   const toast = useCallback((msg, tipo = 'ok') => {
     const id = Date.now()
@@ -38,6 +42,15 @@ export default function MesasScreen({ auth, onVolver }) {
   }, [auth.token, toast])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useEffect(() => {
+    if (!modal && !confirmDelete && !confirmBulk) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setModal(null); setConfirmDelete(null); setConfirmBulk(false) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [modal, confirmDelete, confirmBulk])
 
   const mesasFiltradas = filtroArea ? mesas.filter(m => m.areaId === Number(filtroArea)) : mesas
   const todosSeleccionados = mesasFiltradas.length > 0 && mesasFiltradas.every(m => seleccion.has(m.id))
@@ -89,16 +102,26 @@ export default function MesasScreen({ auth, onVolver }) {
     finally     { setGuardando(false) }
   }
 
-  const handleEliminar = async (m) => {
-    if (!confirm(`¿Eliminar la mesa "${m.numero}"?`)) return
+  const handleEliminar = (m) => { setConfirmDelete(m) }
+
+  const ejecutarEliminar = async () => {
+    const m = confirmDelete
+    setConfirmDelete(null)
+    if (!m) return
     try { await api.adminDeleteMesa(auth.token, m.id); toast('Mesa eliminada'); cargar() }
     catch (e) { toast(e.message, 'error') }
   }
 
-  const handleEliminarMasivo = async () => {
+  const handleEliminarMasivo = () => {
     const ids = [...seleccion].filter(id => mesasFiltradas.some(m => m.id === id))
     if (ids.length === 0) return
-    if (!confirm(`¿Eliminar ${ids.length} mesa(s) seleccionada(s)? Esta acción no se puede deshacer.`)) return
+    setConfirmBulk(true)
+  }
+
+  const ejecutarEliminarMasivo = async () => {
+    setConfirmBulk(false)
+    const ids = [...seleccion].filter(id => mesasFiltradas.some(m => m.id === id))
+    if (ids.length === 0) return
 
     setEliminandoMasivo(true)
     let ok = 0, errores = 0
@@ -129,9 +152,9 @@ export default function MesasScreen({ auth, onVolver }) {
             <option value="">Todas las áreas</option>
             {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
-          <button className="ms-btn-add" onClick={abrirNuevo}>+ Nueva mesa</button>
-          <button className="ms-btn-x"   onClick={cargar} title="Refrescar">↻</button>
-          <button className="ms-btn-x"   onClick={onVolver}>✕</button>
+          <button className="ms-btn-add" onClick={abrirNuevo}><Icon name="add" size={14} /> Nueva mesa</button>
+          <button className="ms-btn-x"   onClick={cargar} title="Refrescar" aria-label="Refrescar"><Icon name="refresh" size={14} /></button>
+          <button className="ms-btn-x"   onClick={onVolver} aria-label="Cerrar"><Icon name="close" size={14} /></button>
         </div>
       </div>
 
@@ -144,9 +167,9 @@ export default function MesasScreen({ auth, onVolver }) {
             onClick={handleEliminarMasivo}
             disabled={eliminandoMasivo}
           >
-            {eliminandoMasivo ? 'Eliminando...' : '🗑️ Eliminar seleccionadas'}
+            {eliminandoMasivo ? 'Eliminando...' : (<><Icon name="trash" size={14} /> Eliminar seleccionadas</>)}
           </button>
-          <button className="ms-bulk-clear" onClick={() => setSeleccion(new Set())}>✖ Limpiar selección</button>
+          <button className="ms-bulk-clear" onClick={() => setSeleccion(new Set())}><Icon name="close" size={14} /> Limpiar selección</button>
         </div>
       )}
 
@@ -204,12 +227,34 @@ export default function MesasScreen({ auth, onVolver }) {
         )}
       </div>
 
+      {confirmDelete && (
+        <ModalConfirmar
+          titulo={`¿Eliminar la mesa "${confirmDelete.numero}"?`}
+          mensaje="Esta acción no se puede deshacer."
+          labelConfirmar="Eliminar"
+          variante="danger"
+          onConfirmar={ejecutarEliminar}
+          onCancelar={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {confirmBulk && (
+        <ModalConfirmar
+          titulo={`¿Eliminar ${seleccionActiva.length} mesa(s)?`}
+          mensaje="Esta acción no se puede deshacer. Mesas con cuentas activas no se podrán eliminar."
+          labelConfirmar="Eliminar todas"
+          variante="danger"
+          onConfirmar={ejecutarEliminarMasivo}
+          onCancelar={() => setConfirmBulk(false)}
+        />
+      )}
+
       {modal && (
         <div className="ms-overlay" onClick={() => setModal(null)}>
           <div className="ms-modal" onClick={e => e.stopPropagation()}>
             <div className="ms-modal-header">
               <span>{modal.modo === 'nuevo' ? 'Nueva mesa' : 'Editar mesa'}</span>
-              <button className="ms-btn-x" onClick={() => setModal(null)}>✕</button>
+              <button className="ms-btn-x" onClick={() => setModal(null)} aria-label="Cerrar"><Icon name="close" size={14} /></button>
             </div>
             <div className="ms-modal-body">
               <label className="ms-lbl">Número *</label>

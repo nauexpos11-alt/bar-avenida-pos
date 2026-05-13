@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
 import { useServerClock } from '../hooks/useServerClock'
+import Icon from '../components/Icon'
 import './PuntoVentaHomeScreen.css'
 
 const fmt0 = (n) => `$${Number(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`
@@ -136,7 +137,7 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
               {duracion(datosTurno.fechaApertura)}
             </span>
           ) : (
-            <span className="pvh-turno-cerrado">⚠ Turno cerrado — abre uno para operar</span>
+            <span className="pvh-turno-cerrado"><Icon name="warning" size={14} /> Turno cerrado — abre uno para operar</span>
           )}
         </div>
       </div>
@@ -146,7 +147,7 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
 
         {/* Centro de Operación */}
         <button className="pvh-card pvh-card-centro" onClick={() => ir('pos-centro', 'Centro')}>
-          <div className="pvh-card-ico">🎯</div>
+          <div className="pvh-card-ico"><Icon name="centro" size={42} strokeWidth={1.4} /></div>
           <div className="pvh-card-title">CENTRO DE OPERACIÓN</div>
           <div className="pvh-card-div" />
           <div className="pvh-card-stats">
@@ -164,7 +165,7 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
 
         {/* Barra */}
         <button className="pvh-card pvh-card-barra" onClick={() => ir('pos-barra', 'Barra')}>
-          <div className="pvh-card-ico">🍺</div>
+          <div className="pvh-card-ico"><Icon name="cerveza" size={42} strokeWidth={1.4} /></div>
           <div className="pvh-card-title">BARRA</div>
           <div className="pvh-card-div" />
           <div className="pvh-card-stats">
@@ -182,7 +183,7 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
 
         {/* Caja */}
         <button className="pvh-card pvh-card-caja" onClick={() => ir('caja-apertura-turno', 'Caja')}>
-          <div className="pvh-card-ico">💰</div>
+          <div className="pvh-card-ico"><Icon name="caja" size={42} strokeWidth={1.4} /></div>
           <div className="pvh-card-title">CAJA</div>
           <div className="pvh-card-div" />
           <div className="pvh-card-stats">
@@ -202,7 +203,7 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
 
         {/* Reportes */}
         <button className="pvh-card pvh-card-rep" onClick={() => ir('rep-dashboard-live', 'Dashboard vivo')}>
-          <div className="pvh-card-ico">📊</div>
+          <div className="pvh-card-ico"><Icon name="reportes" size={42} strokeWidth={1.4} /></div>
           <div className="pvh-card-title">REPORTES</div>
           <div className="pvh-card-div" />
           <div className="pvh-card-stats">
@@ -230,10 +231,10 @@ export default function PuntoVentaHomeScreen({ auth, onIrPantalla }) {
             className="pvh-footer-btn pvh-footer-sol"
             onClick={() => ir('solicitudes-pendientes', 'Solicitudes')}
           >
-            🔔 {solicitudes} solicitud{solicitudes !== 1 ? 'es' : ''} pendiente{solicitudes !== 1 ? 's' : ''}
+            <Icon name="bell" size={16} /> {solicitudes} solicitud{solicitudes !== 1 ? 'es' : ''} pendiente{solicitudes !== 1 ? 's' : ''}
           </button>
         ) : (
-          <span className="pvh-footer-ok">✓ Sin solicitudes pendientes</span>
+          <span className="pvh-footer-ok"><Icon name="check" size={14} /> Sin solicitudes pendientes</span>
         )}
       </div>
 

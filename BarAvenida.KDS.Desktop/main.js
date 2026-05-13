@@ -99,12 +99,19 @@ async function arrancarFlujoCarga() {
 }
 
 function cargarApp(servidorUrl) {
-  const url = `${servidorUrl}${RUTA_KDS}`
-  win.loadURL(url).catch(() => {})
+  // Cache-busting: timestamp para forzar index.html fresco cada arranque
+  const cb = Date.now()
+  const url = `${servidorUrl}${RUTA_KDS}?_=${cb}`
+  win.loadURL(url, { extraHeaders: 'pragma: no-cache\ncache-control: no-cache, no-store, must-revalidate\n' }).catch(() => {})
   win.webContents.removeAllListeners('did-fail-load')
   win.webContents.on('did-fail-load', (_e, _c, _d, urlFallida) => {
-    if (urlFallida === url || urlFallida.startsWith(servidorUrl)) {
-      setTimeout(() => { if (win) win.loadURL(url).catch(() => {}) }, RETRY_DELAY)
+    if (urlFallida.startsWith(servidorUrl)) {
+      setTimeout(() => {
+        if (win) {
+          const cb2 = Date.now()
+          win.loadURL(`${servidorUrl}${RUTA_KDS}?_=${cb2}`, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+        }
+      }, RETRY_DELAY)
     }
   })
 }

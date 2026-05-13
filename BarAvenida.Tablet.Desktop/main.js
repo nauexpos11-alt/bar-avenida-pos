@@ -107,14 +107,18 @@ async function arrancarFlujoCarga() {
 }
 
 function cargarApp(servidorUrl) {
-  const url = `${servidorUrl}/tablet/`
-  win.loadURL(url, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+  const cb = Date.now()
+  const url = `${servidorUrl}/tablet/?_=${cb}`
+  win.loadURL(url, { extraHeaders: 'pragma: no-cache\ncache-control: no-cache, no-store, must-revalidate\n' }).catch(() => {})
 
   win.webContents.removeAllListeners('did-fail-load')
   win.webContents.on('did-fail-load', (_event, _code, _desc, urlFallida) => {
-    if (urlFallida === url || urlFallida.startsWith(servidorUrl)) {
+    if (urlFallida.startsWith(servidorUrl)) {
       setTimeout(() => {
-        if (win) win.loadURL(url, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+        if (win) {
+          const cb2 = Date.now()
+          win.loadURL(`${servidorUrl}/tablet/?_=${cb2}`, { extraHeaders: 'pragma: no-cache\n' }).catch(() => {})
+        }
       }, RETRY_DELAY)
     }
   })

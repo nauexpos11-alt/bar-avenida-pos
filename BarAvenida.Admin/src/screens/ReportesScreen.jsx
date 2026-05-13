@@ -4,10 +4,11 @@ import LineChart  from '../components/charts/LineChart'
 import BarChartH from '../components/charts/BarChartH'
 import BarChartV from '../components/charts/BarChartV'
 import PieChart  from '../components/charts/PieChart'
+import Icon from '../components/Icon'
 import './ReportesScreen.css'
 
 const TABS = [
-  { key: 'vendidos-hoy', label: '🍺 Productos vendidos hoy' },
+  { key: 'vendidos-hoy', label: 'Productos vendidos hoy' },
   { key: 'ventas',       label: 'Ventas'         },
   { key: 'productos',    label: 'Productos top'  },
   { key: 'meseros',      label: 'Meseros'        },
@@ -220,7 +221,7 @@ function TabVendidosHoy({ data }) {
           <div className="vh-total-line">TOTAL VENDIDO HOY: <span className="vh-total-amt">{fmtMXN(0)}</span></div>
         </div>
         <div className="vh-empty">
-          <div className="vh-empty-icon">🍻</div>
+          <div className="vh-empty-icon"><Icon name="cerveza" size={56} strokeWidth={1.2} /></div>
           <div className="vh-empty-title">Aún no hay productos vendidos hoy</div>
           <div className="vh-empty-sub">En cuanto se cobre una cuenta, los productos aparecerán aquí.</div>
         </div>

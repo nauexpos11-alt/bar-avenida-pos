@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import ToastContainer from '../components/Toast'
+import Icon from '../components/Icon'
 import './CortesCajaScreen.css'
 
 const fmt = n => `$${Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -44,7 +45,7 @@ export default function CortesCajaScreen({ auth, tab = 'x', onVolver }) {
           <div className="cc-breadcrumb">CAJA &rsaquo; Cortes de caja</div>
         </div>
         {onVolver && (
-          <button className="cc-btn-x" onClick={onVolver} title="Volver al dashboard">✕</button>
+          <button className="cc-btn-x" onClick={onVolver} title="Volver al dashboard" aria-label="Cerrar"><Icon name="close" size={14} /></button>
         )}
       </div>
 
@@ -107,7 +108,7 @@ function TabX({ auth, toast }) {
       // Si hay un corte Z guardado (id existente), lo reimprimimos; si no, avisamos
       if (corte.id) {
         const r = await api.adminImprimirCorte(auth.token, corte.id, 'X')
-        toast(r.modoSimulado ? '📄 Archivos simulados regenerados' : (r.mensaje || 'Impreso'))
+        toast(r.modoSimulado ? 'Archivos simulados regenerados' : (r.mensaje || 'Impreso'))
       } else {
         toast('El Corte X es solo una vista previa. Usa Corte Z para generar archivos persistentes.', 'error')
       }
@@ -145,7 +146,7 @@ function TabX({ auth, toast }) {
               disabled={imprimiendo || !corte.id}
               title="Solo funciona si hay un Corte Z guardado"
             >
-              {imprimiendo ? 'Generando...' : '🖨️ Simular impresión'}
+              {imprimiendo ? 'Generando...' : (<><Icon name="imprimir" size={14} /> Simular impresión</>)}
             </button>
           </div>
         </>
@@ -201,7 +202,7 @@ function TabZ({ auth, toast }) {
       setModal(false)
       setTurno(null)
       setPreview(null)
-      toast(corte?.modoSimulado ? '📄 Corte Z generado — archivos simulados creados' : '✅ Corte Z generado y turno cerrado')
+      toast(corte?.modoSimulado ? 'Corte Z generado — archivos simulados creados' : 'Corte Z generado y turno cerrado')
     } catch (e) {
       toast(e.message || 'Error al generar Corte Z', 'error')
     } finally {
@@ -219,11 +220,11 @@ function TabZ({ auth, toast }) {
     return (
       <div className="cc-tab-body">
         <div className="cc-resultado-ok">
-          <span className="cc-resultado-icon">✅</span>
+          <span className="cc-resultado-icon"><Icon name="check" size={28} /></span>
           <h3>Turno cerrado — Corte Z #{resultado.id} generado</h3>
           <p>{fmtFecha(resultado.fecha)}</p>
           {resultado.modoSimulado && (
-            <p className="cc-sim-aviso">📄 Archivos simulados guardados en F:\BarAvenida\TicketsImpresos\</p>
+            <p className="cc-sim-aviso">Archivos simulados guardados en TicketsImpresos/</p>
           )}
           <CorteKpis corte={resultado} />
           <button className="cc-btn-ref" onClick={() => setResultado(null)} style={{ marginTop: 16 }}>
@@ -358,7 +359,7 @@ function TabHistorico({ auth, toast }) {
     setReimprimiendo(corte.id)
     try {
       const r = await api.adminImprimirCorte(auth.token, corte.id, corte.tipo)
-      toast(r.modoSimulado ? '📄 Archivos simulados regenerados' : r.mensaje)
+      toast(r.modoSimulado ? 'Archivos simulados regenerados' : r.mensaje)
     } catch (e) {
       toast(e.message, 'error')
     } finally {
@@ -433,7 +434,7 @@ function TabHistorico({ auth, toast }) {
                     disabled={reimprimiendo === c.id}
                     title="Reimprimir / Regenerar archivos"
                   >
-                    {reimprimiendo === c.id ? '...' : '🖨️'}
+                    {reimprimiendo === c.id ? '...' : <Icon name="imprimir" size={14} />}
                   </button>
                 </td>
               </tr>
@@ -554,7 +555,7 @@ function TabIncidentes({ auth, toast }) {
           <tbody>
             {incidentes.length === 0 ? (
               <tr><td colSpan={10} className="cc-vacio">
-                {cargando ? 'Cargando...' : 'Sin incidentes en el rango seleccionado ✅'}
+                {cargando ? 'Cargando...' : 'Sin incidentes en el rango seleccionado'}
               </td></tr>
             ) : incidentes.map((inc, i) => (
               <tr key={inc.id} className={`cc-fila${i % 2 === 0 ? ' cc-par' : ' cc-impar'}`}>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '../api'
 import ToastContainer from '../components/Toast'
+import Icon from '../components/Icon'
 import './AuditoriaScreen.css'
 
 const PAGE_SIZE = 50
@@ -219,7 +220,7 @@ export default function AuditoriaScreen({ auth, onVolver }) {
       {/* Header */}
       <div className="aud-header">
         <button className="aud-back" onClick={onVolver}>← Volver</button>
-        <h2 className="aud-title">🔍 Auditoría del sistema</h2>
+        <h2 className="aud-title"><Icon name="audit" size={20} /> Auditoría del sistema</h2>
       </div>
 
       {/* Filtros */}

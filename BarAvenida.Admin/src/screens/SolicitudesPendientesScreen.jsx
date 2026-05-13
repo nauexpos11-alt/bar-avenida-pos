@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { api, API_URL } from '../api'
+import Icon from '../components/Icon'
 import './SolicitudesPendientesScreen.css'
 
 function tiempoEspera(fechaSolicitud) {
-  const minutos = Math.floor((Date.now() - new Date(fechaSolicitud).getTime()) / 60000)
+  if (!fechaSolicitud) return '—'
+  const t = new Date(fechaSolicitud).getTime()
+  if (!Number.isFinite(t)) return '—'
+  const minutos = Math.floor((Date.now() - t) / 60000)
   if (minutos < 1)  return 'menos de 1 min'
   if (minutos < 60) return `${minutos} min`
   const h = Math.floor(minutos / 60)
@@ -46,7 +50,16 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { cargarSolicitudes() }, [])
+
+  // Esc para cerrar modal de confirmación
+  useEffect(() => {
+    if (!confirmDialog) return
+    const onKey = (e) => { if (e.key === 'Escape') setConfirm(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [confirmDialog])
 
   // ── SignalR ─────────────────────────────────────
   useEffect(() => {
@@ -75,10 +88,10 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
     try {
       if (accion === 'aprobar') {
         await api.aprobarSolicitud(auth.token, id)
-        setToastMsg('✅ Solicitud APROBADA — productos cancelados')
+        setToastMsg('Solicitud APROBADA — productos cancelados')
       } else {
         await api.rechazarSolicitud(auth.token, id)
-        setToastMsg('🚫 Solicitud RECHAZADA — productos conservados')
+        setToastMsg('Solicitud RECHAZADA — productos conservados')
       }
       setTimeout(() => setToastMsg(null), 3500)
       // Quitar de la lista inmediatamente para feedback rápido
@@ -101,16 +114,16 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
 
       {/* ── Header ── */}
       <div className="solp-header">
-        <button className="solp-btn-volver" onClick={onVolver}>◀ VOLVER</button>
-        <h1 className="solp-titulo">🔔 SOLICITUDES PENDIENTES</h1>
-        <button className="solp-btn-refresh" onClick={cargarSolicitudes} title="Recargar">↻</button>
+        <button className="solp-btn-volver" onClick={onVolver}><Icon name="back" size={16} /> VOLVER</button>
+        <h1 className="solp-titulo"><Icon name="bell" size={20} /> SOLICITUDES PENDIENTES</h1>
+        <button className="solp-btn-refresh" onClick={cargarSolicitudes} title="Recargar" aria-label="Recargar"><Icon name="refresh" size={16} /></button>
       </div>
 
       {/* ── Error ── */}
       {error && (
         <div className="solp-error-bar">
-          ⚠ {error}
-          <button onClick={() => setError(null)}>✕</button>
+          <Icon name="warning" size={14} /> {error}
+          <button onClick={() => setError(null)} aria-label="Cerrar"><Icon name="close" size={14} /></button>
         </div>
       )}
 
@@ -135,7 +148,7 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
           <div className="solp-loading">Cargando solicitudes...</div>
         ) : solicitudes.length === 0 ? (
           <div className="solp-vacio">
-            <div className="solp-vacio-ico">✅</div>
+            <div className="solp-vacio-ico"><Icon name="check" size={56} strokeWidth={1.4} /></div>
             <div className="solp-vacio-txt">Sin solicitudes pendientes</div>
             <div className="solp-vacio-sub">Cuando una mesera solicite una cancelación, aparecerá aquí</div>
           </div>
@@ -158,7 +171,7 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
                   <div className="solp-mesa-row">
                     <div className="solp-mesa">Mesa {s.mesaNumero}</div>
                     <div className={`solp-tipo-badge solp-tipo-${esTipoCuenta ? 'cuenta' : 'producto'}`}>
-                      {esTipoCuenta ? '🚫 CUENTA COMPLETA' : '📋 PRODUCTOS'}
+                      {esTipoCuenta ? <><Icon name="cancel" size={12} /> CUENTA COMPLETA</> : <><Icon name="cuentas" size={12} /> PRODUCTOS</>}
                     </div>
                   </div>
 
@@ -193,7 +206,7 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
 
                   {esTipoCuenta && (
                     <div className="solp-cuenta-warn">
-                      ⚠ Se cancelará la cuenta completa
+                      <Icon name="warning" size={14} /> Se cancelará la cuenta completa
                     </div>
                   )}
 
@@ -205,14 +218,14 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
                       onClick={() => pedirConfirmacion(s, 'rechazar')}
                       disabled={procesando}
                     >
-                      {procesando ? '...' : '✕ RECHAZAR'}
+                      {procesando ? '...' : (<><Icon name="close" size={14} /> RECHAZAR</>)}
                     </button>
                     <button
                       className="solp-btn-aprobar"
                       onClick={() => pedirConfirmacion(s, 'aprobar')}
                       disabled={procesando}
                     >
-                      {procesando ? '...' : '✓ APROBAR'}
+                      {procesando ? '...' : (<><Icon name="check" size={14} /> APROBAR</>)}
                     </button>
                   </div>
 
@@ -228,7 +241,7 @@ export default function SolicitudesPendientesScreen({ auth, onVolver }) {
         <div className="solp-modal-overlay" onClick={() => setConfirm(null)}>
           <div className="solp-modal" onClick={e => e.stopPropagation()}>
             <div className="solp-modal-titulo">
-              {confirmDialog.accion === 'aprobar' ? '✓ Aprobar solicitud' : '✕ Rechazar solicitud'}
+              {confirmDialog.accion === 'aprobar' ? 'Aprobar solicitud' : 'Rechazar solicitud'}
             </div>
             <div className="solp-modal-msg">
               {confirmDialog.accion === 'aprobar' ? (

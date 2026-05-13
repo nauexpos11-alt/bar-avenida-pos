@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import PinAdminModal from '../components/PinAdminModal'
 import ToastContainer from '../components/Toast'
+import Icon from '../components/Icon'
 import './AreasScreen.css'
 
 const VACIO = { nombre: '', activa: true }
@@ -33,18 +34,30 @@ export default function AreasScreen({ auth, onVolver }) {
 
   useEffect(() => { cargar() }, [cargar])
 
+  // Esc cierra modales
+  useEffect(() => {
+    if (!modal && !pinModal) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setModal(null); setPinModal(null) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [modal, pinModal])
+
   const abrirNuevo = () => { setForm(VACIO); setModal({ modo: 'nuevo' }) }
   const abrirEditar = (a) => { setForm({ nombre: a.nombre, activa: a.activa }); setModal({ modo: 'editar', area: a }) }
 
   const handleGuardar = async () => {
-    if (!form.nombre.trim()) { toast('El nombre es requerido', 'error'); return }
+    const nombreTrim = String(form.nombre || '').trim()
+    if (!nombreTrim) { toast('El nombre es requerido', 'error'); return }
     setGuardando(true)
     try {
+      const payload = { ...form, nombre: nombreTrim }
       if (modal.modo === 'nuevo') {
-        await api.adminCreateArea(auth.token, form)
+        await api.adminCreateArea(auth.token, payload)
         toast('Área creada')
       } else {
-        await api.adminUpdateArea(auth.token, modal.area.id, form)
+        await api.adminUpdateArea(auth.token, modal.area.id, payload)
         toast('Área actualizada')
       }
       setModal(null)
@@ -85,9 +98,9 @@ export default function AreasScreen({ auth, onVolver }) {
           <div className="as-breadcrumb">CONFIGURACIÓN → Áreas de venta</div>
         </div>
         <div className="as-header-btns">
-          <button className="as-btn-add" onClick={abrirNuevo}>+ Nueva área</button>
-          <button className="as-btn-x" onClick={cargar} title="Refrescar">↻</button>
-          <button className="as-btn-x" onClick={onVolver}>✕</button>
+          <button className="as-btn-add" onClick={abrirNuevo}><Icon name="add" size={14} /> Nueva área</button>
+          <button className="as-btn-x" onClick={cargar} title="Refrescar" aria-label="Refrescar"><Icon name="refresh" size={14} /></button>
+          <button className="as-btn-x" onClick={onVolver} aria-label="Cerrar"><Icon name="close" size={14} /></button>
         </div>
       </div>
 
@@ -144,7 +157,7 @@ export default function AreasScreen({ auth, onVolver }) {
           <div className="as-modal" onClick={e => e.stopPropagation()}>
             <div className="as-modal-header">
               <span>{modal.modo === 'nuevo' ? 'Nueva área' : 'Editar área'}</span>
-              <button className="as-btn-x" onClick={() => setModal(null)}>✕</button>
+              <button className="as-btn-x" onClick={() => setModal(null)} aria-label="Cerrar"><Icon name="close" size={14} /></button>
             </div>
             <div className="as-modal-body">
               <label className="as-lbl">Nombre *</label>

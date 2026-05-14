@@ -5,6 +5,7 @@ import CobrarCuentaModal    from '../components/CobrarCuentaModal'
 import CuentaCard           from '../components/CuentaCard'
 import EditarInfoCuentaModal from '../components/EditarInfoCuentaModal'
 import MoverAreaModal       from '../components/MoverAreaModal'
+import ResumenMeserasTurno  from '../components/ResumenMeserasTurno'
 import Icon                 from '../components/Icon'
 import './CentroOperacionScreen.css'
 
@@ -68,6 +69,7 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
   const [modalCobrar, setModalCobrar] = useState(false)
   const [modalEditar, setModalEditar] = useState(false)
   const [modalMover,  setModalMover]  = useState(false)
+  const [mostrarResumen, setMostrarResumen] = useState(false)
   const [toast,       setToast]       = useState(null)
   const [tick,        setTick]        = useState(0)
 
@@ -282,7 +284,14 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
             )}
           </div>
         </div>
+        <button className="co-btn-resumen" onClick={() => setMostrarResumen(true)} title="Ver resumen por mesera">
+          <Icon name="usuarios" size={14} /> RESUMEN MESERAS
+        </button>
       </div>
+
+      {mostrarResumen && (
+        <ResumenMeserasTurno auth={auth} onClose={() => setMostrarResumen(false)} />
+      )}
 
       {/* ── Toast ── */}
       {toast && (
@@ -375,9 +384,9 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
               {/* Detalle header */}
               <div className="co-det-header">
                 <div className="co-det-title">
-                  {detalle.mesaNumero
-                    ? `Mesa ${detalle.mesaNumero}`
-                    : (detalle.nombreCliente || 'BARRA')}
+                  {detalle.nombreCliente
+                    ? detalle.nombreCliente
+                    : (detalle.mesaNumero ? `Mesa ${detalle.mesaNumero}` : 'BARRA')}
                   {detalle.estado === 'PorCobrar' && (
                     <span className="co-badge-cobrar"><Icon name="cobrar" size={12} /> COBRANDO</span>
                   )}

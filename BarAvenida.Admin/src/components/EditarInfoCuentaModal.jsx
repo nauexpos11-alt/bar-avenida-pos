@@ -27,7 +27,7 @@ export default function EditarInfoCuentaModal({ cuenta, onClose, onGuardar }) {
         </div>
         <div className="eim-body">
           <div className="eim-subtitulo">
-            {cuenta.mesaNumero ? `Mesa ${cuenta.mesaNumero}` : (cuenta.nombreCliente || 'BARRA')}
+            {cuenta.nombreCliente ? cuenta.nombreCliente : (cuenta.mesaNumero ? `Mesa ${cuenta.mesaNumero}` : 'BARRA')}
             {' · '}Folio #{cuenta.folio}
           </div>
 

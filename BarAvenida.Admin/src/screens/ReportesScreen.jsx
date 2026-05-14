@@ -76,7 +76,7 @@ export default function ReportesScreen({ auth, initialTab = 'vendidos-hoy', onVo
       switch (tabKey) {
         case 'vendidos-hoy': res = await api.adminGetProductosVendidosHoy(t);             break
         case 'ventas':       res = await api.adminGetReporteVentas(t, q);                 break
-        case 'productos':    res = await api.adminGetReporteProductos(t, { ...q, limit: 20 }); break
+        case 'productos':    res = await api.adminGetReporteProductos(t, { ...q, limit: 200 }); break
         case 'meseros':      res = await api.adminGetReporteMeseros(t, q);                break
         case 'categorias':   res = await api.adminGetReporteCategorias(t, q);             break
         case 'hora':         res = await api.adminGetReporteVentasHora(t, q);             break

@@ -63,11 +63,15 @@ public class CuentasController : ControllerBase
         if (mesera == null || (mesera.Rol != "Mesera" && mesera.Rol != "Admin"))
             return BadRequest(new { mensaje = "Mesera no válida" });
 
-        // Folio del DIA (resetea cada dia a 1) — Coronado: visible al abrir cuenta
-        var hoyAp = DateTime.Today;
-        var mananaAp = hoyAp.AddDays(1);
+        // Folio del TURNO ACTUAL (resetea a 1 cada vez que se abre nuevo turno)
+        // Si no hay turno abierto, usa fecha del dia como fallback
+        var turnoActual = await _context.CajaTurnos
+            .Where(t => t.Estado == "Abierto")
+            .OrderByDescending(t => t.FechaApertura)
+            .FirstOrDefaultAsync();
+        DateTime desdeFolio = turnoActual?.FechaApertura ?? DateTime.Today;
         int ultimoFolio = await _context.Cuentas
-            .Where(c => c.FechaApertura >= hoyAp && c.FechaApertura < mananaAp)
+            .Where(c => c.FechaApertura >= desdeFolio)
             .MaxAsync(c => (int?)c.Folio) ?? 0;
 
         var cuenta = new Cuenta
@@ -1012,11 +1016,14 @@ public class CuentasController : ControllerBase
         if (mesera == null)
             return BadRequest(new { mensaje = "Usuario no válido" });
 
-        // Folio del DIA (resetea cada dia a 1) — Coronado
-        var hoyRap = DateTime.Today;
-        var mananaRap = hoyRap.AddDays(1);
+        // Folio del TURNO ACTUAL (resetea a 1 al abrir nuevo turno)
+        var turnoActRap = await _context.CajaTurnos
+            .Where(t => t.Estado == "Abierto")
+            .OrderByDescending(t => t.FechaApertura)
+            .FirstOrDefaultAsync();
+        DateTime desdeFolioRap = turnoActRap?.FechaApertura ?? DateTime.Today;
         int ultimoFolio = await _context.Cuentas
-            .Where(c => c.FechaApertura >= hoyRap && c.FechaApertura < mananaRap)
+            .Where(c => c.FechaApertura >= desdeFolioRap)
             .MaxAsync(c => (int?)c.Folio) ?? 0;
         int barrasAbiertas = await _context.Cuentas
             .CountAsync(c => c.MesaId == null && c.Estado == "Abierta");

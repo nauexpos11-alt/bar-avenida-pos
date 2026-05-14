@@ -198,7 +198,7 @@ public class TicketService
         if (cuenta.Descuento > 0)
             sb.AppendLine(($"Descuento: ${cuenta.Descuento,9:N2}").PadLeft(w));
 
-        string totalLine = $"*** TOTAL: ${cuenta.Total:N2} ***";
+        string totalLine = $"*** TOTAL: ${cuenta.Total:N2} MXN ***";
         sb.AppendLine(Centrar(totalLine, w));
         sb.AppendLine(Linea(w));
 

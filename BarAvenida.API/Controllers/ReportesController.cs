@@ -86,11 +86,13 @@ public class ReportesController : ControllerBase
         var (d, h) = Rango(desde, hasta);
         limit = Math.Clamp(limit, 1, 200);
 
+        // Incluye TODAS las ventas del rango: cobradas + abiertas + por cobrar
+        // (excluye solo canceladas) para capturar todos los productos vendidos
         var raw = await _db.OrdenDetalles
             .AsNoTracking()
-            .Where(x => x.Orden!.Cuenta!.Estado == "Cobrada"
-                     && x.Orden.Cuenta.FechaCierre >= d
-                     && x.Orden.Cuenta.FechaCierre < h)
+            .Where(x => x.Orden!.Cuenta!.Estado != "Cancelada"
+                     && x.Orden.Cuenta.FechaApertura >= d
+                     && x.Orden.Cuenta.FechaApertura < h)
             .Select(x => new {
                 x.ProductoId,
                 ProductoNombre  = x.Producto!.Nombre,

@@ -179,6 +179,9 @@ export const api = {
   adminGetImpresorasDisponibles:(t)          => req('/api/admin/impresoras-disponibles', {}, t),
   adminGetTicketsSimulados:     (t, limit = 10) => req(`/api/admin/tickets-simulados/recientes?limit=${limit}`, {}, t),
   adminAbrirCajon:              (t, dto)     => req('/api/admin/abrir-cajon', { method: 'POST', body: JSON.stringify(dto) }, t),
+  adminProbarImpresora:         (t)          => req('/api/admin/probar-impresora', { method: 'POST' }, t),
+  adminProbarCajon:             (t)          => req('/api/admin/probar-cajon',     { method: 'POST' }, t),
+  adminGetResumenMeserasTurno:  (t)          => req('/api/admin/resumen-meseras-turno', {}, t),
   adminGetRegistrosCajon:       (t, { desde, hasta } = {}) => {
     const p = new URLSearchParams()
     if (desde) p.set('desde', desde)

@@ -29,7 +29,7 @@ export default function MoverAreaModal({ cuenta, auth, onClose, onGuardar }) {
         </div>
         <div className="mam-body">
           <div className="mam-subtitulo">
-            {cuenta.mesaNumero ? `Mesa ${cuenta.mesaNumero}` : (cuenta.nombreCliente || 'BARRA')}
+            {cuenta.nombreCliente ? cuenta.nombreCliente : (cuenta.mesaNumero ? `Mesa ${cuenta.mesaNumero}` : 'BARRA')}
             {cuenta.area ? ` · Área actual: ${cuenta.area}` : ' · Sin área asignada'}
           </div>
 

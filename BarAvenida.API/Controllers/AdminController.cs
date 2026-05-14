@@ -859,6 +859,124 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Cajón abierto." });
     }
 
+    // GET /api/admin/resumen-meseras-turno — pestañas de meseras con pedidos del turno
+    [HttpGet("resumen-meseras-turno")]
+    public async Task<IActionResult> GetResumenMeserasTurno()
+    {
+        // Determinar rango del turno actual (o del día si no hay turno abierto)
+        var turno = await _db.CajaTurnos
+            .Where(t => t.Estado == "Abierto")
+            .OrderByDescending(t => t.FechaApertura)
+            .FirstOrDefaultAsync();
+        DateTime desde = turno?.FechaApertura ?? DateTime.Today;
+
+        // Cuentas del turno
+        var cuentas = await _db.Cuentas
+            .Include(c => c.Mesa)
+            .Include(c => c.Mesera)
+            .Include(c => c.Ordenes).ThenInclude(o => o.Detalles).ThenInclude(d => d.Producto)
+            .Where(c => c.FechaApertura >= desde && c.Estado != "Cancelada")
+            .ToListAsync();
+
+        var resumen = cuentas
+            .GroupBy(c => new { Id = c.MeseraId, Nombre = c.Mesera?.Nombre ?? "—" })
+            .Select(g => new
+            {
+                meseraId    = g.Key.Id,
+                meseraNombre = g.Key.Nombre,
+                cuentasAbiertas = g.Count(c => c.Estado == "Abierta"),
+                cuentasCobradas = g.Count(c => c.Estado == "Cobrada"),
+                totalVendido   = g.Sum(c => c.Total),
+                totalAbierto   = g.Where(c => c.Estado == "Abierta").Sum(c => c.Ordenes.Sum(o => o.Detalles.Sum(d => d.Subtotal))),
+                primerPedido   = g.Min(c => c.FechaApertura),
+                ultimoPedido   = g.Max(c => (DateTime?)c.Ordenes
+                                                .SelectMany(o => o.Detalles)
+                                                .Select(d => d.Orden.FechaEnvio)
+                                                .DefaultIfEmpty(c.FechaApertura)
+                                                .Max()),
+                cuentas = g.OrderByDescending(c => c.FechaApertura).Select(c => new
+                {
+                    id            = c.Id,
+                    folio         = c.Folio,
+                    mesaNumero    = c.Mesa?.Numero,
+                    nombreCliente = c.NombreCliente,
+                    estado        = c.Estado,
+                    total         = c.Total,
+                    fechaApertura = c.FechaApertura,
+                    productos     = c.Ordenes
+                        .SelectMany(o => o.Detalles)
+                        .GroupBy(d => d.Producto?.Nombre ?? "—")
+                        .Select(pg => new {
+                            nombre   = pg.Key,
+                            cantidad = pg.Sum(d => d.Cantidad),
+                            subtotal = pg.Sum(d => d.Subtotal),
+                        })
+                        .OrderByDescending(p => p.cantidad)
+                        .ToList()
+                }).ToList()
+            })
+            .OrderByDescending(m => m.totalVendido + m.totalAbierto)
+            .ToList();
+
+        return Ok(new {
+            turnoId   = turno?.Id,
+            desde,
+            meseras   = resumen,
+        });
+    }
+
+    // POST /api/admin/probar-impresora — imprime un ticket de prueba
+    [HttpPost("probar-impresora")]
+    public async Task<IActionResult> ProbarImpresora()
+    {
+        var cfg = await _db.ConfiguracionesTicket.FindAsync(1);
+        if (cfg is null) return BadRequest(new { mensaje = "Sin configuración de ticket" });
+
+        var texto = new System.Text.StringBuilder();
+        texto.AppendLine("================================");
+        texto.AppendLine("    BAR AVENIDA — TICKET TEST   ");
+        texto.AppendLine("================================");
+        texto.AppendLine($"Fecha: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
+        texto.AppendLine("Impresora configurada correctamente");
+        texto.AppendLine("================================");
+        texto.AppendLine();
+        texto.AppendLine();
+        texto.AppendLine();
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(texto.ToString());
+        // Append corte de papel ESC/POS
+        var fullBytes = new List<byte>(bytes);
+        fullBytes.AddRange(new byte[] { 0x1D, 0x56, 0x42, 0x00 });
+
+        var ticket = new BarAvenida.API.Services.TicketGenerado
+        {
+            Folio       = "TEST",
+            TextoPlano  = texto.ToString(),
+            EscPosBytes = fullBytes.ToArray()
+        };
+        bool ok = await _escPos.ImprimirTicketAsync(ticket);
+        return Ok(new
+        {
+            ok,
+            mensaje = ok
+                ? (cfg.ImpresionHabilitada
+                    ? "Ticket de prueba enviado a la impresora."
+                    : "Modo simulado: archivo guardado en TicketsImpresos.")
+                : "No se pudo imprimir. Verifica el nombre/IP de la impresora."
+        });
+    }
+
+    // POST /api/admin/probar-cajon — abre el cajón sin requerir cobro
+    [HttpPost("probar-cajon")]
+    public async Task<IActionResult> ProbarCajon()
+    {
+        var idStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+        int.TryParse(idStr, out int userId);
+        var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Id == userId);
+        bool ok = await _escPos.AbrirCajonAsync(usuario?.Nombre ?? "admin", "Prueba de cajón");
+        return Ok(new { ok, mensaje = ok ? "Pulso enviado al cajón." : "No se pudo abrir el cajón." });
+    }
+
     // ── CRUD ÁREAS ───────────────────────────────────────────────────────────────
 
     [HttpGet("areas")]

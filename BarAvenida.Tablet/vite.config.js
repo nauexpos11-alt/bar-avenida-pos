@@ -6,5 +6,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/tablet/',
+  build: {
+    outDir: '../BarAvenida.API/wwwroot/tablet',
+    emptyOutDir: true,
+  },
   server: { port: 3002, host: true },
 })

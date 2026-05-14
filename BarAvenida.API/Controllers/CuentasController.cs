@@ -300,21 +300,26 @@ public class CuentasController : ControllerBase
                 .ThenInclude(d => d.Producto)
             .Where(o => o.FechaListo.HasValue
                      && o.FechaListo.Value >= hoy
-                     && o.FechaListo.Value <  manana)
+                     && o.FechaListo.Value <  manana
+                     && o.Cuenta != null
+                     && o.Cuenta.MesaId != null) // Excluir cobros barra del KDS
             .OrderByDescending(o => o.FechaListo)
             .Take(200)
             .ToListAsync();
 
         var resultado = ordenes.Select(o => new
         {
-            id            = o.Id,
-            mesaId        = o.Cuenta?.MesaId,
-            mesaNumero    = o.Cuenta?.Mesa?.Numero ?? o.Cuenta?.NombreCliente ?? "BARRA",
-            nombreMesera  = o.Cuenta?.Mesera?.Nombre ?? "",
-            numeroOrden   = o.NumeroOrden,
-            fechaEnvio    = o.FechaEnvio,
-            fechaListo    = o.FechaListo,
-            tiempoMinutos = o.FechaListo.HasValue
+            id              = o.Id,
+            mesaId          = o.Cuenta?.MesaId,
+            mesaNumero      = o.Cuenta?.Mesa?.Numero ?? o.Cuenta?.NombreCliente ?? "BARRA",
+            meseraNombre    = o.Cuenta?.Mesera?.Nombre ?? "",   // nombre estandar (lo usa el frontend)
+            nombreMesera    = o.Cuenta?.Mesera?.Nombre ?? "",   // alias retro-compat
+            nombreCliente   = o.Cuenta?.NombreCliente,            // alias / nombre de la mesa
+            folio           = o.Cuenta?.Folio,                    // folio del dia
+            numeroOrden     = o.NumeroOrden,
+            fechaEnvio      = o.FechaEnvio,
+            fechaListo      = o.FechaListo,
+            tiempoMinutos   = o.FechaListo.HasValue
                 ? (int)Math.Round((o.FechaListo.Value - o.FechaEnvio).TotalMinutes)
                 : 0,
             detalles = o.Detalles.Select(d => new
@@ -842,16 +847,10 @@ public class CuentasController : ControllerBase
                 return BadRequest(new { mensaje = $"Producto {item.ProductoId} no válido" });
         }
 
-        // Folio del DIA (resetea cada dia a 1) — Coronado
+        // Cobro rápido barra: NO genera folio (se cobra rápido, no requiere seguimiento)
+        // y NO entra a KDS (se anota directo en comanda física). — Coronado
         var hoy = DateTime.Today;
-        var manana = hoy.AddDays(1);
-        int ultimoFolio = await _context.Cuentas
-            .Where(c => c.FechaApertura >= hoy && c.FechaApertura < manana)
-            .MaxAsync(c => (int?)c.Folio) ?? 0;
 
-        // Correlativo del día para "BARRA #N" — incluye TODAS las cuentas barra
-        // (abiertas, cobradas, canceladas) creadas hoy, para que cada cobro
-        // directo tenga un nombre único.
         int barrasHoy = await _context.Cuentas.CountAsync(c =>
             c.MesaId == null
             && c.FechaApertura >= hoy
@@ -866,7 +865,7 @@ public class CuentasController : ControllerBase
             FechaApertura = ahora,
             FechaCierre   = ahora,
             Estado        = "Cobrada",
-            Folio         = ultimoFolio + 1,
+            Folio         = 0,  // 0 = sin folio (barra)
             NombreCliente = $"BARRA #{barrasHoy + 1}",
             Descuento     = dto.Descuento < 0 ? 0 : dto.Descuento,
             MetodoPago    = metodo,

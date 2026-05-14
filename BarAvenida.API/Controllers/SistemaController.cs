@@ -33,6 +33,67 @@ public class SistemaController : ControllerBase
         });
     }
 
+    // ── Wifi del bar (para QR de conexion automatica en tablets) ─────────
+    // Guarda SSID + password en archivo simple JSON (no requiere migracion BD).
+    // Lo lee el frontend Admin para generar el QR Wi-Fi.
+    private static string WifiConfigPath =>
+        System.IO.Path.Combine(BarAvenida.API.Helpers.PathHelper.DataRoot, "wifi-bar.json");
+
+    [HttpGet("wifi-bar")]
+    [AllowAnonymous]
+    public IActionResult GetWifiBar()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(WifiConfigPath))
+                return Ok(new { ssid = "", password = "", seguridad = "WPA" });
+
+            var json = System.IO.File.ReadAllText(WifiConfigPath);
+            var cfg  = System.Text.Json.JsonSerializer.Deserialize<WifiBarDto>(json);
+            return Ok(cfg ?? new WifiBarDto());
+        }
+        catch (Exception ex)
+        {
+            return Ok(new { ssid = "", password = "", seguridad = "WPA", error = ex.Message });
+        }
+    }
+
+    [HttpPost("wifi-bar")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult SetWifiBar([FromBody] WifiBarDto dto)
+    {
+        try
+        {
+            var dir = BarAvenida.API.Helpers.PathHelper.DataRoot;
+            if (!System.IO.Directory.Exists(dir))
+                System.IO.Directory.CreateDirectory(dir);
+
+            var seguro = string.IsNullOrWhiteSpace(dto.Seguridad) ? "WPA" : dto.Seguridad.Trim().ToUpper();
+            if (seguro != "WPA" && seguro != "WEP" && seguro != "nopass") seguro = "WPA";
+
+            var cfg = new WifiBarDto
+            {
+                Ssid       = (dto.Ssid ?? "").Trim(),
+                Password   = (dto.Password ?? "").Trim(),
+                Seguridad  = seguro,
+            };
+            var json = System.Text.Json.JsonSerializer.Serialize(cfg, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            System.IO.File.WriteAllText(WifiConfigPath, json);
+            return Ok(new { ok = true, mensaje = "Wifi guardado", cfg });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = ex.Message });
+        }
+    }
+
+    public class WifiBarDto
+    {
+        public string Ssid      { get; set; } = "";
+        public string Password  { get; set; } = "";
+        public string Seguridad { get; set; } = "WPA"; // WPA, WEP, nopass
+    }
+
     /// <summary>
     /// Health check completo. Sirve para que Coronado verifique a distancia desde NAU
     /// el estado de la PC del bar sin necesidad de TeamViewer.

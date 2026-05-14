@@ -133,6 +133,32 @@ public class CajaController : ControllerBase
         if (usuario == null)
             return Unauthorized(new { mensaje = "PIN incorrecto." });
 
+        int cuentasCanceladas = 0;
+        int ordenesEliminadas = 0;
+        if (dto.LimpiarDiaAnterior)
+        {
+            // Cancelar todas las cuentas abiertas del día anterior
+            var abiertas = await _db.Cuentas
+                .Include(c => c.Ordenes).ThenInclude(o => o.Detalles)
+                .Where(c => c.Estado == "Abierta")
+                .ToListAsync();
+
+            foreach (var c in abiertas)
+            {
+                // Borrar órdenes y detalles asociados
+                foreach (var o in c.Ordenes.ToList())
+                {
+                    _db.OrdenDetalles.RemoveRange(o.Detalles);
+                    _db.Ordenes.Remove(o);
+                    ordenesEliminadas++;
+                }
+                c.Estado      = "Cancelada";
+                c.FechaCierre = DateTime.Now;
+                cuentasCanceladas++;
+            }
+            await _db.SaveChangesAsync();
+        }
+
         var turno = new CajaTurno
         {
             FechaApertura     = DateTime.Now,
@@ -145,7 +171,9 @@ public class CajaController : ControllerBase
         await _db.SaveChangesAsync();
 
         await _db.Entry(turno).Reference(t => t.UsuarioApertura).LoadAsync();
-        _log.LogInformation("🔓 Turno #{Id} abierto por {Usuario}", turno.Id, usuario.Nombre);
+        _log.LogInformation("🔓 Turno #{Id} abierto por {Usuario}{Limpieza}",
+            turno.Id, usuario.Nombre,
+            dto.LimpiarDiaAnterior ? $" (limpiado: {cuentasCanceladas} cuentas, {ordenesEliminadas} órdenes)" : "");
 
         await _audit.LogAsync(
             "Caja",
@@ -568,6 +596,131 @@ public class CajaController : ControllerBase
             Page     = page,
             PageSize = pageSize,
             Items    = items,
+        });
+    }
+
+    // ── DELETE /api/Caja/turnos/{id} ─────────────────────────────────────────
+    // Elimina un turno (abierto o cerrado) con sus retiros e incidentes.
+    // Las cuentas COBRADAS no se borran (solo se desvincularían si tuvieran TurnoId, que no lo tienen).
+    // Requiere PIN admin.
+    [HttpDelete("turnos/{id:int}")]
+    public async Task<IActionResult> EliminarTurno(int id, [FromBody] PinSoloDto dto)
+    {
+        var turno = await _db.CajaTurnos
+            .Include(t => t.UsuarioApertura)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (turno == null)
+            return NotFound(new { mensaje = "Turno no encontrado." });
+
+        var usuario = await ValidarPin(dto.Pin);
+        if (usuario == null)
+            return Unauthorized(new { mensaje = "PIN incorrecto." });
+        if (usuario.Rol != "Admin")
+            return StatusCode(403, new { mensaje = "Solo un Admin puede eliminar turnos." });
+
+        // Borrar retiros del turno
+        var retiros = await _db.RetirosCaja.Where(r => r.TurnoId == id).ToListAsync();
+        _db.RetirosCaja.RemoveRange(retiros);
+
+        // Borrar incidentes del turno
+        var incidentes = await _db.IncidentesCaja.Where(i => i.TurnoId == id).ToListAsync();
+        _db.IncidentesCaja.RemoveRange(incidentes);
+
+        // Borrar cortes asociados al turno (si los hay)
+        var cortes = await _db.CortesCaja.Where(c => c.TurnoId == id).ToListAsync();
+        _db.CortesCaja.RemoveRange(cortes);
+
+        _db.CajaTurnos.Remove(turno);
+        await _db.SaveChangesAsync();
+
+        _log.LogWarning("🗑 Turno #{Id} ELIMINADO por {Usuario}", id, usuario.Nombre);
+        await _audit.LogAsync(
+            "Caja",
+            "TurnoEliminado",
+            $"Turno #{id} eliminado por {usuario.Nombre}. Retiros: {retiros.Count}, Incidentes: {incidentes.Count}, Cortes: {cortes.Count}",
+            usuario.Id, usuario.Nombre,
+            $"{{\"turnoId\":{id}}}");
+
+        return Ok(new { mensaje = "Turno eliminado correctamente.", turnoId = id });
+    }
+
+    // ── POST /api/Caja/reset-total ───────────────────────────────────────────
+    // BORRA TODO: cuentas, órdenes, cortes, turnos, retiros, incidentes.
+    // NO borra: usuarios, productos, mesas, áreas, configuración.
+    // Requiere doble PIN admin + texto de confirmación "RESETEAR TODO".
+    [HttpPost("reset-total")]
+    public async Task<IActionResult> ResetTotal([FromBody] ResetTotalDto dto)
+    {
+        if (dto.Confirmacion != "RESETEAR TODO")
+            return BadRequest(new { mensaje = "Falta escribir 'RESETEAR TODO' para confirmar." });
+
+        var usuario = await ValidarPin(dto.Pin);
+        if (usuario == null)
+            return Unauthorized(new { mensaje = "PIN admin incorrecto." });
+        if (usuario.Rol != "Admin")
+            return StatusCode(403, new { mensaje = "Solo un Admin puede ejecutar este reset." });
+
+        // Snapshot para auditoría antes de borrar
+        int countCuentas      = await _db.Cuentas.CountAsync();
+        int countOrdenes      = await _db.Ordenes.CountAsync();
+        int countDetalles     = await _db.OrdenDetalles.CountAsync();
+        int countTurnos       = await _db.CajaTurnos.CountAsync();
+        int countCortes       = await _db.CortesCaja.CountAsync();
+        int countRetiros      = await _db.RetirosCaja.CountAsync();
+        int countIncidentes   = await _db.IncidentesCaja.CountAsync();
+        int countSolicitudes  = await _db.SolicitudesCancelacion.CountAsync();
+        int countAperturasCaj = await _db.RegistrosAperturaCajon.CountAsync();
+        int countMovInv       = await _db.MovimientosInventario.CountAsync();
+
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            // Orden de borrado importante por FKs (hijos -> padres)
+            _db.IncidentesCaja        .RemoveRange(_db.IncidentesCaja);
+            _db.RetirosCaja           .RemoveRange(_db.RetirosCaja);
+            _db.CortesCaja            .RemoveRange(_db.CortesCaja);
+            _db.RegistrosAperturaCajon.RemoveRange(_db.RegistrosAperturaCajon);
+            _db.SolicitudesCancelacion.RemoveRange(_db.SolicitudesCancelacion);
+            _db.MovimientosInventario .RemoveRange(_db.MovimientosInventario);
+            _db.OrdenDetalles         .RemoveRange(_db.OrdenDetalles);
+            _db.Ordenes               .RemoveRange(_db.Ordenes);
+            _db.Cuentas               .RemoveRange(_db.Cuentas);
+            _db.CajaTurnos            .RemoveRange(_db.CajaTurnos);
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync();
+            _log.LogError(ex, "❌ Reset total falló");
+            return StatusCode(500, new { mensaje = $"Error al resetear: {ex.Message}" });
+        }
+
+        _log.LogWarning("💣 RESET TOTAL ejecutado por {Usuario}", usuario.Nombre);
+        await _audit.LogAsync(
+            "Caja",
+            "ResetTotal",
+            $"RESET TOTAL ejecutado por {usuario.Nombre}. Borrados: {countCuentas} cuentas, {countOrdenes} órdenes, {countTurnos} turnos, {countCortes} cortes",
+            usuario.Id, usuario.Nombre,
+            $"{{\"cuentas\":{countCuentas},\"ordenes\":{countOrdenes},\"detalles\":{countDetalles},\"turnos\":{countTurnos},\"cortes\":{countCortes},\"retiros\":{countRetiros},\"incidentes\":{countIncidentes}}}");
+
+        return Ok(new
+        {
+            mensaje = "Todo borrado. Sistema reiniciado desde cero.",
+            borrado = new
+            {
+                cuentas      = countCuentas,
+                ordenes      = countOrdenes,
+                ordenDetalles = countDetalles,
+                turnos       = countTurnos,
+                cortes       = countCortes,
+                retiros      = countRetiros,
+                incidentes   = countIncidentes,
+                solicitudes  = countSolicitudes,
+                aperturas    = countAperturasCaj,
+                movInventario = countMovInv,
+            }
         });
     }
 

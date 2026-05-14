@@ -331,6 +331,29 @@
 .mc-mes { font-size: 0.55rem; color: #ffb3b3; overflow: hidden; max-width: 72px; text-overflow: ellipsis; white-space: nowrap; }
 .mc-tot { font-size: 0.75rem; font-weight: 800; color: #fff; }
 
+/* Cuando hay alias, el alias es el TITULO y el numero de mesa va chiquito abajo */
+.mc-num-alias {
+  font-size: 1.05rem !important;
+  color: var(--gold, #f0c842) !important;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px rgba(240, 200, 66, 0.45);
+  max-width: 78px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.mc-mesa-sub {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: -2px;
+  margin-bottom: 1px;
+}
+
 /* ── Panel detalle de cuenta ──────────────────────── */
 .cuenta-detalle-panel {
   width: 0;

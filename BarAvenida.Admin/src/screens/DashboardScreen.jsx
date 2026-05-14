@@ -16,8 +16,9 @@ function getResumen(cuenta) {
   const mapa = {}
   ;(cuenta?.ordenes ?? []).forEach(o => {
     ;(o.detalles ?? o.ordenDetalles ?? []).forEach(d => {
-      const k      = String(d.productoId ?? d.nombreProducto ?? '?')
-      const nombre = d.nombreProducto ?? d.producto?.nombre ?? '?'
+      const k      = String(d.productoId ?? d.productoNombre ?? d.nombreProducto ?? '?')
+      // El backend manda "productoNombre" (camelCase del PascalCase ProductoNombre)
+      const nombre = d.productoNombre ?? d.nombreProducto ?? d.producto?.nombre ?? 'Producto'
       const precio = d.precioUnitario ?? d.precio ?? 0
       if (mapa[k]) { mapa[k].cantidad += d.cantidad; mapa[k].subtotal += d.cantidad * precio }
       else           mapa[k] = { nombre, cantidad: d.cantidad, precio, subtotal: d.cantidad * precio }
@@ -328,17 +329,25 @@ export default function DashboardScreen({ auth, onLogout, onIrPantalla }) {
                     {ocu && mesa.folio != null && (
                       <span className="mc-folio">#{mesa.folio}</span>
                     )}
-                    <span className="mc-num">{mesa.numero}</span>
-                    {ocu ? (
+                    {/* Si tiene alias, el alias es el TITULO grande y el número de mesa va abajo chiquito */}
+                    {ocu && mesa.aliasCuenta ? (
                       <>
-                        {mesa.aliasCuenta && (
-                          <span className="mc-alias">{mesa.aliasCuenta}</span>
-                        )}
+                        <span className="mc-num mc-num-alias">{mesa.aliasCuenta}</span>
+                        <span className="mc-mesa-sub">Mesa {mesa.numero}</span>
+                        <span className="mc-mes">{(mesa.nombreMesera ?? mesa.meseraActual ?? '').split(' ')[0]}</span>
+                        <span className="mc-tot">{fmt(mesa.totalActual ?? 0)}</span>
+                      </>
+                    ) : ocu ? (
+                      <>
+                        <span className="mc-num">{mesa.numero}</span>
                         <span className="mc-mes">{(mesa.nombreMesera ?? mesa.meseraActual ?? '').split(' ')[0]}</span>
                         <span className="mc-tot">{fmt(mesa.totalActual ?? 0)}</span>
                       </>
                     ) : (
-                      <span className="mc-lib">·</span>
+                      <>
+                        <span className="mc-num">{mesa.numero}</span>
+                        <span className="mc-lib">·</span>
+                      </>
                     )}
                   </button>
                 )

@@ -14,14 +14,14 @@
 [Setup]
 AppId={{A1B2C3D4-BAR-AVENIDA-SERVER-INSTALL}}
 AppName=Bar Avenida Server
-AppVersion=1.10.2
+AppVersion=1.10.3
 AppPublisher=Bar Avenida
 AppPublisherURL=https://baravenida.local
 AppSupportURL=https://baravenida.local
 DefaultDirName={autopf}\Bar Avenida\Server
 DefaultGroupName=Bar Avenida
 OutputDir=dist
-OutputBaseFilename=Bar Avenida Server Setup 1.10.2
+OutputBaseFilename=Bar Avenida Server Setup 1.10.3
 Compression=zip/9
 SolidCompression=no
 ArchitecturesAllowed=x64compatible
@@ -123,8 +123,13 @@ Filename: "{cmd}"; Parameters: "/c sc stop BarAvenidaAPI"; Tasks: iniciarservici
 Filename: "{cmd}"; Parameters: "/c timeout /t 3 /nobreak"; Tasks: iniciarservicio; Flags: runhidden waituntilterminated
 Filename: "{cmd}"; Parameters: "/c sc start BarAvenidaAPI"; Tasks: iniciarservicio; StatusMsg: "Reiniciando servicio con permisos finales..."; Flags: runhidden waituntilterminated
 
-; ========== PASO 8: Configurar firewall (puerto 7000) ==========
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; New-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7000 -Profile Any -Enabled True | Out-Null"""; StatusMsg: "Configurando firewall..."; Flags: runhidden waituntilterminated
+; ========== PASO 8: Configurar firewall (puertos 7000 HTTP y 7443 HTTPS) ==========
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; New-NetFirewallRule -DisplayName 'Bar Avenida API (puerto 7000)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7000 -Profile Any -Enabled True | Out-Null"""; StatusMsg: "Configurando firewall HTTP..."; Flags: runhidden waituntilterminated
+
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetFirewallRule -DisplayName 'Bar Avenida API HTTPS (puerto 7443)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; New-NetFirewallRule -DisplayName 'Bar Avenida API HTTPS (puerto 7443)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7443 -Profile Any -Enabled True | Out-Null"""; StatusMsg: "Configurando firewall HTTPS..."; Flags: runhidden waituntilterminated
+
+; ========== PASO 8a: Cambiar perfil de red a Privada (clave para que tablets vean al servidor) ==========
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' } | ForEach-Object { Set-NetConnectionProfile -InterfaceIndex $_.InterfaceIndex -NetworkCategory Private -ErrorAction SilentlyContinue }"""; StatusMsg: "Configurando red como Privada (LAN)..."; Flags: runhidden waituntilterminated
 
 ; ========== PASO 8b: Generar cert HTTPS si no existe (v1.9.0) ==========
 ; Solo corre si no existe C:\ProgramData\Bar Avenida\cert\BarAvenida.pfx

@@ -75,6 +75,9 @@
 }
 .cc-tab:hover { color: #aaa; }
 .cc-tab-active { color: #f0c842; border-bottom-color: #f0c842; }
+.cc-tab-danger { color: #b85a5a; }
+.cc-tab-danger:hover { color: #ef4444; }
+.cc-tab-danger.cc-tab-active { color: #ef4444; border-bottom-color: #ef4444; }
 
 /* ── Content area ────────────────────── */
 .cc-content {
@@ -165,6 +168,25 @@
   letter-spacing: 0.04em;
 }
 .cc-btn-corte-z:hover { background: #1a1400; }
+
+.cc-btn-eliminar-turno {
+  background: transparent;
+  border: 1.5px solid #6b1d1d;
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 11px 22px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.08s;
+  letter-spacing: 0.03em;
+}
+.cc-btn-eliminar-turno:hover {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.18), rgba(192, 57, 43, 0.18));
+  border-color: #ef4444;
+  color: #ff8888;
+}
+.cc-btn-eliminar-turno:active { transform: scale(0.97); }
 
 /* ── Info row ────────────────────────── */
 .cc-info-row {

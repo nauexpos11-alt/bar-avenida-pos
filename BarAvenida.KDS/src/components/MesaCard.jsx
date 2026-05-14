@@ -58,14 +58,16 @@ export default function MesaCard({ grupo, now, onListo, onTodaLaMesaListo }) {
 
       <header className="mc-top">
         <span className="mc-mesa">
-          {grupo.mesaNumero ? `MESA ${grupo.mesaNumero}` : 'BARRA'}
+          {grupo.aliasCliente
+            ? String(grupo.aliasCliente).toUpperCase()
+            : (grupo.mesaNumero ? `MESA ${grupo.mesaNumero}` : 'BARRA')}
           {grupo.folio != null && <span className="mc-folio-pill">#{grupo.folio}</span>}
         </span>
         {urgente && <span className="mc-badge-urgente">URGENTE</span>}
       </header>
 
-      {grupo.aliasCliente && (
-        <div className="mc-alias">{String(grupo.aliasCliente).toUpperCase()}</div>
+      {grupo.aliasCliente && grupo.mesaNumero && (
+        <div className="mc-alias mc-mesa-sub">MESA {grupo.mesaNumero}</div>
       )}
       <div className="mc-mesera">
         <span className="mc-mesera-lbl">MESERA</span>

@@ -193,12 +193,10 @@ public class TicketService
 
         sb.AppendLine(Linea(w));
 
-        // Totales
+        // Totales — comisión NO se imprime en ticket al cliente (uso interno)
         sb.AppendLine(($"Subtotal:  ${cuenta.Subtotal,9:N2}").PadLeft(w));
         if (cuenta.Descuento > 0)
             sb.AppendLine(($"Descuento: ${cuenta.Descuento,9:N2}").PadLeft(w));
-        if (cuenta.ComisionTarjeta > 0)
-            sb.AppendLine(($"Comision:  ${cuenta.ComisionTarjeta,9:N2}").PadLeft(w));
 
         string totalLine = $"*** TOTAL: ${cuenta.Total:N2} ***";
         sb.AppendLine(Centrar(totalLine, w));

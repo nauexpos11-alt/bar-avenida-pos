@@ -16,7 +16,7 @@ const duracion = (inicio) => {
   return `${h}h ${m}m`
 }
 
-const VACIO = { pin: '', notas: '', monto: '', justificacion: '' }
+const VACIO = { pin: '', notas: '', monto: '', justificacion: '', limpiarDia: false }
 
 export default function TurnoCajaScreen({ auth, onVolver }) {
   const [turno,      setTurno]      = useState(undefined) // undefined=cargando, null=sin turno
@@ -79,16 +79,28 @@ export default function TurnoCajaScreen({ auth, onVolver }) {
 
   const handleAbrirTurno = async () => {
     if (!form.pin) { toast('Ingresa tu PIN', 'error'); return }
+    if (form.limpiarDia) {
+      const ok = window.confirm(
+        '¿Seguro que quieres LIMPIAR EL DÍA ANTERIOR?\n\n' +
+        'Esto cancelará TODAS las cuentas abiertas y borrará TODAS las órdenes ' +
+        'pendientes del KDS para empezar fresco.\n\n' +
+        'Esta acción NO se puede deshacer.'
+      )
+      if (!ok) return
+    }
     setCargando(true)
     try {
       const t = await api.adminAbrirTurno(auth.token, {
         pin: form.pin,
         montoInicial: parseFloat(form.monto) || 0,
         notas: form.notas || null,
+        limpiarDiaAnterior: !!form.limpiarDia,
       })
       setTurno(t)
       setModalAbrir(false)
-      toast('Turno abierto correctamente')
+      toast(form.limpiarDia
+        ? 'Turno abierto. Mesas y KDS limpios para empezar fresco.'
+        : 'Turno abierto correctamente')
     } catch (e) {
       toast(e.message || 'Error al abrir turno', 'error')
     } finally {
@@ -223,6 +235,32 @@ export default function TurnoCajaScreen({ auth, onVolver }) {
               value={form.notas}
               onChange={e => campo('notas', e.target.value)}
             />
+
+            <div style={{
+              marginTop: 14,
+              background: '#1f0808',
+              border: '1.5px solid #6b1d1d',
+              borderRadius: 8,
+              padding: '12px 14px',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={!!form.limpiarDia}
+                  onChange={e => campo('limpiarDia', e.target.checked)}
+                  style={{ marginTop: 3, accentColor: '#ef4444', width: 16, height: 16 }}
+                />
+                <div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#fca5a5', letterSpacing: '0.04em' }}>
+                    LIMPIAR DÍA ANTERIOR (empezar de cero)
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#aaa', marginTop: 4, lineHeight: 1.45 }}>
+                    Cancela todas las cuentas abiertas y borra órdenes pendientes del KDS.
+                    Las cuentas ya cobradas y el histórico NO se tocan.
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
         </Modal>
       )}

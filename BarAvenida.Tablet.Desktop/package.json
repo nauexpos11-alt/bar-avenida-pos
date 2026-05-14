@@ -1,7 +1,7 @@
 {
     "name":  "baravenida-tablet-desktop",
-    "version":  "1.10.2",
-    "description":  "Bar Avenida — Tablet de Meseras",
+    "version":  "1.10.3",
+    "description":  "Bar Avenida â€” Tablet de Meseras",
     "author":  "Bar Avenida",
     "main":  "main.js",
     "scripts":  {

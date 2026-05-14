@@ -553,3 +553,70 @@ irm https://raw.githubusercontent.com/nauexpos11-alt/bar-avenida-pos/main/Script
   (pasar `specs/auto_update_completo.md` a Claude Code)
 - 🟡 Validación E2E del pipeline completo: requiere primer `release-total.ps1`
   ejecutado por Coronado para subir el primer release a GitHub.
+
+### Sesión Cowork, Mayo 10, 2026 — Primera instalación en el bar + v1.3.0 fixes
+
+**Evento operativo:** Coronado llevó USB con v1.2.0 a una compu nueva del bar.
+- ✅ Admin .exe instaló bien
+- ✅ KDS .exe instaló bien
+- ❌ **El servicio `BarAvenidaAPI` NO arrancó solo** — bug de v1.2.0
+- ❌ Coronado tuvo que correr manualmente `fix-permisos-sql-system.sql` y `Start-Service`
+
+**Decisión:** el bar usa Soft Restaurant temporalmente mientras se mejora
+Bar Avenida sin presión.
+
+**Causa raíz del bug:** El installer `BarAvenidaServer.iss` v1.2.0 hacía
+`sc create` + `sc start` pero NT AUTHORITY\SYSTEM no tenía permisos sobre
+SQL Server. El servicio crashea silenciosamente al intentar conectar a la BD.
+
+**v1.3.0 — fixes generados (pendiente correr `release-total.ps1 -Version 1.3.0`):**
+
+1. **Nuevo `Backups/setup-sql-baravenida.sql`** — script idempotente que:
+   - Crea login NT AUTHORITY\SYSTEM si no existe
+   - Le da `dbcreator` + `securityadmin` a nivel servidor (puede crear BD)
+   - Si la BD `BarAvenida` ya existe, le da `db_owner`
+   - Corre dos veces durante la instalación (antes de crear servicio y
+     después de que migraciones creen la BD)
+
+2. **`Installer/BarAvenidaServer.iss` rediseñado:**
+   - Versión 1.3.0
+   - Pre-arranque: corre `setup-sql-baravenida.sql` ANTES de `sc create`.
+     SYSTEM ya tiene permisos cuando el servicio arranca por primera vez.
+   - Post-arranque: espera 15s para que migraciones creen la BD, vuelve a
+     correr `setup-sql-baravenida.sql` para `db_owner` sobre BarAvenida,
+     y reinicia el servicio con permisos finales.
+   - Auto-configura firewall puerto 7000 con PowerShell.
+   - Nueva tarea checkbox: instalar tarea de auto-update directo del installer
+     (ya no hay que correr `install-tarea-auto-update.ps1` aparte).
+   - Nueva tarea checkbox: crear acceso directo a la Tablet PWA en escritorio.
+   - Iconos en menú Inicio: Tablet, Admin, KDS (abren URLs en navegador).
+   - Validación preinstalación mejorada con mensajes claros y links.
+   - `ArchitecturesAllowed` cambiado a `x64compatible` (warning de Inno fixed).
+   - `RunOnceId` agregado a [UninstallRun] (warning de Inno fixed).
+   - Postinstall opcional: abre la Tablet en navegador al terminar.
+
+3. **`Scripts/commit-v1.3.0-fixes.ps1`** — commit + push de estos fixes.
+
+**Cómo desplegar v1.3.0 al bar:**
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\BarAvenida-dev\Scripts\commit-v1.3.0-fixes.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\BarAvenida-dev\Scripts\release-total.ps1" -Version "1.3.0"
+```
+
+Si la PC del bar ya tiene la tarea `BarAvenida_AutoUpdate` instalada, se
+actualiza sola en máximo 6h. Si no, hay que reinstalar manualmente.
+
+**Otro cambio crítico:** el repo productivo se movió de `E:\bar-avenida-pos`
+(disco USB externo, Coronado lo formateó por accidente) a
+`C:\BarAvenida-dev` (disco SSD interno, más seguro). El repo en GitHub no
+cambió. Todos los scripts auto-detectan el path con `$PSScriptRoot`.
+
+**Pendientes después de v1.3.0:**
+- Frente B: Seguridad real (Round 1+2) — lockout, rate limit, audit, HTTPS,
+  PinValidator, JWT refresh, headers seguros, AES-256 backups.
+- Frente C: Features nuevas — electron-updater real, chat asistente IA,
+  WhatsApp, Pidemusic, Loyalty.
+- Frente D: Mejoras vs Soft Restaurant — lista por hacer cuando Coronado
+  lo use unos días y note diferencias.
+- Migrar paths `F:\BarAvenida\*` a `{commonappdata}\Bar Avenida\*` para que
+  no dependa de drive F: (v1.4.0).

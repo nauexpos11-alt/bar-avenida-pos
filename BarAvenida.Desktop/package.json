@@ -1,7 +1,7 @@
 {
     "name":  "baravenida-desktop",
-    "version":  "1.10.2",
-    "description":  "Bar Avenida — Monitor Admin",
+    "version":  "1.10.3",
+    "description":  "Bar Avenida â€” Monitor Admin",
     "author":  "Bar Avenida",
     "main":  "main.js",
     "scripts":  {

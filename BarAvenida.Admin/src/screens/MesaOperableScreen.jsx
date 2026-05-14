@@ -55,9 +55,11 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
   const [abriendo, setAbriendo] = useState(false)
   // Modal de "personalizar cuenta nueva" — Coronado: admin puede personalizar como mesera
   const [modalAbrir, setModalAbrir] = useState(false)
-  const [nuevaCuentaAlias,    setNuevaCuentaAlias]    = useState('')
+  const [nuevaCuentaNombre,   setNuevaCuentaNombre]   = useState('')  // Nombre de la mesa (ej "NAU", "Mesa Juan")
   const [nuevaCuentaPersonas, setNuevaCuentaPersonas] = useState(1)
   const [nuevaCuentaArea,     setNuevaCuentaArea]     = useState('')
+  const [nuevaCuentaMeseraId, setNuevaCuentaMeseraId] = useState(null)  // mesera asignada
+  const [meserasDisponibles,  setMeserasDisponibles]  = useState([])
 
   // Solicitudes de cancelación pendientes (banner)
   const [solicitudes, setSolicitudes] = useState([])
@@ -202,30 +204,41 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
 
   // ── Acciones ────────────────────────────────────────────
   // Click "ABRIR CUENTA" abre modal de personalización (igual que mesera)
-  const handleAbrirCuenta = () => {
-    setNuevaCuentaAlias('')
+  const handleAbrirCuenta = async () => {
+    setNuevaCuentaNombre('')
     setNuevaCuentaPersonas(1)
     setNuevaCuentaArea('')
+    setNuevaCuentaMeseraId(auth.id) // Por default el admin mismo
     setError(null)
     setModalAbrir(true)
+    // Cargar meseras disponibles
+    try {
+      const todos = await api.adminGetMeseros(auth.token)
+      // Filtra solo activos con rol Mesera/Admin/Barman
+      const activos = (Array.isArray(todos) ? todos : []).filter(u => u.activo)
+      setMeserasDisponibles(activos)
+    } catch (e) {
+      setMeserasDisponibles([])
+    }
   }
 
   const confirmarAbrirCuenta = async () => {
     if (abriendo) return
+    const meseraIdAsignada = nuevaCuentaMeseraId || auth.id
     setAbriendo(true)
     setError(null)
     try {
       await api.abrirCuenta(auth.token, {
         mesaId:         mesa.id,
-        meseraId:       auth.id,
+        meseraId:       meseraIdAsignada,
         numeroPersonas: Math.max(1, parseInt(nuevaCuentaPersonas, 10) || 1),
-        nombreCliente:  nuevaCuentaAlias?.trim() || null,
+        nombreCliente:  nuevaCuentaNombre?.trim() || null,
         area:           nuevaCuentaArea?.trim() || null,
       })
       const m = await cargarMesa()
       await cargarCuenta(m)
       setModalAbrir(false)
-      showToast(nuevaCuentaAlias ? `Cuenta "${nuevaCuentaAlias}" abierta` : 'Cuenta abierta')
+      showToast(nuevaCuentaNombre ? `Mesa "${nuevaCuentaNombre}" abierta` : 'Cuenta abierta')
     } catch (e) {
       setError(e.message || 'Error al abrir cuenta')
     } finally {
@@ -393,15 +406,32 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
               </div>
               <div className="mop-modal-body">
                 <label className="mop-field">
-                  <span className="mop-field-lbl">Nombre / Alias del cliente <span className="mop-field-hint">(opcional — ej. "NAU", "Mesa Juan")</span></span>
+                  <span className="mop-field-lbl">Nombre de la mesa <span className="mop-field-hint">(opcional — ej. "NAU", "Caca", "VIP")</span></span>
                   <input
                     type="text"
                     autoFocus
                     maxLength={40}
-                    value={nuevaCuentaAlias}
-                    onChange={e => setNuevaCuentaAlias(e.target.value)}
-                    placeholder="Sin alias"
+                    value={nuevaCuentaNombre}
+                    onChange={e => setNuevaCuentaNombre(e.target.value)}
+                    placeholder="Sin nombre — usar número de mesa"
                   />
+                </label>
+                <label className="mop-field">
+                  <span className="mop-field-lbl">Asignar a mesera</span>
+                  <select
+                    value={nuevaCuentaMeseraId ?? ''}
+                    onChange={e => setNuevaCuentaMeseraId(e.target.value ? parseInt(e.target.value, 10) : null)}
+                    className="mop-select"
+                  >
+                    {meserasDisponibles.length === 0 && (
+                      <option value="">Cargando meseras…</option>
+                    )}
+                    {meserasDisponibles.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.codigo ? `${m.codigo} · ` : ''}{m.nombre} {m.rol ? `(${m.rol})` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="mop-field">
                   <span className="mop-field-lbl">Número de personas</span>
@@ -418,14 +448,16 @@ export default function MesaOperableScreen({ auth, mesaId, mesaNumero, onVolver 
                   </div>
                 </label>
                 <label className="mop-field">
-                  <span className="mop-field-lbl">Área <span className="mop-field-hint">(opcional)</span></span>
-                  <input
-                    type="text"
-                    maxLength={30}
+                  <span className="mop-field-lbl">Área</span>
+                  <select
+                    className="mop-select"
                     value={nuevaCuentaArea}
                     onChange={e => setNuevaCuentaArea(e.target.value)}
-                    placeholder="Salón, Terraza, VIP…"
-                  />
+                  >
+                    <option value="">— Selecciona —</option>
+                    <option value="Comedor">Comedor</option>
+                    <option value="Terraza">Terraza</option>
+                  </select>
                 </label>
               </div>
               <div className="mop-modal-footer">

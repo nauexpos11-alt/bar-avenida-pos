@@ -23,6 +23,10 @@ public class AbrirTurnoDto
     public string Pin { get; set; } = "";
     public decimal MontoInicial { get; set; }
     public string? Notas { get; set; }
+
+    // Si true, cancela todas las cuentas abiertas y limpia órdenes pendientes
+    // del KDS antes de abrir el turno. Útil para empezar fresco el día.
+    public bool LimpiarDiaAnterior { get; set; } = false;
 }
 
 public class CerrarTurnoDto
@@ -92,6 +96,20 @@ public class RetiroCajaItemDto
 public class ImprimirCorteDto
 {
     public string? Tipo { get; set; }
+}
+
+public class PinSoloDto
+{
+    [Required]
+    public string Pin { get; set; } = "";
+}
+
+public class ResetTotalDto
+{
+    [Required]
+    public string Pin { get; set; } = "";
+    [Required]
+    public string Confirmacion { get; set; } = "";
 }
 
 // ── Incidentes (PROMPT C.3) ───────────────────────────────────────────────

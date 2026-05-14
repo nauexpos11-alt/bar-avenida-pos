@@ -210,6 +210,29 @@
 .btn-activar    { background: transparent; border-color: #14532d; color: #4ade80; }
 .btn-activar:hover { background: #0d2318; }
 
+/* Boton ELIMINAR permanente - rojo solido (irreversible, pide PIN admin) */
+.btn-eliminar {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.18), rgba(192, 57, 43, 0.18));
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #ff8888;
+  font-weight: 700;
+  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-eliminar:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ef4444, #c0392b);
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.45);
+  transform: translateY(-1px);
+}
+.btn-eliminar:active:not(:disabled) {
+  transform: translateY(0.5px) scale(0.97);
+}
+.btn-eliminar:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ── Modal ────────────────────────────────────────── */
 .usr-modal {
   max-width: 460px;

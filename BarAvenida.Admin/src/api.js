@@ -206,6 +206,10 @@ export const api = {
   adminGetRetiros:      (t, turnoId)  => req(`/api/Caja/retiros/${turnoId}`, {}, t),
   adminImprimirCorte:   (t, corteId, tipo) =>
     req(`/api/Caja/imprimir-corte/${corteId}`, { method: 'POST', body: JSON.stringify({ tipo }) }, t),
+  adminEliminarTurno:   (t, turnoId, pin) =>
+    req(`/api/Caja/turnos/${turnoId}`, { method: 'DELETE', body: JSON.stringify({ pin }) }, t),
+  adminResetTotal:      (t, pin, confirmacion) =>
+    req('/api/Caja/reset-total', { method: 'POST', body: JSON.stringify({ pin, confirmacion }) }, t),
 
   // Auth — Cambiar PIN
   cambiarPin:      (t, dto)              => req('/api/Auth/cambiar-pin',       { method: 'POST', body: JSON.stringify(dto) }, t),

@@ -423,12 +423,18 @@ export default function App() {
             {historial.map(h => (
               <article key={h.id} className="hist-card">
                 <header className="hist-top">
-                  <span className="hist-num">ORDEN #{h.numeroOrden ?? '?'}</span>
+                  <span className="hist-num">
+                    ORDEN #{h.numeroOrden ?? '?'}
+                    {h.folio != null && <span className="hist-folio"> · #{h.folio}</span>}
+                  </span>
                   <span className="hist-tiempo">{h.tiempoMinutos} min</span>
                 </header>
+                {h.nombreCliente && (
+                  <div className="hist-alias">{String(h.nombreCliente).toUpperCase()}</div>
+                )}
                 <div className="hist-meta">
-                  <span className="hist-mesa">MESA {h.mesaNumero}</span>
-                  <span className="hist-mesera">{String(h.nombreMesera || '').toUpperCase()}</span>
+                  <span className="hist-mesa">{h.mesaNumero ? `MESA ${h.mesaNumero}` : 'BARRA'}</span>
+                  <span className="hist-mesera">{String(h.meseraNombre || h.nombreMesera || '—').toUpperCase()}</span>
                 </div>
                 <ul className="hist-detalles">
                   {(h.detalles ?? []).map((d, i) => (

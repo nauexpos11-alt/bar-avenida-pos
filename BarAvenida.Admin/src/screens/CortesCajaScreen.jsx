@@ -56,10 +56,11 @@ export default function CortesCajaScreen({ auth, tab = 'x', onVolver }) {
           { key: 'z',          label: 'Corte Z (Cierre)' },
           { key: 'historico',  label: 'Histórico' },
           { key: 'incidentes', label: 'Incidentes' },
+          { key: 'mant',       label: '⚠ Mantenimiento' },
         ].map(({ key, label }) => (
           <button
             key={key}
-            className={`cc-tab${activeTab === key ? ' cc-tab-active' : ''}`}
+            className={`cc-tab${activeTab === key ? ' cc-tab-active' : ''}${key === 'mant' ? ' cc-tab-danger' : ''}`}
             onClick={() => setActiveTab(key)}
           >
             {label}
@@ -73,6 +74,7 @@ export default function CortesCajaScreen({ auth, tab = 'x', onVolver }) {
         {activeTab === 'z'          && <TabZ auth={auth} toast={toast} />}
         {activeTab === 'historico'  && <TabHistorico auth={auth} toast={toast} />}
         {activeTab === 'incidentes' && <TabIncidentes auth={auth} toast={toast} />}
+        {activeTab === 'mant'       && <TabMantenimiento auth={auth} toast={toast} />}
       </div>
     </div>
   )
@@ -157,6 +159,17 @@ function TabX({ auth, toast }) {
 
 // ── Tab Z ─────────────────────────────────────────────────────────────────────
 
+// Umbrales (espejo de appsettings.json — Caja:Umbrales)
+const UMBRAL_VERDE    = 50
+const UMBRAL_AMARILLA = 200
+
+function calcSeveridad(diferencia) {
+  const abs = Math.abs(diferencia || 0)
+  if (abs <= UMBRAL_VERDE)    return { nivel: 'Verde',    color: '#22c55e', bg: '#0d2318', requiereJust: false }
+  if (abs <= UMBRAL_AMARILLA) return { nivel: 'Amarilla', color: '#fbbf24', bg: '#1a1500', requiereJust: false }
+  return                            { nivel: 'Roja',     color: '#ef4444', bg: '#2a0808', requiereJust: true  }
+}
+
 function TabZ({ auth, toast }) {
   const [turno,           setTurno]           = useState(undefined)
   const [preview,         setPreview]          = useState(null)
@@ -165,8 +178,16 @@ function TabZ({ auth, toast }) {
   const [modal,           setModal]            = useState(false)
   const [pin,             setPin]              = useState('')
   const [notas,           setNotas]            = useState('')
+  const [justificacion,   setJustificacion]    = useState('')
   const [efectivoContado, setEfectivoContado]  = useState('')
   const [enviando,        setEnviando]         = useState(false)
+  const [modalError,      setModalError]       = useState('')
+
+  // Eliminar turno (sin cerrarlo - lo borra/cancela)
+  const [modalEliminarTurno, setModalEliminarTurno] = useState(false)
+  const [pinElim,            setPinElim]            = useState('')
+  const [eliminandoTurno,    setEliminandoTurno]    = useState(false)
+  const [errElim,            setErrElim]            = useState('')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -187,8 +208,24 @@ function TabZ({ auth, toast }) {
 
   useEffect(() => { cargar() }, [cargar])
 
+  const efectivoEsperado = preview?.efectivoEnCaja ?? 0
+  const montoContado     = parseFloat(efectivoContado) || 0
+  const diferencia       = montoContado - efectivoEsperado
+  const difSign          = diferencia >= 0 ? '+' : ''
+  const severidad        = calcSeveridad(diferencia)
+  const difColor         = diferencia === 0 ? '#22c55e' : severidad.color
+
   const handleZ = async () => {
-    if (!pin) { toast('Ingresa tu PIN', 'error'); return }
+    setModalError('')
+    if (!pin) { setModalError('Ingresa tu PIN de administrador'); return }
+    if (efectivoContado === '' || isNaN(parseFloat(efectivoContado))) {
+      setModalError('Captura el efectivo contado en caja (puede ser 0)')
+      return
+    }
+    if (severidad.requiereJust && justificacion.trim().length < 10) {
+      setModalError(`La diferencia es de $${Math.abs(diferencia).toLocaleString('es-MX')} (severidad ROJA). Justificación obligatoria (mínimo 10 caracteres).`)
+      return
+    }
     setEnviando(true)
     try {
       const res = await api.adminCerrarTurno(auth.token, {
@@ -196,6 +233,7 @@ function TabZ({ auth, toast }) {
         pin,
         efectivoContado: parseFloat(efectivoContado) || 0,
         notas: notas || null,
+        justificacion: justificacion.trim() || null,
       })
       const corte = res?.corte ?? res
       setResultado(corte)
@@ -204,17 +242,33 @@ function TabZ({ auth, toast }) {
       setPreview(null)
       toast(corte?.modoSimulado ? 'Corte Z generado — archivos simulados creados' : 'Corte Z generado y turno cerrado')
     } catch (e) {
-      toast(e.message || 'Error al generar Corte Z', 'error')
+      const msg = e?.message || 'Error al generar Corte Z'
+      setModalError(msg)
+      // Si es PIN incorrecto limpiar PIN
+      if (/pin/i.test(msg)) setPin('')
     } finally {
       setEnviando(false)
     }
   }
 
-  const efectivoEsperado = preview?.efectivoEnCaja ?? 0
-  const montoContado     = parseFloat(efectivoContado) || 0
-  const diferencia       = montoContado - efectivoEsperado
-  const difSign          = diferencia >= 0 ? '+' : ''
-  const difColor         = diferencia === 0 ? '#27ae60' : '#e74c3c'
+  const handleEliminarTurno = async () => {
+    setErrElim('')
+    if (!pinElim || pinElim.length < 4) { setErrElim('Ingresa tu PIN admin'); return }
+    setEliminandoTurno(true)
+    try {
+      await api.adminEliminarTurno(auth.token, turno.id, pinElim)
+      toast('Turno eliminado correctamente')
+      setModalEliminarTurno(false)
+      setPinElim('')
+      setTurno(null)
+      setPreview(null)
+      await cargar()
+    } catch (e) {
+      setErrElim(e?.message || 'Error al eliminar turno')
+    } finally {
+      setEliminandoTurno(false)
+    }
+  }
 
   if (resultado) {
     return (
@@ -264,7 +318,16 @@ function TabZ({ auth, toast }) {
 
           <div className="cc-tab-actions cc-tab-actions-bottom">
             <button className="cc-btn-ref" onClick={cargar} disabled={cargando}>↻ Actualizar</button>
-            <button className="cc-btn-corte-z" onClick={() => { setPin(''); setNotas(''); setEfectivoContado(''); setModal(true) }}>
+            <button
+              className="cc-btn-eliminar-turno"
+              onClick={() => { setPinElim(''); setErrElim(''); setModalEliminarTurno(true) }}
+              title="Cancelar el turno sin generar corte (requiere PIN admin)"
+            >
+              🗑 Eliminar turno
+            </button>
+            <button className="cc-btn-corte-z" onClick={() => {
+              setPin(''); setNotas(''); setJustificacion(''); setEfectivoContado(''); setModalError(''); setModal(true)
+            }}>
               🔒 CERRAR Y GUARDAR CORTE Z
             </button>
           </div>
@@ -274,7 +337,7 @@ function TabZ({ auth, toast }) {
       {modal && (
         <Modal
           titulo="Confirmar Cierre de Turno"
-          onClose={() => setModal(false)}
+          onClose={() => !enviando && setModal(false)}
           accionLabel={enviando ? 'Cerrando...' : '🔒 Cerrar y guardar Corte Z'}
           onAccion={handleZ}
           accionPeligrosa
@@ -283,6 +346,15 @@ function TabZ({ auth, toast }) {
             <p className="tc-aviso">
               Se cerrará el turno #{turno?.id} y se registrará el Corte Z con los totales actuales.
             </p>
+
+            {modalError && (
+              <div style={{
+                background: '#3b0000', border: '1.5px solid #ef4444', color: '#fca5a5',
+                padding: '10px 12px', borderRadius: 6, margin: '8px 0 12px',
+                fontSize: 13, fontWeight: 600, lineHeight: 1.4,
+              }}>{modalError}</div>
+            )}
+
             {preview && (
               <div style={{ marginBottom: 8, fontSize: 13, color: '#888' }}>
                 Efectivo esperado en caja: <strong>{fmt(preview.efectivoEnCaja)}</strong>
@@ -300,14 +372,61 @@ function TabZ({ auth, toast }) {
               autoFocus
             />
             {efectivoContado !== '' && preview && (
-              <div style={{ fontWeight: 700, fontSize: 15, color: difColor, margin: '4px 0 8px' }}>
-                Diferencia: {difSign}{fmt(diferencia)}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                margin: '6px 0 10px', flexWrap: 'wrap'
+              }}>
+                <span style={{ fontWeight: 700, fontSize: 15, color: difColor }}>
+                  Diferencia: {difSign}{fmt(diferencia)}
+                </span>
+                <span style={{
+                  background: severidad.bg, color: severidad.color,
+                  border: `1.5px solid ${severidad.color}`,
+                  padding: '3px 10px', borderRadius: 12,
+                  fontSize: 11, fontWeight: 800, letterSpacing: '0.08em',
+                }}>
+                  ● {severidad.nivel.toUpperCase()}
+                </span>
+                {severidad.requiereJust && (
+                  <span style={{ color: '#fca5a5', fontSize: 12, fontWeight: 600 }}>
+                    ⚠ Justificación obligatoria
+                  </span>
+                )}
               </div>
             )}
+
+            {severidad.requiereJust && efectivoContado !== '' && (
+              <>
+                <label className="tc-lbl" style={{ color: '#fca5a5' }}>
+                  JUSTIFICACIÓN <span style={{ color: '#ef4444' }}>*</span>
+                  <span style={{ color: '#888', fontWeight: 400, marginLeft: 6, fontSize: 11 }}>
+                    (mínimo 10 caracteres, obligatorio por la diferencia)
+                  </span>
+                </label>
+                <textarea
+                  className="tc-input tc-textarea"
+                  placeholder="Explica por qué hay esta diferencia (mín. 10 caracteres)..."
+                  maxLength={300}
+                  value={justificacion}
+                  onChange={e => setJustificacion(e.target.value)}
+                  style={{
+                    borderColor: justificacion.trim().length >= 10 ? '#22c55e' : '#ef4444',
+                    minHeight: 60,
+                  }}
+                />
+                <div style={{
+                  fontSize: 11, color: justificacion.trim().length >= 10 ? '#22c55e' : '#888',
+                  marginTop: 2, marginBottom: 6,
+                }}>
+                  {justificacion.trim().length} / 10 caracteres mínimos
+                </div>
+              </>
+            )}
+
             <label className="tc-lbl">Notas del corte (opcional)</label>
             <textarea
               className="tc-input tc-textarea"
-              placeholder="Observaciones del cierre..."
+              placeholder="Observaciones generales del cierre..."
               maxLength={200}
               value={notas}
               onChange={e => setNotas(e.target.value)}
@@ -321,6 +440,43 @@ function TabZ({ auth, toast }) {
               value={pin}
               onChange={e => setPin(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleZ()}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {modalEliminarTurno && (
+        <Modal
+          titulo="⚠ Eliminar turno"
+          onClose={() => !eliminandoTurno && setModalEliminarTurno(false)}
+          accionLabel={eliminandoTurno ? 'Eliminando…' : '🗑 Eliminar permanentemente'}
+          onAccion={handleEliminarTurno}
+          accionPeligrosa
+        >
+          <div className="tc-form">
+            <p className="tc-aviso" style={{ color: '#fca5a5' }}>
+              Vas a <strong>eliminar el turno #{turno?.id} sin cerrarlo</strong>.
+              <br/>No se generará Corte Z. Las cuentas cobradas durante este turno NO se borran.
+              <br/><strong>Esta acción NO se puede deshacer.</strong>
+            </p>
+            {errElim && (
+              <div style={{
+                background: '#3b0000', border: '1.5px solid #ef4444', color: '#fca5a5',
+                padding: '8px 10px', borderRadius: 6, margin: '8px 0',
+                fontSize: 13, fontWeight: 600,
+              }}>{errElim}</div>
+            )}
+            <label className="tc-lbl">PIN ADMIN (confirmación)</label>
+            <input
+              className="tc-input"
+              type="password"
+              inputMode="numeric"
+              placeholder="••••"
+              maxLength={8}
+              value={pinElim}
+              autoFocus
+              onChange={e => setPinElim(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              onKeyDown={e => e.key === 'Enter' && handleEliminarTurno()}
             />
           </div>
         </Modal>
@@ -601,6 +757,311 @@ function TabIncidentes({ auth, toast }) {
         {total} incidente{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}
         {cargando && <span className="cc-footer-carg"> · actualizando...</span>}
       </div>
+    </div>
+  )
+}
+
+// ── Tab Mantenimiento (ELIMINAR TURNOS + RESET TOTAL) ─────────────────────────
+
+function TabMantenimiento({ auth, toast }) {
+  const [cortes,    setCortes]    = useState([])
+  const [turnos,    setTurnos]    = useState([])
+  const [cargando,  setCargando]  = useState(false)
+
+  // Modal eliminar turno
+  const [turnoAEliminar,    setTurnoAEliminar]    = useState(null)
+  const [pinTurno,          setPinTurno]          = useState('')
+  const [errTurno,          setErrTurno]          = useState('')
+  const [elimTurno,         setElimTurno]         = useState(false)
+
+  // Modal reset total
+  const [modalReset,        setModalReset]        = useState(false)
+  const [pinReset,          setPinReset]          = useState('')
+  const [confirmReset,      setConfirmReset]      = useState('')
+  const [errReset,          setErrReset]          = useState('')
+  const [reseteando,        setReseteando]        = useState(false)
+  const [resultReset,       setResultReset]       = useState(null)
+
+  const cargarTurnos = useCallback(async () => {
+    setCargando(true)
+    try {
+      // Trae cortes histórico (últimos 90 días) y derivamos turnos
+      const desde = new Date(); desde.setDate(desde.getDate() - 90)
+      const hasta = new Date()
+      const cs = await api.adminGetCortes(auth.token, {
+        desde: desde.toISOString(),
+        hasta: hasta.toISOString(),
+      })
+      setCortes(Array.isArray(cs) ? cs : [])
+      // También turno actual abierto
+      const tActual = await api.adminGetTurnoActual(auth.token).catch(() => null)
+      // Construyo lista de turnos únicos de cortes + actual
+      const map = new Map()
+      if (tActual) map.set(tActual.id, { ...tActual, estado: 'Abierto' })
+      ;(Array.isArray(cs) ? cs : []).forEach(c => {
+        if (!map.has(c.turnoId)) {
+          map.set(c.turnoId, {
+            id: c.turnoId,
+            fechaApertura: c.fecha,
+            usuarioAperturaNombre: c.usuarioNombre,
+            montoInicial: c.montoInicial,
+            estado: 'Cerrado',
+          })
+        }
+      })
+      setTurnos(Array.from(map.values()).sort((a, b) => b.id - a.id))
+    } catch (e) {
+      toast(e.message || 'Error al cargar turnos', 'error')
+    } finally {
+      setCargando(false)
+    }
+  }, [auth.token, toast])
+
+  useEffect(() => { cargarTurnos() }, [cargarTurnos])
+
+  const abrirEliminar = (t) => {
+    setTurnoAEliminar(t); setPinTurno(''); setErrTurno('')
+  }
+
+  const confirmarEliminarTurno = async () => {
+    setErrTurno('')
+    if (!pinTurno || pinTurno.length < 4) { setErrTurno('Ingresa tu PIN admin'); return }
+    setElimTurno(true)
+    try {
+      await api.adminEliminarTurno(auth.token, turnoAEliminar.id, pinTurno)
+      toast(`Turno #${turnoAEliminar.id} eliminado`)
+      setTurnoAEliminar(null)
+      setPinTurno('')
+      await cargarTurnos()
+    } catch (e) {
+      setErrTurno(e?.message || 'Error al eliminar turno')
+    } finally {
+      setElimTurno(false)
+    }
+  }
+
+  const ejecutarReset = async () => {
+    setErrReset('')
+    if (!pinReset) { setErrReset('Ingresa tu PIN admin'); return }
+    if (confirmReset.trim().toUpperCase() !== 'RESETEAR TODO') {
+      setErrReset('Escribe exactamente: RESETEAR TODO')
+      return
+    }
+    setReseteando(true)
+    try {
+      const res = await api.adminResetTotal(auth.token, pinReset, 'RESETEAR TODO')
+      setResultReset(res?.borrado || {})
+      setModalReset(false)
+      setPinReset(''); setConfirmReset('')
+      toast('Sistema reiniciado desde cero')
+      await cargarTurnos()
+    } catch (e) {
+      setErrReset(e?.message || 'Error al resetear')
+    } finally {
+      setReseteando(false)
+    }
+  }
+
+  return (
+    <div className="cc-tab-body">
+      <div className="cc-aviso-z" style={{ background: '#2a0808', borderColor: '#ef4444', color: '#fca5a5' }}>
+        <strong>⚠ ZONA DE PELIGRO.</strong> Estas acciones son destructivas y no se pueden deshacer.
+        Solo Admin con PIN puede ejecutarlas.
+      </div>
+
+      <h3 style={{ color: '#f0c842', fontSize: '0.95rem', letterSpacing: '0.1em', margin: '20px 0 10px' }}>
+        TURNOS REGISTRADOS
+      </h3>
+
+      <div className="cc-tabla-wrap">
+        <table className="cc-tabla">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Apertura</th>
+              <th>Cajero</th>
+              <th>Fondo</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {cargando ? (
+              <tr><td colSpan={6} className="cc-vacio">Cargando...</td></tr>
+            ) : turnos.length === 0 ? (
+              <tr><td colSpan={6} className="cc-vacio">Sin turnos registrados</td></tr>
+            ) : turnos.map((t, i) => (
+              <tr key={t.id} className={`cc-fila${i % 2 === 0 ? ' cc-par' : ' cc-impar'}`}>
+                <td className="cc-td-id">{t.id}</td>
+                <td className="cc-td-fecha">{fmtFecha(t.fechaApertura)}</td>
+                <td>{t.usuarioAperturaNombre}</td>
+                <td className="cc-td-num">{fmt(t.montoInicial)}</td>
+                <td>
+                  <span style={{
+                    background: t.estado === 'Abierto' ? '#0d2318' : '#1a1a1a',
+                    color:      t.estado === 'Abierto' ? '#4ade80' : '#888',
+                    border: `1px solid ${t.estado === 'Abierto' ? '#22c55e' : '#444'}`,
+                    padding: '3px 10px', borderRadius: 12,
+                    fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.08em',
+                  }}>
+                    {t.estado.toUpperCase()}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    className="cc-btn-eliminar-turno"
+                    style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                    onClick={() => abrirEliminar(t)}
+                  >
+                    🗑 Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style={{ color: '#ef4444', fontSize: '0.95rem', letterSpacing: '0.1em', margin: '32px 0 10px' }}>
+        RESET TOTAL — EMPEZAR DESDE CERO
+      </h3>
+      <p style={{ color: '#aaa', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: 14 }}>
+        Borra <strong style={{ color: '#fff' }}>TODAS las cuentas, órdenes, turnos, cortes,
+        retiros, incidentes, solicitudes y movimientos de inventario</strong>. No borra
+        usuarios, productos, mesas, áreas, configuración ni reglas de cross-sell.
+        Ideal para empezar limpio después de pruebas o cuando los datos están corruptos.
+      </p>
+      <button
+        className="cc-btn-eliminar-turno"
+        style={{
+          background: 'linear-gradient(180deg, #ef4444, #c0392b)',
+          color: '#fff', border: 'none', padding: '14px 28px',
+          fontSize: '1rem', fontWeight: 800, letterSpacing: '0.05em',
+        }}
+        onClick={() => { setPinReset(''); setConfirmReset(''); setErrReset(''); setModalReset(true) }}
+      >
+        💣 RESETEAR TODO DESDE CERO
+      </button>
+
+      {resultReset && (
+        <div style={{
+          marginTop: 16, background: '#0d2318', border: '1.5px solid #22c55e',
+          color: '#4ade80', padding: '12px 14px', borderRadius: 6,
+          fontSize: '0.88rem', lineHeight: 1.6,
+        }}>
+          <strong>✓ Reset ejecutado.</strong> Borrado:
+          <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
+            <li>{resultReset.cuentas || 0} cuentas</li>
+            <li>{resultReset.ordenes || 0} órdenes ({resultReset.ordenDetalles || 0} detalles)</li>
+            <li>{resultReset.turnos || 0} turnos</li>
+            <li>{resultReset.cortes || 0} cortes</li>
+            <li>{resultReset.retiros || 0} retiros</li>
+            <li>{resultReset.incidentes || 0} incidentes</li>
+            <li>{resultReset.solicitudes || 0} solicitudes cancelación</li>
+            <li>{resultReset.aperturas || 0} aperturas cajón</li>
+            <li>{resultReset.movInventario || 0} movimientos inventario</li>
+          </ul>
+        </div>
+      )}
+
+      {/* Modal eliminar turno */}
+      {turnoAEliminar && (
+        <Modal
+          titulo={`⚠ Eliminar turno #${turnoAEliminar.id}`}
+          onClose={() => !elimTurno && setTurnoAEliminar(null)}
+          accionLabel={elimTurno ? 'Eliminando…' : '🗑 Eliminar permanentemente'}
+          onAccion={confirmarEliminarTurno}
+          accionPeligrosa
+        >
+          <div className="tc-form">
+            <p className="tc-aviso" style={{ color: '#fca5a5' }}>
+              Vas a eliminar el <strong>turno #{turnoAEliminar.id}</strong> (estado: {turnoAEliminar.estado}).
+              <br/>Se borrarán: retiros, incidentes y cortes asociados al turno.
+              <br/><strong>Esta acción NO se puede deshacer.</strong>
+            </p>
+            {errTurno && (
+              <div style={{
+                background: '#3b0000', border: '1.5px solid #ef4444', color: '#fca5a5',
+                padding: '8px 10px', borderRadius: 6, margin: '8px 0',
+                fontSize: 13, fontWeight: 600,
+              }}>{errTurno}</div>
+            )}
+            <label className="tc-lbl">PIN ADMIN</label>
+            <input
+              className="tc-input"
+              type="password"
+              inputMode="numeric"
+              placeholder="••••"
+              maxLength={8}
+              autoFocus
+              value={pinTurno}
+              onChange={e => setPinTurno(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              onKeyDown={e => e.key === 'Enter' && confirmarEliminarTurno()}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal reset total */}
+      {modalReset && (
+        <Modal
+          titulo="💣 RESET TOTAL — Confirmación final"
+          onClose={() => !reseteando && setModalReset(false)}
+          accionLabel={reseteando ? 'Reseteando…' : '💣 Borrar TODO ahora'}
+          onAccion={ejecutarReset}
+          accionPeligrosa
+        >
+          <div className="tc-form">
+            <div style={{
+              background: '#2a0808', border: '1.5px solid #ef4444', color: '#fca5a5',
+              padding: '12px 14px', borderRadius: 6, marginBottom: 12,
+              fontSize: 13, lineHeight: 1.5, fontWeight: 600,
+            }}>
+              ⚠ <strong>ÚLTIMA ADVERTENCIA</strong><br/>
+              Vas a borrar TODAS las cuentas (cobradas y abiertas), órdenes, turnos,
+              cortes, retiros, incidentes, solicitudes y movimientos de inventario.<br/>
+              <strong style={{ color: '#fff' }}>Esto NO se puede deshacer.</strong>
+            </div>
+
+            {errReset && (
+              <div style={{
+                background: '#3b0000', border: '1.5px solid #ef4444', color: '#fca5a5',
+                padding: '8px 10px', borderRadius: 6, margin: '8px 0',
+                fontSize: 13, fontWeight: 600,
+              }}>{errReset}</div>
+            )}
+
+            <label className="tc-lbl">
+              Escribe exactamente: <strong style={{ color: '#ef4444' }}>RESETEAR TODO</strong>
+            </label>
+            <input
+              className="tc-input"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="RESETEAR TODO"
+              value={confirmReset}
+              onChange={e => setConfirmReset(e.target.value)}
+              style={{
+                borderColor: confirmReset.trim().toUpperCase() === 'RESETEAR TODO' ? '#22c55e' : undefined,
+              }}
+              autoFocus
+            />
+
+            <label className="tc-lbl">PIN ADMIN</label>
+            <input
+              className="tc-input"
+              type="password"
+              inputMode="numeric"
+              placeholder="••••"
+              maxLength={8}
+              value={pinReset}
+              onChange={e => setPinReset(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              onKeyDown={e => e.key === 'Enter' && ejecutarReset()}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

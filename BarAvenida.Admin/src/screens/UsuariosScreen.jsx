@@ -17,6 +17,11 @@ export default function UsuariosScreen({ auth, onVolver }) {
   const [form,       setForm]       = useState(emptyForm())
   const [saving,     setSaving]     = useState(false)
   const [formError,  setFormError]  = useState(null)
+  // Modal de eliminar definitivo con PIN admin
+  const [modalEliminar,    setModalEliminar]    = useState(null) // { usuario }
+  const [pinEliminar,      setPinEliminar]      = useState('')
+  const [pinEliminarError, setPinEliminarError] = useState('')
+  const [eliminando,       setEliminando]       = useState(false)
 
   const cargar = useCallback(async () => {
     try {
@@ -83,6 +88,37 @@ export default function UsuariosScreen({ auth, onVolver }) {
 
   function handlePinChange(val) {
     setForm(f => ({ ...f, pin: val.replace(/\D/g, '').slice(0, 4) }))
+  }
+
+  function abrirEliminar(u) {
+    setPinEliminar('')
+    setPinEliminarError('')
+    setModalEliminar({ usuario: u })
+  }
+
+  async function confirmarEliminar() {
+    if (eliminando) return
+    if (!pinEliminar || pinEliminar.length < 4) {
+      setPinEliminarError('Ingresa tu PIN admin (mín. 4 dígitos)')
+      return
+    }
+    setEliminando(true)
+    setPinEliminarError('')
+    try {
+      await api.adminEliminarUsuario(auth.token, modalEliminar.usuario.id, pinEliminar)
+      setModalEliminar(null)
+      await cargar()
+    } catch (e) {
+      const msg = e?.message || 'Error al eliminar'
+      if (msg.toLowerCase().includes('pin')) {
+        setPinEliminarError(msg)
+        setPinEliminar('')
+      } else {
+        setPinEliminarError(msg)
+      }
+    } finally {
+      setEliminando(false)
+    }
   }
 
   return (
@@ -160,6 +196,14 @@ export default function UsuariosScreen({ auth, onVolver }) {
                       onClick={() => toggleActivo(u)}
                     >
                       {u.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button
+                      className="btn-row btn-eliminar"
+                      onClick={() => abrirEliminar(u)}
+                      title="Eliminar permanentemente (con PIN admin)"
+                      disabled={u.id === auth.id}
+                    >
+                      Eliminar
                     </button>
                   </td>
                 </tr>
@@ -245,6 +289,50 @@ export default function UsuariosScreen({ auth, onVolver }) {
               </button>
               <button className="btn-primary" onClick={guardar} disabled={saving}>
                 {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar permanente con PIN admin */}
+      {modalEliminar && (
+        <div className="modal-overlay" onClick={() => !eliminando && setModalEliminar(null)}>
+          <div className="modal-box usr-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-title" style={{ color: '#ff6b6b' }}>
+              ⚠ Eliminar permanentemente
+            </div>
+            <p style={{ color: '#ccc', fontSize: '0.9rem', margin: '12px 0 16px', lineHeight: 1.5 }}>
+              Vas a eliminar a <strong style={{ color: '#fff' }}>{modalEliminar.usuario.nombre}</strong> permanentemente.
+              <br/><strong style={{ color: '#ff8888' }}>Esta acción NO se puede deshacer.</strong>
+              <br/>Sus cuentas y solicitudes se transferirán al admin que ejecuta el borrado.
+            </p>
+            {pinEliminarError && <div className="modal-error">{pinEliminarError}</div>}
+            <div className="usr-form">
+              <label className="usr-label">Tu PIN ADMIN (confirmación)</label>
+              <input
+                className="usr-input"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                autoFocus
+                value={pinEliminar}
+                onChange={e => setPinEliminar(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="••••"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setModalEliminar(null)} disabled={eliminando}>
+                Cancelar
+              </button>
+              <button
+                className="btn-primary"
+                style={{ background: 'linear-gradient(180deg, #ef4444, #c0392b)', color: '#fff' }}
+                onClick={confirmarEliminar}
+                disabled={eliminando}
+              >
+                {eliminando ? 'Eliminando…' : 'Eliminar permanentemente'}
               </button>
             </div>
           </div>

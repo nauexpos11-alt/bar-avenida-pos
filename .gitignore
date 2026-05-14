@@ -66,4 +66,5 @@ TestResults/
 BarAvenida.API/wwwroot/admin/
 BarAvenida.API/wwwroot/kds/
 # wwwroot/tablet (build output del Tablet PWA)
-BarAvenida.API/wwwroot/tablet/
+BarAvenida.API/wwwroot/tablet/cert/*.pfx
+cert/cert-password.txt

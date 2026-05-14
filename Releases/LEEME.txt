@@ -24,4 +24,4 @@ ORDEN DE INSTALACION (importante):
    - Abrir Chrome y entrar a: http://IP-DEL-BAR:7000/tablet/
    - Menu Chrome -> "Anadir a pantalla de inicio"
 
-Generado: 2026-05-13 21:08
+Generado: 2026-05-13 21:09

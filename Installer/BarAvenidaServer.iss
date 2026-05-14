@@ -67,6 +67,9 @@ Source: "{#SOURCE_ROOT}Scripts\install-tarea-auto-update.ps1"; DestDir: "{sd}\Ba
 Source: "{#SOURCE_ROOT}Scripts\generar-cert-https.ps1";        DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 Source: "{#SOURCE_ROOT}Scripts\confiar-cert-cliente.ps1";      DestDir: "{sd}\BarAvenida"; Flags: ignoreversion
 
+; Script para configurar red Privada (v1.10.3)
+Source: "configurar-red-lan.ps1";                              DestDir: "{tmp}"; Flags: deleteafterinstall
+
 [Dirs]
 ; Carpetas de runtime con permisos de escritura para el servicio
 ; Si F: existe, las crea ahi. Si no, fallback a C:\BarAvenida-data\
@@ -129,7 +132,7 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Com
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetFirewallRule -DisplayName 'Bar Avenida API HTTPS (puerto 7443)' -ErrorAction SilentlyContinue | Remove-NetFirewallRule; New-NetFirewallRule -DisplayName 'Bar Avenida API HTTPS (puerto 7443)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7443 -Profile Any -Enabled True | Out-Null"""; StatusMsg: "Configurando firewall HTTPS..."; Flags: runhidden waituntilterminated
 
 ; ========== PASO 8a: Cambiar perfil de red a Privada (clave para que tablets vean al servidor) ==========
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' } | ForEach-Object { Set-NetConnectionProfile -InterfaceIndex $_.InterfaceIndex -NetworkCategory Private -ErrorAction SilentlyContinue }"""; StatusMsg: "Configurando red como Privada (LAN)..."; Flags: runhidden waituntilterminated
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{tmp}\configurar-red-lan.ps1"""; StatusMsg: "Configurando red como Privada (LAN)..."; Flags: runhidden waituntilterminated
 
 ; ========== PASO 8b: Generar cert HTTPS si no existe (v1.9.0) ==========
 ; Solo corre si no existe C:\ProgramData\Bar Avenida\cert\BarAvenida.pfx

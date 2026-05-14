@@ -68,3 +68,13 @@ BarAvenida.API/wwwroot/kds/
 # wwwroot/tablet (build output del Tablet PWA)
 BarAvenida.API/wwwroot/tablet/cert/*.pfx
 cert/cert-password.txt
+
+# Cert privado para code signing - NUNCA subir
+cert/*.pfx
+cert/*.cer
+cert/
+
+# Archivos basura
+/delete
+/stop
+/publish-installer/

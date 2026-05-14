@@ -187,15 +187,19 @@ public class SistemaController : ControllerBase
 
         if (string.IsNullOrEmpty(ipPreferida)) ipPreferida = "localhost";
 
-        var urlTablet = $"http://{ipPreferida}:{puerto}/tablet/";
-        var urlAdmin  = $"http://{ipPreferida}:{puerto}/admin/";
-        var urlKds    = $"http://{ipPreferida}:{puerto}/kds";
+        // Para tablet usamos HTTPS (puerto 7443) para que Chrome la reconozca
+        // como PWA instalable real (sin barra de navegador).
+        var urlTablet      = $"https://{ipPreferida}:7443/tablet/";
+        var urlTabletHttp  = $"http://{ipPreferida}:{puerto}/tablet/";
+        var urlAdmin       = $"http://{ipPreferida}:{puerto}/admin/";
+        var urlKds         = $"http://{ipPreferida}:{puerto}/kds";
 
         return Ok(new
         {
             ip            = ipPreferida,
             puerto        = puerto,
-            urlTablet     = urlTablet,
+            urlTablet     = urlTablet,        // HTTPS (PWA real)
+            urlTabletHttp = urlTabletHttp,    // HTTP fallback
             urlAdmin      = urlAdmin,
             urlKds        = urlKds,
             ipsCandidatas = ipCandidatas

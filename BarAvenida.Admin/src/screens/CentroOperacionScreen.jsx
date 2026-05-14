@@ -282,7 +282,6 @@ export default function CentroOperacionScreen({ auth, onIrPantalla }) {
             )}
           </div>
         </div>
-        <button className="co-btn-nueva-barra" onClick={handleNuevaBarra}><Icon name="add" size={16} /> NUEVA BARRA</button>
       </div>
 
       {/* ── Toast ── */}
